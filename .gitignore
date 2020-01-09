@@ -1,0 +1,7 @@
+# Files related to code-tagging
+tags
+cscope.out
+
+# Ignore bin/build folder
+build/*
+bin/*
