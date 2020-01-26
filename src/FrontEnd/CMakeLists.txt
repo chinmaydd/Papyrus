@@ -1,5 +1,7 @@
 set(_SOURCE_FILES
   Lexer.cpp
+  AST.cpp
+  ASTConstructor.cpp
   )
 
 add_library(FrontEnd OBJECT
