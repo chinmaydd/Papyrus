@@ -24,8 +24,8 @@ int main(int argc, char *argv[]) {
     Lexer lexer(is);
 
     // Testing!
-    while (lexer.get_next_token() != Lexer::TOK_DOT ||
-           lexer.get_next_token() != Lexer::TOK_EOF) {
+    while (lexer.GetNextToken() != Lexer::TOK_DOT ||
+           lexer.GetNextToken() != Lexer::TOK_EOF) {
         LOG(INFO) << lexer.get_buffer();
     }
 

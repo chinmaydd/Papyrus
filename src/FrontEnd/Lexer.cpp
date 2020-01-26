@@ -2,67 +2,67 @@
 
 using namespace papyrus;
 
-#define RESERVE_WORD(a, b) reserved_words.insert({a,b})
+#define RESERVE_WORD(a, b) reserved_words_.insert({a,b})
 
-char Lexer::read_ch() {
-    last_char = ch;
-    input_buffer.get(ch); 
+char Lexer::ReadChar() {
+    last_char_ = ch_;
+    input_buffer_.get(ch_); 
 
-    if (input_buffer.eof()) return EOF;
-    return ch;
+    if (input_buffer_.eof()) return EOF;
+    return ch_;
 }
 
-char Lexer::peek_ch() {
-    if (input_buffer.eof()) return EOF;
+char Lexer::PeekChar() {
+    if (input_buffer_.eof()) return EOF;
 
-    return input_buffer.peek();
+    return input_buffer_.peek();
 }
 
-void Lexer::read_and_advance() {
-    current_buffer.push_back(read_ch());
+void Lexer::ReadAndAdvance() {
+    current_buffer_.push_back(ReadChar());
 }
 
-void Lexer::consume_line() {
-    char peek_char = peek_ch();
+void Lexer::ConsumeLine() {
+    char peek_char = PeekChar();
     while (peek_char != EOF && peek_char != '\n') {
-        read_ch();
-        peek_char = peek_ch();
+        ReadChar();
+        peek_char= PeekChar();
     }
 }
 
-void Lexer::consume_whitespace_and_comments() {
-    char peek_char = peek_ch();
+void Lexer::ConsumeWhitespaceAndComments() {
+    char peek_char = PeekChar();
     while (peek_char != EOF) {
         if (peek_char == ' ' || peek_char == '\t' || peek_char == '\r') {
-            read_ch();
+            ReadChar();
         } else if (peek_char == '\n') {
-            current_lineno += 1;
-            read_ch();
+            current_lineno_ += 1;
+            ReadChar();
         } else if (peek_char == '#') {
-            consume_line();
-        } else if (peek_ch() == '/') {
-            read_ch();
-            if (peek_ch() == '/')
-                consume_line();
+            ConsumeLine();
+        } else if (PeekChar() == '/') {
+            ReadChar();
+            if (PeekChar() == '/')
+                ConsumeLine();
             else {
-                LOG(ERROR) << "[LEXER] Invalid character found after '/' on Line: " << current_lineno;
+                LOG(ERROR) << "[LEXER] Invalid character found after '/' on Line: " << current_lineno_;
             }
         } else
             break;
 
-        peek_char = peek_ch();
+        peek_char = PeekChar();
     }
 }
 
 Lexer::Lexer(std::istream &i_buf) : 
-    input_buffer(i_buf),
-    current_buffer(),
-    current_lineno(1),
-    ch('\0'),
-    last_char(' '),
-    current_token(Lexer::TOK_NONE),
-    reserved_words(),
-    LOGCFG() {
+    input_buffer_(i_buf),
+    current_buffer_(),
+    current_lineno_(1),
+    ch_('\0'),
+    last_char_(' '),
+    current_token_(Lexer::TOK_NONE),
+    reserved_words_(),
+    LOGCFG_() {
         RESERVE_WORD("let", TOK_LET);
         RESERVE_WORD("call", TOK_CALL);
         RESERVE_WORD("if", TOK_IF);
@@ -79,137 +79,137 @@ Lexer::Lexer(std::istream &i_buf) :
 }
     
 
-void Lexer::reserve(std::string& word, Lexer::Token& token) {
+void Lexer::Reserve(std::string& word, Lexer::Token& token) {
     RESERVE_WORD(word, token);
 }
 
-Lexer::Token Lexer::get_next_token() {
-    current_buffer = "";
-    current_token = Token::TOK_NONE;
+Lexer::Token Lexer::GetNextToken() {
+    current_buffer_ = "";
+    current_token_ = Token::TOK_NONE;
 
-    consume_whitespace_and_comments();
+    ConsumeWhitespaceAndComments();
         
-    if (std::isalpha(peek_ch())) {
-        read_and_advance();
-        while (std::isalnum(peek_ch())) {
-            read_and_advance();
+    if (std::isalpha(PeekChar())) {
+        ReadAndAdvance();
+        while (std::isalnum(PeekChar())) {
+            ReadAndAdvance();
         }
-        auto res_word_it = reserved_words.find(current_buffer);
-        if (res_word_it != reserved_words.end()) {
-            // Found a reserved word!
+        auto res_word_it = reserved_words_.find(current_buffer_);
+        if (res_word_it != reserved_words_.end()) {
+            // Found a Reserved word!
             // Return token since we have already stored it.
-            current_token = res_word_it->second;
+            current_token_ = res_word_it->second;
         } else {
-            current_token = TOK_IDENT;
+            current_token_ = TOK_IDENT;
         }
-    } else if (std::isdigit(peek_ch())) {
-        read_and_advance();
-        while (std::isdigit(peek_ch())) {
-            read_and_advance();
+    } else if (std::isdigit(PeekChar())) {
+        ReadAndAdvance();
+        while (std::isdigit(PeekChar())) {
+            ReadAndAdvance();
         }
-        if (std::isalpha(peek_ch())) {
-            LOG(ERROR) << "[LEXER] Invalid number literal found on Line: " << current_lineno;
+        if (std::isalpha(PeekChar())) {
+            LOG(ERROR) << "[LEXER] Invalid number literal found on Line: " << current_lineno_;
         } else {
-            current_token = TOK_NUM;
+            current_token_ = TOK_NUM;
         }
     } else {
-        switch(peek_ch()) {
+        switch(PeekChar()) {
             case '!':
             case '=':
-                read_and_advance();
-                if (peek_ch() == '=') {
-                    read_and_advance();
-                    current_token = last_char == '!' ? TOK_RELOP_NEQ : TOK_RELOP_EQ;
+                ReadAndAdvance();
+                if (PeekChar() == '=') {
+                    ReadAndAdvance();
+                    current_token_ = last_char_ == '!' ? TOK_RELOP_NEQ : TOK_RELOP_EQ;
                 } else {
-                    LOG(ERROR) << "[LEXER] Invalid character found after " << last_char << " on Line: " << current_lineno;
+                    LOG(ERROR) << "[LEXER] Invalid character found after " << last_char_ << " on Line: " << current_lineno_;
                 }
                 break;
             case '<':
-                read_and_advance();
-                if (peek_ch() == '-') {
-                    read_and_advance();
-                    current_token = TOK_LEFTARROW;
+                ReadAndAdvance();
+                if (PeekChar() == '-') {
+                    ReadAndAdvance();
+                    current_token_ = TOK_LEFTARROW;
                 } else {
-                    if (peek_ch() == '=') {
-                        read_and_advance();
-                        current_token = TOK_RELOP_LTE;
+                    if (PeekChar() == '=') {
+                        ReadAndAdvance();
+                        current_token_ = TOK_RELOP_LTE;
                     } else {
-                        read_and_advance();
-                        current_token = TOK_RELOP_LT;
+                        ReadAndAdvance();
+                        current_token_ = TOK_RELOP_LT;
                     }
                 }
                 break;
             case '>':
-                read_and_advance();
-                if (peek_ch() == '=') {
-                    read_and_advance();
-                    current_token = TOK_RELOP_GTE;
+                ReadAndAdvance();
+                if (PeekChar() == '=') {
+                    ReadAndAdvance();
+                    current_token_ = TOK_RELOP_GTE;
                 } else {
-                    read_and_advance();
-                    current_token = TOK_RELOP_GT;
+                    ReadAndAdvance();
+                    current_token_ = TOK_RELOP_GT;
                 }
                 break;
             case ';':
-                read_and_advance();
-                current_token = TOK_SEMICOLON;
+                ReadAndAdvance();
+                current_token_ = TOK_SEMICOLON;
                 break;
             case ',':
-                read_and_advance();
-                current_token = TOK_COMMA;
+                ReadAndAdvance();
+                current_token_ = TOK_COMMA;
                 break;
             case '(':
-                read_and_advance();
-                current_token = TOK_ROUND_OPEN;
+                ReadAndAdvance();
+                current_token_ = TOK_ROUND_OPEN;
                 break;
             case ')':
-                read_and_advance();
-                current_token = TOK_ROUND_CLOSED;
+                ReadAndAdvance();
+                current_token_ = TOK_ROUND_CLOSED;
                 break;
             case '{':
-                read_and_advance();
-                current_token = TOK_CURLY_OPEN;
+                ReadAndAdvance();
+                current_token_ = TOK_CURLY_OPEN;
                 break;
             case '}':
-                read_and_advance();
-                current_token = TOK_CURLY_CLOSED;
+                ReadAndAdvance();
+                current_token_ = TOK_CURLY_CLOSED;
                 break;
             case '[':
-                read_and_advance();
-                current_token = TOK_SQUARE_OPEN;
+                ReadAndAdvance();
+                current_token_ = TOK_SQUARE_OPEN;
                 break;
             case ']':
-                read_and_advance();
-                current_token = TOK_SQUARE_CLOSED;
+                ReadAndAdvance();
+                current_token_ = TOK_SQUARE_CLOSED;
                 break;
             case '*':
-                read_and_advance();
-                current_token = TOK_BINOP_MUL;
+                ReadAndAdvance();
+                current_token_ = TOK_BINOP_MUL;
                 break;
             case '+':
-                read_and_advance();
-                current_token = TOK_BINOP_ADD;
+                ReadAndAdvance();
+                current_token_ = TOK_BINOP_ADD;
                 break;
             case '-':
-                read_and_advance();
-                current_token = TOK_BINOP_SUB;
+                ReadAndAdvance();
+                current_token_ = TOK_BINOP_SUB;
                 break;
             case '/':
-                read_and_advance();
-                current_token = TOK_BINOP_DIV;
+                ReadAndAdvance();
+                current_token_ = TOK_BINOP_DIV;
                 break;
             case '.':
-                read_and_advance();
-                current_token = TOK_DOT;
+                ReadAndAdvance();
+                current_token_ = TOK_DOT;
                 break;
             case EOF:
-                current_token = TOK_EOF;
+                current_token_ = TOK_EOF;
                 break;
             default:
                 // By default, let us assume it is any token we dont know
                 // about. Just to be safe.
-                current_token = TOK_ANY;
+                current_token_ = TOK_ANY;
                 break;
         }
     }
-    return current_token;
+    return current_token_;
 }

@@ -66,29 +66,29 @@ public:
 
     Lexer(std::istream &i_buf);
 
-    Token get_next_token();
-    const std::string& get_buffer() const { return current_buffer; };
-    const Token get_token() const { return current_token; };
+    Token GetNextToken();
+    const std::string& get_buffer() const { return current_buffer_; };
+    const Token get_token() const { return current_token_; };
 
 private:
     // Variables
-    std::istream &input_buffer;
-    std::string current_buffer;
-    int current_lineno;
-    char ch;
-    char last_char;
-    Token current_token;
-    // Map for reserved words in the language
-    std::unordered_map<std::string, Token> reserved_words;
-    structlog LOGCFG;
+    std::istream &input_buffer_;
+    std::string current_buffer_;
+    int current_lineno_;
+    char ch_;
+    char last_char_;
+    Token current_token_;
+    // Map for Reserved words in the language
+    std::unordered_map<std::string, Token> reserved_words_;
+    structlog LOGCFG_;
 
     // Methods
-    char read_ch();
-    char peek_ch();
-    void read_and_advance();
-    void consume_line();
-    void consume_whitespace_and_comments();
-    inline void reserve(std::string&, Token&);
+    char ReadChar();
+    char PeekChar();
+    void ReadAndAdvance();
+    void ConsumeLine();
+    void ConsumeWhitespaceAndComments();
+    inline void Reserve(std::string&, Token&);
 };
 }
 
