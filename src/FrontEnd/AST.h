@@ -30,7 +30,8 @@ protected:
 class ConstantNode : public ASTNode {
 public:
     ConstantNode(long int);
-    const long int GetConstantValue() const { return value_; }
+    long int GetConstantValue() const { return value_; }
+
 protected:
     long int value_;
 };
@@ -52,13 +53,13 @@ public:
     };
 
     explicit ExpressionNode();
-    void SetPrimaryTerm(std::unique_ptr<ExpressionNode>&);
-    void SetSecondaryTerm(std::unique_ptr<ExpressionNode>&);
+    void SetPrimaryTerm(ExpressionNode*);
+    void SetSecondaryTerm(ExpressionNode*);
     void SetOperation(ArithmeticOperator);
 
 private:
-    std::unique_ptr<ExpressionNode> primary_term_;
-    std::unique_ptr<ExpressionNode> secondary_term_;
+    ExpressionNode* primary_term_;
+    ExpressionNode* secondary_term_;
     ArithmeticOperator op_;
     bool is_binary_;
 };
@@ -68,8 +69,8 @@ private:
 
 class DesignatorNode : public ASTNode {
 protected:
-    std::unique_ptr<IdentifierNode> identifier_;
-    DesignatorNode(std::unique_ptr<IdentifierNode>&);
+    IdentifierNode* identifier_;
+    DesignatorNode(IdentifierNode*);
 };
 
 class VarIdentifierNode : public DesignatorNode {
@@ -77,10 +78,10 @@ class VarIdentifierNode : public DesignatorNode {
 
 class ArrIdentifierNode : public DesignatorNode {
 public:
-    void AddIndirectionToArray(std::unique_ptr<ExpressionNode>&);
+    void AddIndirectionToArray(ExpressionNode*);
 
 private:
-    std::vector<std::unique_ptr<ExpressionNode> > indirections_;
+    std::vector<ExpressionNode*> indirections_;
 };
 
 ////////////////////////////////
@@ -88,11 +89,12 @@ private:
 
 class RelationNode : public ASTNode {
 public:
-    RelationNode(std::unique_ptr<ExpressionNode>&, RelationalOperator, std::unique_ptr<ExpressionNode>&);
+    RelationNode(ExpressionNode*, RelationalOperator, ExpressionNode*);
+
 private:
-    std::unique_ptr<ExpressionNode> left_expr_;
+    ExpressionNode* left_expr_;
     RelationalOperator op_;
-    std::unique_ptr<ExpressionNode> right_expr_;
+    ExpressionNode* right_expr_;
 };
 
 ////////////////////////////////
@@ -103,52 +105,57 @@ class StatementNode : public ASTNode {
 
 class FunctionCallNode : public ExpressionNode, public StatementNode {
 public:
-    FunctionCallNode(std::unique_ptr<IdentifierNode>&);
-    void AddArgument(std::unique_ptr<ExpressionNode>&);
+    FunctionCallNode(IdentifierNode*);
+    void AddArgument(ExpressionNode*);
 
 private:
-    std::unique_ptr<IdentifierNode> identifier_;
-    std::vector<std::unique_ptr<ExpressionNode> > arguments_;
+    IdentifierNode* identifier_;
+    std::vector<ExpressionNode*> arguments_;
 };
 
 class AssignmentNode : public StatementNode {
 public:
-    AssignmentNode(std::unique_ptr<DesignatorNode>&, std::unique_ptr<ExpressionNode>&);
+    AssignmentNode(DesignatorNode*, ExpressionNode*);
+
 private:
-    std::unique_ptr<DesignatorNode> designator_;
-    std::unique_ptr<ExpressionNode> value_;
+    DesignatorNode* designator_;
+    ExpressionNode* value_;
 };
 
 class StatSequenceNode : public ASTNode {
 public:
-    void AddStatementToSequence(std::unique_ptr<StatementNode>&);
+    void AddStatementToSequence(StatementNode*);
+
 private:
-    std::vector<std::unique_ptr<StatementNode> > statements_;
+    std::vector<StatementNode*> statements_;
 };
 
 class ITENode : public StatementNode {
 public:
-    ITENode(std::unique_ptr<RelationNode>&, std::unique_ptr<StatSequenceNode>&);
-    void AddElseClause(std::unique_ptr<StatSequenceNode>&);
+    ITENode(RelationNode*, StatSequenceNode*);
+    void AddElseClause(StatSequenceNode*);
+
 private:
-    std::unique_ptr<RelationNode> relation_;
-    std::unique_ptr<StatSequenceNode> if_sequence_;
-    std::unique_ptr<StatSequenceNode> else_sequence_;
+    RelationNode* relation_;
+    StatSequenceNode* if_sequence_;
+    StatSequenceNode* else_sequence_;
 };
 
 class ReturnNode : public StatementNode {
 public:
-    ReturnNode(std::unique_ptr<ExpressionNode>&);
+    ReturnNode(ExpressionNode*);
+
 private:
-    std::unique_ptr<ExpressionNode> return_expression_;
+    ExpressionNode* return_expression_;
 };
 
 class WhileNode : public StatementNode {
 public:
-    WhileNode(std::unique_ptr<RelationNode>&, std::unique_ptr<StatSequenceNode>&);
+    WhileNode(RelationNode*, StatSequenceNode*);
+
 private:
-    std::unique_ptr<RelationNode> loop_condition_;
-    std::unique_ptr<StatSequenceNode> statement_sequence_;
+    RelationNode* loop_condition_;
+    StatSequenceNode* statement_sequence_;
 };
 
 ////////////////////////////////
@@ -156,8 +163,8 @@ private:
 
 class TypeDeclNode : public ASTNode {
 protected:
-    TypeDeclNode(std::unique_ptr<IdentifierNode>&);
-    std::unique_ptr<IdentifierNode> identifier_;
+    TypeDeclNode(IdentifierNode*);
+    IdentifierNode* identifier_;
 };
 
 class VarIdentifierDeclNode : public TypeDeclNode {
@@ -165,19 +172,21 @@ class VarIdentifierDeclNode : public TypeDeclNode {
 
 class ArrIdentifierDeclNode : public TypeDeclNode {
 public:
-    ArrIdentifierDeclNode(std::unique_ptr<IdentifierNode>&);
-    void AddArrDimension(std::unique_ptr<ConstantNode>&);
+    ArrIdentifierDeclNode(IdentifierNode*);
+    void AddArrDimension(ConstantNode*);
+
 private:
-    std::vector<std::unique_ptr<ConstantNode> > dimensions_;
+    std::vector<ConstantNode*> dimensions_;
 };
 
 class VarDeclNode : public ASTNode {
 public:
-    VarDeclNode(std::unique_ptr<TypeDeclNode>&, std::unique_ptr<IdentifierNode>&);
-    void AddIdentifierDecl(std::unique_ptr<IdentifierNode>&);
+    VarDeclNode(TypeDeclNode*, IdentifierNode*);
+    void AddIdentifierDecl(IdentifierNode*);
+
 private:
-    std::unique_ptr<TypeDeclNode> type_declaration_;
-    std::vector<std::unique_ptr<IdentifierNode> > identifiers_;
+    TypeDeclNode* type_declaration_;
+    std::vector<IdentifierNode*> identifiers_;
 };
 
 ////////////////////////////////
@@ -185,25 +194,28 @@ private:
 
 class FormalParamNode : public ASTNode {
 public:
-    void AddFormalParam(std::unique_ptr<IdentifierNode>&);
+    void AddFormalParam(IdentifierNode*);
+
 private:
-    std::vector<std::unique_ptr<IdentifierNode> > parameters_;
+    std::vector<IdentifierNode*> parameters_;
 };
 
 class FunctionBodyNode : public ASTNode {
 public:
-    FunctionBodyNode(std::unique_ptr<VarDeclNode>&, std::unique_ptr<StatSequenceNode>&);
+    FunctionBodyNode(VarDeclNode*, StatSequenceNode*);
+
 private:
-    std::unique_ptr<VarDeclNode> var_declarations_;
-    std::unique_ptr<StatSequenceNode> func_statement_sequence_;
+    VarDeclNode* var_declarations_;
+    StatSequenceNode* func_statement_sequence_;
 };
 
 class FunctionDeclNode : public ASTNode {
 public:
-    FunctionDeclNode(std::unique_ptr<FormalParamNode>&, std::unique_ptr<FunctionBodyNode>&);
+    FunctionDeclNode(FormalParamNode*, FunctionBodyNode*);
+
 private:
-    std::unique_ptr<FormalParamNode> formal_parameters_;
-    std::unique_ptr<FunctionBodyNode> func_body_;
+    FormalParamNode* formal_parameters_;
+    FunctionBodyNode* func_body_;
 };
 
 ////////////////////////////////
@@ -211,13 +223,14 @@ private:
 
 class ComputationNode : public ASTNode {
 public:
-    void AddGlobalVariableDeclarations(std::unique_ptr<VarDeclNode>&);
-    void AddFunctionDeclarations(std::unique_ptr<FunctionDeclNode>&);
-    void SetComputationBody(std::unique_ptr<StatSequenceNode>&);
+    void AddGlobalVariableDeclarations(VarDeclNode*);
+    void AddFunctionDeclarations(FunctionDeclNode*);
+    void SetComputationBody(StatSequenceNode*);
+
 private:
-    std::vector<std::unique_ptr<VarDeclNode> > variable_declarations_;
-    std::vector<std::unique_ptr<FunctionDeclNode> > function_declarations_;
-    std::unique_ptr<StatSequenceNode> computation_body_;
+    std::vector<VarDeclNode*> variable_declarations_;
+    std::vector<FunctionDeclNode*> function_declarations_;
+    StatSequenceNode* computation_body_;
 };
 
 } // end namespace papyrus

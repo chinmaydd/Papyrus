@@ -2,19 +2,6 @@
 
 using namespace papyrus;
 
-using ExpressionNodePtr   = std::unique_ptr<ExpressionNode>&; 
-using DesignatorNodePtr   = std::unique_ptr<DesignatorNode>&;
-using IdentifierNodePtr   = std::unique_ptr<IdentifierNode>&;
-using StatementNodePtr    = std::unique_ptr<StatementNode>&;
-using RelationNodePtr     = std::unique_ptr<RelationNode>&;
-using StatSequenceNodePtr = std::unique_ptr<StatSequenceNode>&;
-using ConstantNodePtr     = std::unique_ptr<ConstantNode>&;
-using TypeDeclNodePtr     = std::unique_ptr<TypeDeclNode>&;
-using VarDeclNodePtr      = std::unique_ptr<VarDeclNode>&;
-using FunctionDeclNodePtr = std::unique_ptr<FunctionDeclNode>&;
-using FormalParamNodePtr  = std::unique_ptr<FormalParamNode>&;
-using FunctionBodyNodePtr = std::unique_ptr<FunctionBodyNode>&;
-
 ////////////////////////////////////
 // Identifier Node
 ////////////////////////////////////
@@ -36,18 +23,18 @@ ExpressionNode::ExpressionNode() :
     op_(BINOP_NONE),
     is_binary_(false) {}
 
-void ExpressionNode::SetPrimaryTerm(ExpressionNodePtr primary) {
-    primary_term_ = std::move(primary);
+void ExpressionNode::SetPrimaryTerm(ExpressionNode* primary) {
+    primary_term_ = primary;
 }
 
-void ExpressionNode::SetSecondaryTerm(ExpressionNodePtr secondary) {
+void ExpressionNode::SetSecondaryTerm(ExpressionNode* secondary) {
     // Do not set secondary term if primary is not set.
     // XXX: Is this the best way to handdle this case?
     if (primary_term_ == nullptr) {
         return;
     }
 
-    secondary_term_  = std::move(secondary);
+    secondary_term_  = secondary;
     is_binary_ = true;
 }
 
@@ -58,8 +45,8 @@ void ExpressionNode::SetOperation(ArithmeticOperator op) {
 ////////////////////////////////////
 // Designator Node
 ////////////////////////////////////
-DesignatorNode::DesignatorNode(IdentifierNodePtr identifier) :
-    identifier_(std::move(identifier)) {
+DesignatorNode::DesignatorNode(IdentifierNode* identifier) :
+    identifier_(identifier) {
 }
 
 ////////////////////////////////////
@@ -69,11 +56,8 @@ DesignatorNode::DesignatorNode(IdentifierNodePtr identifier) :
 ////////////////////////////////////
 // ArrayIdentifier Node
 ////////////////////////////////////
-// ArrayIdentifierNode::ArrayIdentifierNode(IdentifierNodePtr identifier) :
-//     DesignatorNode(identifier) {}
-
-void ArrIdentifierNode::AddIndirectionToArray(ExpressionNodePtr indirection) {
-    indirections_.push_back(std::move(indirection));
+void ArrIdentifierNode::AddIndirectionToArray(ExpressionNode* indirection) {
+    indirections_.push_back(indirection);
 }
 
 ////////////////////////////////////
@@ -83,69 +67,69 @@ void ArrIdentifierNode::AddIndirectionToArray(ExpressionNodePtr indirection) {
 //////////////////////////////////////
 // FunctionCall Node
 ////////////////////////////////////
-FunctionCallNode::FunctionCallNode(IdentifierNodePtr identifier) :
-    identifier_(std::move(identifier)),
+FunctionCallNode::FunctionCallNode(IdentifierNode* identifier) :
+    identifier_(identifier),
     StatementNode() {}
 
-void FunctionCallNode::AddArgument(ExpressionNodePtr expression) {
-    arguments_.push_back(std::move(expression));
+void FunctionCallNode::AddArgument(ExpressionNode* expression) {
+    arguments_.push_back(expression);
 }
 
 //////////////////////////////////////
 // Assignment Node
 ////////////////////////////////////
-AssignmentNode::AssignmentNode(DesignatorNodePtr designator, ExpressionNodePtr value) :
-    designator_(std::move(designator)),
-    value_(std::move(value)),
+AssignmentNode::AssignmentNode(DesignatorNode* designator, ExpressionNode* value) :
+    designator_(designator),
+    value_(value),
     StatementNode() {}
 
 ////////////////////////////////////
 // ITE Node
 ////////////////////////////////////
-ITENode::ITENode(RelationNodePtr relation, StatSequenceNodePtr if_sequence) :
-    relation_(std::move(relation)),
-    if_sequence_(std::move(if_sequence)),
+ITENode::ITENode(RelationNode* relation, StatSequenceNode* if_sequence) :
+    relation_(relation),
+    if_sequence_(if_sequence),
     StatementNode() {}
 
-void ITENode::AddElseClause(StatSequenceNodePtr else_sequence) {
-    else_sequence_ = std::move(else_sequence);
+void ITENode::AddElseClause(StatSequenceNode* else_sequence) {
+    else_sequence_ = else_sequence;
 }
 
 ////////////////////////////////////
 // Return Node
 ////////////////////////////////////
-ReturnNode::ReturnNode(ExpressionNodePtr return_expression) :
-    return_expression_(std::move(return_expression)),
+ReturnNode::ReturnNode(ExpressionNode* return_expression) :
+    return_expression_(return_expression),
     StatementNode() {}
 
 ////////////////////////////////////
 // While Node
 ////////////////////////////////////
-WhileNode::WhileNode(RelationNodePtr loop_condition, StatSequenceNodePtr statement_sequence) :
-    loop_condition_(std::move(loop_condition)),
-    statement_sequence_(std::move(statement_sequence)),
+WhileNode::WhileNode(RelationNode* loop_condition, StatSequenceNode* statement_sequence) :
+    loop_condition_(loop_condition),
+    statement_sequence_(statement_sequence),
     StatementNode() {}
 
 ////////////////////////////////////
 // StatSequence Node
 ////////////////////////////////////
-void StatSequenceNode::AddStatementToSequence(StatementNodePtr statement) {
-    statements_.push_back(std::move(statement));
+void StatSequenceNode::AddStatementToSequence(StatementNode* statement) {
+    statements_.push_back(statement);
 }
 
 ////////////////////////////////////
 // Relation Node
 ////////////////////////////////////
-RelationNode::RelationNode(ExpressionNodePtr left_expr, RelationalOperator op, ExpressionNodePtr right_expr) :
-    left_expr_(std::move(left_expr)),
+RelationNode::RelationNode(ExpressionNode* left_expr, RelationalOperator op, ExpressionNode* right_expr) :
+    left_expr_(left_expr),
     op_(op),
-    right_expr_(std::move(right_expr)) {}
+    right_expr_(right_expr) {}
 
 ////////////////////////////////////
 // TypeDecl Node
 ////////////////////////////////////
-TypeDeclNode::TypeDeclNode(IdentifierNodePtr identifier) :
-    identifier_(std::move(identifier)) {}
+TypeDeclNode::TypeDeclNode(IdentifierNode* identifier) :
+    identifier_(identifier) {}
 
 ////////////////////////////////////
 // VarIdentifierDecl Node
@@ -154,53 +138,53 @@ TypeDeclNode::TypeDeclNode(IdentifierNodePtr identifier) :
 ////////////////////////////////////
 // ArrIdentifierDecl Node
 ////////////////////////////////////
-ArrIdentifierDeclNode::ArrIdentifierDeclNode(IdentifierNodePtr identifier) :
+ArrIdentifierDeclNode::ArrIdentifierDeclNode(IdentifierNode* identifier) :
     TypeDeclNode(identifier) {}
 
-void ArrIdentifierDeclNode::AddArrDimension(ConstantNodePtr dimension) {
-    dimensions_.push_back(std::move(dimension));
+void ArrIdentifierDeclNode::AddArrDimension(ConstantNode* dimension) {
+    dimensions_.push_back(dimension);
 }
 
 ////////////////////////////////////
 // VarDecl Node
 ////////////////////////////////////
-VarDeclNode::VarDeclNode(TypeDeclNodePtr type_declaration, IdentifierNodePtr identifier) :
-    type_declaration_(std::move(type_declaration)) {
-        identifiers_.push_back(std::move(identifier));
+VarDeclNode::VarDeclNode(TypeDeclNode* type_declaration, IdentifierNode* identifier) :
+    type_declaration_(type_declaration) {
+        identifiers_.push_back(identifier);
 }
 
 ////////////////////////////////////
 // FormalParam Node
 ////////////////////////////////////
-void FormalParamNode::AddFormalParam(IdentifierNodePtr identifier) {
-    parameters_.push_back(std::move(identifier));
+void FormalParamNode::AddFormalParam(IdentifierNode* identifier) {
+    parameters_.push_back(identifier);
 }
 
 ////////////////////////////////////
 // FunctionBody Node
 ////////////////////////////////////
-FunctionBodyNode::FunctionBodyNode(VarDeclNodePtr var_declarations, StatSequenceNodePtr func_statement_seq) :
-    var_declarations_(std::move(var_declarations)),
-    func_statement_sequence_(std::move(func_statement_seq)) {}
+FunctionBodyNode::FunctionBodyNode(VarDeclNode* var_declarations, StatSequenceNode* func_statement_seq) :
+    var_declarations_(var_declarations),
+    func_statement_sequence_(func_statement_seq) {}
 
 ////////////////////////////////////
 // FunctionDecl Node
 ////////////////////////////////////
-FunctionDeclNode::FunctionDeclNode(FormalParamNodePtr formal_parameters, FunctionBodyNodePtr func_body) :
-    formal_parameters_(std::move(formal_parameters)),
-    func_body_(std::move(func_body)) {}
+FunctionDeclNode::FunctionDeclNode(FormalParamNode* formal_parameters, FunctionBodyNode* func_body) :
+    formal_parameters_(formal_parameters),
+    func_body_(func_body) {}
 
 ////////////////////////////////////
 // Computation Node
 ////////////////////////////////////
-void ComputationNode::AddGlobalVariableDeclarations(VarDeclNodePtr var_declaration) {
-    variable_declarations_.push_back(std::move(var_declaration));
+void ComputationNode::AddGlobalVariableDeclarations(VarDeclNode* var_declaration) {
+    variable_declarations_.push_back(var_declaration);
 }
 
-void ComputationNode::AddFunctionDeclarations(FunctionDeclNodePtr func_declaration) {
-    function_declarations_.push_back(std::move(func_declaration));
+void ComputationNode::AddFunctionDeclarations(FunctionDeclNode* func_declaration) {
+    function_declarations_.push_back(func_declaration);
 }
 
-void ComputationNode::SetComputationBody(StatSequenceNodePtr computation_body) {
-    computation_body_ = std::move(computation_body);
+void ComputationNode::SetComputationBody(StatSequenceNode* computation_body) {
+    computation_body_ = computation_body;
 }

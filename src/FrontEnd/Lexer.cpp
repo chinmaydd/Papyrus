@@ -63,6 +63,7 @@ Lexer::Lexer(std::istream &i_buf) :
     current_token_(Lexer::TOK_NONE),
     reserved_words_(),
     LOGCFG_() {
+        RESERVE_WORD("main", TOK_MAIN);
         RESERVE_WORD("let", TOK_LET);
         RESERVE_WORD("call", TOK_CALL);
         RESERVE_WORD("if", TOK_IF);
@@ -84,8 +85,11 @@ void Lexer::Reserve(std::string& word, Lexer::Token& token) {
 }
 
 Lexer::Token Lexer::GetNextToken() {
+    if (current_token_ == TOK_EOF)
+        return current_token_;
+
     current_buffer_ = "";
-    current_token_ = Token::TOK_NONE;
+    current_token_ = TOK_NONE;
 
     ConsumeWhitespaceAndComments();
         
