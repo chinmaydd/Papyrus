@@ -8,9 +8,12 @@ using IdentifierNodePtr   = std::unique_ptr<IdentifierNode>&;
 using StatementNodePtr    = std::unique_ptr<StatementNode>&;
 using RelationNodePtr     = std::unique_ptr<RelationNode>&;
 using StatSequenceNodePtr = std::unique_ptr<StatSequenceNode>&;
-using NumNodePtr          = std::unique_ptr<NumNode>&;
+using ConstantNodePtr     = std::unique_ptr<ConstantNode>&;
 using TypeDeclNodePtr     = std::unique_ptr<TypeDeclNode>&;
 using VarDeclNodePtr      = std::unique_ptr<VarDeclNode>&;
+using FunctionDeclNodePtr = std::unique_ptr<FunctionDeclNode>&;
+using FormalParamNodePtr  = std::unique_ptr<FormalParamNode>&;
+using FunctionBodyNodePtr = std::unique_ptr<FunctionBodyNode>&;
 
 ////////////////////////////////////
 // Identifier Node
@@ -66,7 +69,10 @@ DesignatorNode::DesignatorNode(IdentifierNodePtr identifier) :
 ////////////////////////////////////
 // ArrayIdentifier Node
 ////////////////////////////////////
-void ArrayIdentifierNode::AddIndirectionToArray(ExpressionNodePtr indirection) {
+// ArrayIdentifierNode::ArrayIdentifierNode(IdentifierNodePtr identifier) :
+//     DesignatorNode(identifier) {}
+
+void ArrIdentifierNode::AddIndirectionToArray(ExpressionNodePtr indirection) {
     indirections_.push_back(std::move(indirection));
 }
 
@@ -78,7 +84,8 @@ void ArrayIdentifierNode::AddIndirectionToArray(ExpressionNodePtr indirection) {
 // FunctionCall Node
 ////////////////////////////////////
 FunctionCallNode::FunctionCallNode(IdentifierNodePtr identifier) :
-    identifier_(std::move(identifier)) {}
+    identifier_(std::move(identifier)),
+    StatementNode() {}
 
 void FunctionCallNode::AddArgument(ExpressionNodePtr expression) {
     arguments_.push_back(std::move(expression));
@@ -89,14 +96,16 @@ void FunctionCallNode::AddArgument(ExpressionNodePtr expression) {
 ////////////////////////////////////
 AssignmentNode::AssignmentNode(DesignatorNodePtr designator, ExpressionNodePtr value) :
     designator_(std::move(designator)),
-    value_(std::move(value)) {}
+    value_(std::move(value)),
+    StatementNode() {}
 
 ////////////////////////////////////
 // ITE Node
 ////////////////////////////////////
 ITENode::ITENode(RelationNodePtr relation, StatSequenceNodePtr if_sequence) :
     relation_(std::move(relation)),
-    if_sequence_(std::move(if_sequence)) {}
+    if_sequence_(std::move(if_sequence)),
+    StatementNode() {}
 
 void ITENode::AddElseClause(StatSequenceNodePtr else_sequence) {
     else_sequence_ = std::move(else_sequence);
@@ -106,21 +115,22 @@ void ITENode::AddElseClause(StatSequenceNodePtr else_sequence) {
 // Return Node
 ////////////////////////////////////
 ReturnNode::ReturnNode(ExpressionNodePtr return_expression) :
-    return_expression_(std::move(return_expression)) {}
+    return_expression_(std::move(return_expression)),
+    StatementNode() {}
 
 ////////////////////////////////////
 // While Node
 ////////////////////////////////////
 WhileNode::WhileNode(RelationNodePtr loop_condition, StatSequenceNodePtr statement_sequence) :
-    loop_condition_(loop_condition),
-    statement_sequence_(statement_sequence) {}
+    loop_condition_(std::move(loop_condition)),
+    statement_sequence_(std::move(statement_sequence)),
+    StatementNode() {}
 
 ////////////////////////////////////
 // StatSequence Node
 ////////////////////////////////////
 void StatSequenceNode::AddStatementToSequence(StatementNodePtr statement) {
     statements_.push_back(std::move(statement));
-
 }
 
 ////////////////////////////////////
@@ -138,16 +148,16 @@ TypeDeclNode::TypeDeclNode(IdentifierNodePtr identifier) :
     identifier_(std::move(identifier)) {}
 
 ////////////////////////////////////
-// VarIdentifier Node
+// VarIdentifierDecl Node
 ////////////////////////////////////
 
 ////////////////////////////////////
-// ArrIdentifier Node
+// ArrIdentifierDecl Node
 ////////////////////////////////////
-ArrIdentifierNode::ArrIdentifierNode(IdentifierNodePtr identifier) :
+ArrIdentifierDeclNode::ArrIdentifierDeclNode(IdentifierNodePtr identifier) :
     TypeDeclNode(identifier) {}
 
-void ArrIdentifierNode::AddArrDimension(NumNodePtr dimension) {
+void ArrIdentifierDeclNode::AddArrDimension(ConstantNodePtr dimension) {
     dimensions_.push_back(std::move(dimension));
 }
 
@@ -155,13 +165,14 @@ void ArrIdentifierNode::AddArrDimension(NumNodePtr dimension) {
 // VarDecl Node
 ////////////////////////////////////
 VarDeclNode::VarDeclNode(TypeDeclNodePtr type_declaration, IdentifierNodePtr identifier) :
-    type_declaration_(std::move(type_declaration)),
-    identifiers_{std::move(identifier)} {}
+    type_declaration_(std::move(type_declaration)) {
+        identifiers_.push_back(std::move(identifier));
+}
 
 ////////////////////////////////////
 // FormalParam Node
 ////////////////////////////////////
-FormalParamNode::AddFormalParam(IdentifierNodePtr identifier) {
+void FormalParamNode::AddFormalParam(IdentifierNodePtr identifier) {
     parameters_.push_back(std::move(identifier));
 }
 
@@ -170,12 +181,12 @@ FormalParamNode::AddFormalParam(IdentifierNodePtr identifier) {
 ////////////////////////////////////
 FunctionBodyNode::FunctionBodyNode(VarDeclNodePtr var_declarations, StatSequenceNodePtr func_statement_seq) :
     var_declarations_(std::move(var_declarations)),
-    func_statement_sequence(std::move(func_statement_seq)) {}
+    func_statement_sequence_(std::move(func_statement_seq)) {}
 
 ////////////////////////////////////
 // FunctionDecl Node
 ////////////////////////////////////
-FunctionDeclNode(FormalParamNodePtr formal_parameters, FunctionBodyNodePtr func_body) :
+FunctionDeclNode::FunctionDeclNode(FormalParamNodePtr formal_parameters, FunctionBodyNodePtr func_body) :
     formal_parameters_(std::move(formal_parameters)),
     func_body_(std::move(func_body)) {}
 

@@ -69,17 +69,30 @@ private:
 class DesignatorNode : public ASTNode {
 protected:
     std::unique_ptr<IdentifierNode> identifier_;
+    DesignatorNode(std::unique_ptr<IdentifierNode>&);
 };
 
-class VarIdentifierNode : public IdentifierNode, public DesignatorNode {
+class VarIdentifierNode : public DesignatorNode {
 };
 
-class ArrayIdentifierNode : public IdentifierNode, public DesignatorNode {
+class ArrIdentifierNode : public DesignatorNode {
 public:
     void AddIndirectionToArray(std::unique_ptr<ExpressionNode>&);
 
 private:
     std::vector<std::unique_ptr<ExpressionNode> > indirections_;
+};
+
+////////////////////////////////
+////////////////////////////////
+
+class RelationNode : public ASTNode {
+public:
+    RelationNode(std::unique_ptr<ExpressionNode>&, RelationalOperator, std::unique_ptr<ExpressionNode>&);
+private:
+    std::unique_ptr<ExpressionNode> left_expr_;
+    RelationalOperator op_;
+    std::unique_ptr<ExpressionNode> right_expr_;
 };
 
 ////////////////////////////////
@@ -104,6 +117,13 @@ public:
 private:
     std::unique_ptr<DesignatorNode> designator_;
     std::unique_ptr<ExpressionNode> value_;
+};
+
+class StatSequenceNode : public ASTNode {
+public:
+    void AddStatementToSequence(std::unique_ptr<StatementNode>&);
+private:
+    std::vector<std::unique_ptr<StatementNode> > statements_;
 };
 
 class ITENode : public StatementNode {
@@ -131,25 +151,6 @@ private:
     std::unique_ptr<StatSequenceNode> statement_sequence_;
 };
 
-class StatSequenceNode : public ASTNode {
-public:
-    void AddStatementToSequence(std::unique_ptr<StatementNode>&);
-private:
-    std::vector<std::unique_ptr<StatementNode> > statements_;
-};
-
-////////////////////////////////
-////////////////////////////////
-
-class RelationNode : public ASTNode {
-public:
-    RelationNode(std::unique_ptr<ExpressionNode>&, RelationalOperator, std::unique_ptr<ExpressionNode>&);
-private:
-    std::unique_ptr<ExpressionNode> left_expr_;
-    RelationalOperator op_;
-    std::unique_ptr<ExpressionNode> right_expr_;
-};
-
 ////////////////////////////////
 ////////////////////////////////
 
@@ -160,14 +161,14 @@ protected:
 };
 
 class VarIdentifierDeclNode : public TypeDeclNode {
-}
+};
 
 class ArrIdentifierDeclNode : public TypeDeclNode {
 public:
     ArrIdentifierDeclNode(std::unique_ptr<IdentifierNode>&);
-    void AddArrDimension(std::unique_ptr<NumNode>&);
+    void AddArrDimension(std::unique_ptr<ConstantNode>&);
 private:
-    std::vector<std::unique_ptr<NumNode> > dimensions_;
+    std::vector<std::unique_ptr<ConstantNode> > dimensions_;
 };
 
 class VarDeclNode : public ASTNode {
@@ -203,7 +204,7 @@ public:
 private:
     std::unique_ptr<FormalParamNode> formal_parameters_;
     std::unique_ptr<FunctionBodyNode> func_body_;
-}
+};
 
 ////////////////////////////////
 ////////////////////////////////
@@ -212,12 +213,12 @@ class ComputationNode : public ASTNode {
 public:
     void AddGlobalVariableDeclarations(std::unique_ptr<VarDeclNode>&);
     void AddFunctionDeclarations(std::unique_ptr<FunctionDeclNode>&);
-    void SetComputationBody(std:unique_ptr<StatSequenceNode&);
+    void SetComputationBody(std::unique_ptr<StatSequenceNode>&);
 private:
     std::vector<std::unique_ptr<VarDeclNode> > variable_declarations_;
     std::vector<std::unique_ptr<FunctionDeclNode> > function_declarations_;
     std::unique_ptr<StatSequenceNode> computation_body_;
-}
+};
 
 } // end namespace papyrus
 
