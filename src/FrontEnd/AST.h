@@ -203,9 +203,10 @@ private:
 
 class FunctionDeclNode : public ASTNode {
 public:
-    FunctionDeclNode(FormalParamNode*, FunctionBodyNode*);
+    FunctionDeclNode(IdentifierNode*, FormalParamNode*, FunctionBodyNode*);
 
 private:
+    IdentifierNode* identifier_;
     FormalParamNode* formal_parameters_;
     FunctionBodyNode* func_body_;
 };

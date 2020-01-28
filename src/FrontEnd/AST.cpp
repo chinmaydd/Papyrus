@@ -165,7 +165,8 @@ FunctionBodyNode::FunctionBodyNode(VarDeclNode* var_declarations, StatSequenceNo
 ////////////////////////////////////
 // FunctionDecl Node
 ////////////////////////////////////
-FunctionDeclNode::FunctionDeclNode(FormalParamNode* formal_parameters, FunctionBodyNode* func_body) :
+FunctionDeclNode::FunctionDeclNode(IdentifierNode* identifier, FormalParamNode* formal_parameters, FunctionBodyNode* func_body) :
+    identifier_(identifier),
     formal_parameters_(formal_parameters),
     func_body_(func_body) {}
 
