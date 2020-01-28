@@ -17,8 +17,13 @@ public:
     ComputationNode* ComputeAST();
 
 private:
-    void ParseSingleToken(Lexer::Token);
-
+    void RaiseParseError(Lexer::Token);
+    bool MustParseToken(Lexer::Token);
+    Lexer::Token GetNextToken();
+    long int ParseCurrentTokenAsNumber();
+    
+    IdentifierNode* ParseIdentifier();
+    TypeDeclNode* ParseTypeDecl();
     VarDeclNode* ParseVariableDecl();
 
     structlog LOGCFG_;

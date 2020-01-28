@@ -37,6 +37,7 @@ public:
 
         TOK_VAR,
         TOK_ARRAY,
+        TOK_VARORARR,
         TOK_FUNCTION,
         TOK_PROCEDURE,
 
@@ -70,6 +71,8 @@ public:
     const std::string& GetBuffer() const { return current_buffer_; };
     const Token GetToken() const { return current_token_; };
     const int GetLineNo() const { return current_lineno_;}
+    const long int ConvertBufferToNumber() const { return std::stol(current_buffer_); };
+
     const std::string& GetTokenTranslation(Token& t) const { return token_translations_.at(t); }
 
 private:
@@ -93,56 +96,57 @@ private:
     inline void Reserve(std::string&, Token&);
 
     std::unordered_map<Token, std::string> token_translations_ {
-        {TOK_LETTER, "TOK_LETTER"},
-        {TOK_DIGIT, "TOK_DIGIT"},
+        {TOK_LETTER, "LETTER"},
+        {TOK_DIGIT, "DIGIT"},
 
-        {TOK_RELOP_EQ, "TOK_RELOP_EQ"},
-        {TOK_RELOP_NEQ, "TOK_RELOP_NEQ"},
-        {TOK_RELOP_LT, "TOK_RELOP_LT"},
-        {TOK_RELOP_LTE, "TOK_RELOP_LTE"},
-        {TOK_RELOP_GT, "TOK_RELOP_GT"},
-        {TOK_RELOP_GTE, "TOK_RELOP_GTE"},
+        {TOK_RELOP_EQ, "RELOP_EQ"},
+        {TOK_RELOP_NEQ, "RELOP_NEQ"},
+        {TOK_RELOP_LT, "RELOP_LT"},
+        {TOK_RELOP_LTE, "RELOP_LTE"},
+        {TOK_RELOP_GT, "RELOP_GT"},
+        {TOK_RELOP_GTE, "RELOP_GTE"},
 
-        {TOK_IDENT, "TOK_IDENT"},
-        {TOK_NUM, "TOK_NUM"},
+        {TOK_IDENT, "IDENT"},
+        {TOK_NUM, "NUM"},
 
-        {TOK_LET, "TOK_LET"},
-        {TOK_CALL, "TOK_CALL"},
-        {TOK_IF, "TOK_IF"},
-        {TOK_THEN, "TOK_THEN"},
-        {TOK_ELSE, "TOK_ELSE"},
-        {TOK_FI, "TOK_FI"},
-        {TOK_WHILE, "TOK_WHILE"},
-        {TOK_DO, "TOK_DO"},
-        {TOK_OD, "TOK_OD"},
-        {TOK_RETURN, "TOK_RETURN"},
+        {TOK_LET, "LET"},
+        {TOK_CALL, "CALL"},
+        {TOK_IF, "IF"},
+        {TOK_THEN, "THEN"},
+        {TOK_ELSE, "ELSE"},
+        {TOK_FI, "FI"},
+        {TOK_WHILE, "WHILE"},
+        {TOK_DO, "DO"},
+        {TOK_OD, "OD"},
+        {TOK_RETURN, "RETURN"},
 
-        {TOK_VAR, "TOK_VAR"},
-        {TOK_ARRAY, "TOK_ARRAY"},
-        {TOK_FUNCTION, "TOK_FUNCTION"},
-        {TOK_PROCEDURE, "TOK_PROCEDURE"},
+        {TOK_VAR, "VAR"},
+        {TOK_ARRAY, "ARRAY"},
+        {TOK_VARORARR, "VAR OR ARRAY"},
+        {TOK_FUNCTION, "FUNCTION"},
+        {TOK_PROCEDURE, "PROCEDURE"},
 
-        {TOK_SEMICOLON, "TOK_SEMICOLON"},
-        {TOK_ROUND_OPEN, "TOK_ROUND_OPEN"},
-        {TOK_ROUND_CLOSED, "TOK_ROUND_CLOSED"},
-        {TOK_CURLY_OPEN, "TOK_CURLY_OPEN"},
-        {TOK_CURLY_CLOSED, "TOK_CURLY_CLOSED"},
-        {TOK_SQUARE_OPEN, "TOK_SQUARE_OPEN"},
-        {TOK_SQUARE_CLOSED, "TOK_SQUARE_CLOSED"},
-        {TOK_COMMA, "TOK_COMMA"},
-        {TOK_LEFTARROW, "TOK_LEFTARROW"},
-        {TOK_DOT, "TOK_DOT"},
+        {TOK_SEMICOLON, "SEMICOLON"},
+        {TOK_ROUND_OPEN, "ROUND_OPEN"},
+        {TOK_ROUND_CLOSED, "ROUND_CLOSED"},
+        {TOK_CURLY_OPEN, "CURLY_OPEN"},
+        {TOK_CURLY_CLOSED, "CURLY_CLOSED"},
+        {TOK_SQUARE_OPEN, "SQUARE_OPEN"},
+        {TOK_SQUARE_CLOSED, "SQUARE_CLOSED"},
+        {TOK_COMMA, "COMMA"},
+        {TOK_LEFTARROW, "LEFTARROW"},
+        {TOK_DOT, "DOT"},
 
-        {TOK_BINOP_MUL, "TOK_BINOP_MUL"},
-        {TOK_BINOP_ADD, "TOK_BINOP_ADD"},
-        {TOK_BINOP_SUB, "TOK_BINOP_SUB"},
-        {TOK_BINOP_DIV, "TOK_BINOP_DIV"},
+        {TOK_BINOP_MUL, "BINOP_MUL"},
+        {TOK_BINOP_ADD, "BINOP_ADD"},
+        {TOK_BINOP_SUB, "BINOP_SUB"},
+        {TOK_BINOP_DIV, "BINOP_DIV"},
 
-        {TOK_MAIN, "TOK_MAIN"},
+        {TOK_MAIN, "MAIN"},
 
-        {TOK_ANY, "TOK_ANY"},
-        {TOK_NONE, "TOK_NONE"},
-        {TOK_EOF, "TOK_EOF"},
+        {TOK_ANY, "ANY"},
+        {TOK_NONE, "NONE"},
+        {TOK_EOF, "EOF"},
     };
 };
 

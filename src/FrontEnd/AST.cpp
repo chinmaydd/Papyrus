@@ -128,21 +128,12 @@ RelationNode::RelationNode(ExpressionNode* left_expr, RelationalOperator op, Exp
 ////////////////////////////////////
 // TypeDecl Node
 ////////////////////////////////////
-TypeDeclNode::TypeDeclNode(IdentifierNode* identifier) :
-    identifier_(identifier) {}
-
-////////////////////////////////////
-// VarIdentifierDecl Node
-////////////////////////////////////
-
-////////////////////////////////////
-// ArrIdentifierDecl Node
-////////////////////////////////////
-ArrIdentifierDeclNode::ArrIdentifierDeclNode(IdentifierNode* identifier) :
-    TypeDeclNode(identifier) {}
-
-void ArrIdentifierDeclNode::AddArrDimension(ConstantNode* dimension) {
+void TypeDeclNode::AddArrayDimension(ConstantNode* dimension) {
     dimensions_.push_back(dimension);
+}
+
+void TypeDeclNode::SetIfArray(bool is_array) {
+    is_array_ = is_array;
 }
 
 ////////////////////////////////////
@@ -151,6 +142,10 @@ void ArrIdentifierDeclNode::AddArrDimension(ConstantNode* dimension) {
 VarDeclNode::VarDeclNode(TypeDeclNode* type_declaration, IdentifierNode* identifier) :
     type_declaration_(type_declaration) {
         identifiers_.push_back(identifier);
+}
+
+void VarDeclNode::AddIdentifierDecl(IdentifierNode* identifier) {
+    identifiers_.push_back(identifier);
 }
 
 ////////////////////////////////////

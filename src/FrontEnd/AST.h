@@ -162,20 +162,12 @@ private:
 ////////////////////////////////
 
 class TypeDeclNode : public ASTNode {
-protected:
-    TypeDeclNode(IdentifierNode*);
-    IdentifierNode* identifier_;
-};
-
-class VarIdentifierDeclNode : public TypeDeclNode {
-};
-
-class ArrIdentifierDeclNode : public TypeDeclNode {
 public:
-    ArrIdentifierDeclNode(IdentifierNode*);
-    void AddArrDimension(ConstantNode*);
-
+    void AddArrayDimension(ConstantNode*);
+    const bool IsArray() const { return is_array_;};
+    void SetIfArray(bool);
 private:
+    bool is_array_;
     std::vector<ConstantNode*> dimensions_;
 };
 
