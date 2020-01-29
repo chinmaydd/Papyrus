@@ -17,12 +17,31 @@ public:
     ComputationNode* ComputeAST();
 
 private:
-    Lexer::Token GetCurrentToken() const { 
-        return lexer_instance_.GetToken();
+    Lexer::Token GetCurrentToken() const {
+        if (is_peek_) {
+            return current_token_;
+        } else {
+            return lexer_instance_.GetToken();
+        }
     }
-    Lexer::Token GetNextToken() { 
-        return lexer_instance_.GetNextToken();
+    Lexer::Token FetchToken() { 
+        if (is_peek_) {
+            is_peek_ = false;
+            return lexer_instance_.GetToken();
+        } else {
+            return lexer_instance_.GetNextToken();
+        }
     }
+    Lexer::Token PeekNextToken() {
+        if (is_peek_) {
+            return lexer_instance_.GetToken();
+        } else {
+            current_token_ = lexer_instance_.GetToken();
+            is_peek_ = true;
+            return lexer_instance_.GetNextToken();
+        }
+    }
+    // TODO: Need to fix all these!!!!
     long int ParseCurrentTokenAsNumber() const { 
         return lexer_instance_.ConvertBufferToNumber();
     }
@@ -67,6 +86,8 @@ private:
 
     structlog LOGCFG_;
     Lexer& lexer_instance_;
+    bool is_peek_;
+    Lexer::Token current_token_;
 };
 
 

@@ -89,7 +89,7 @@ public:
 
 private:
     // Variables
-    std::istream &input_buffer_;
+    std::istream& input_buffer_;
     std::string current_buffer_;
     int current_lineno_;
     char ch_;

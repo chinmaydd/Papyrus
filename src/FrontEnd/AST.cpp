@@ -52,10 +52,15 @@ DesignatorNode::DesignatorNode(IdentifierNode* identifier) :
 ////////////////////////////////////
 // VarIdentifier Node
 ////////////////////////////////////
+VarIdentifierNode::VarIdentifierNode(IdentifierNode* identifier) :
+    DesignatorNode(identifier) {}
 
 ////////////////////////////////////
 // ArrayIdentifier Node
 ////////////////////////////////////
+ArrIdentifierNode::ArrIdentifierNode(IdentifierNode* identifier) :
+    DesignatorNode(identifier) {}
+
 void ArrIdentifierNode::AddIndirectionToArray(ExpressionNode* indirection) {
     indirections_.push_back(indirection);
 }

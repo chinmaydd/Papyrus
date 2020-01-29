@@ -56,12 +56,14 @@ public:
     void SetPrimaryTerm(ExpressionNode*);
     void SetSecondaryTerm(ExpressionNode*);
     void SetOperation(ArithmeticOperator);
+    void SetExpressionType(ExpressionType);
 
 private:
     ExpressionNode* primary_term_;
     ExpressionNode* secondary_term_;
     ArithmeticOperator op_;
     bool is_binary_;
+    ExpressionType expression_type_;
 };
 
 ////////////////////////////////
@@ -74,10 +76,13 @@ protected:
 };
 
 class VarIdentifierNode : public DesignatorNode {
+public:
+    VarIdentifierNode(IdentifierNode*);
 };
 
 class ArrIdentifierNode : public DesignatorNode {
 public:
+    ArrIdentifierNode(IdentifierNode*);
     void AddIndirectionToArray(ExpressionNode*);
 
 private:
