@@ -2,6 +2,7 @@
 #define PAPYRUS_FRONTEND_LEXER_H
 
 #include "Papyrus/Logger/Logger.h"
+#include "Operation.h"
 
 #include <iostream>
 #include <string>
@@ -68,12 +69,23 @@ public:
     Lexer(std::istream &i_buf);
 
     Token GetNextToken();
-    const std::string& GetBuffer() const { return current_buffer_; };
-    const Token GetToken() const { return current_token_; };
-    const int GetLineNo() const { return current_lineno_;}
-    const long int ConvertBufferToNumber() const { return std::stol(current_buffer_); };
-
-    const std::string& GetTokenTranslation(Token& t) const { return token_translations_.at(t); }
+    const std::string& GetBuffer() const { 
+        return current_buffer_;
+    }
+    Token GetToken() const { 
+        return current_token_;
+    }
+    int GetLineNo() const { 
+        return current_lineno_;
+    }
+    long int ConvertBufferToNumber() const { 
+        return std::stol(current_buffer_);
+    }
+    const std::string& GetTokenTranslation(const Token& tok) const { 
+        return token_translations_.at(tok);
+    }
+    bool IsRelationalOp(const Token&) const;
+    RelationalOperator GetOperatorForToken(const Token&) const;
 
 private:
     // Variables
@@ -83,11 +95,13 @@ private:
     char ch_;
     char last_char_;
     Token current_token_;
+
     // Map for Reserved words in the language
     std::unordered_map<std::string, Token> reserved_words_;
     structlog LOGCFG_;
 
     // Methods
+    // TODO: Add const, inline qualifiers
     char ReadChar();
     char PeekChar();
     void ReadAndAdvance();
@@ -149,7 +163,6 @@ private:
         {TOK_EOF, "EOF"},
     };
 };
+} // namespace papyrus
 
-} // end namespace papyrus
-
-#endif
+#endif /* PAPYRUS_FRONTEND_LEXER_H */

@@ -17,15 +17,36 @@ public:
     ComputationNode* ComputeAST();
 
 private:
-    const Lexer::Token GetCurrentToken() const { return lexer_instance_.GetToken();};
-    const Lexer::Token GetNextToken() { return lexer_instance_.GetNextToken();};
-    const long int ParseCurrentTokenAsNumber() const { return lexer_instance_.ConvertBufferToNumber();};
-    std::string GetBuffer() const { return lexer_instance_.GetBuffer();};
-    const int GetLineNo() const { return lexer_instance_.GetLineNo();};
-    std::string GetTokenTranslation(Lexer::Token tok) const { return lexer_instance_.GetTokenTranslation(tok);};
+    Lexer::Token GetCurrentToken() const { 
+        return lexer_instance_.GetToken();
+    }
+    Lexer::Token GetNextToken() { 
+        return lexer_instance_.GetNextToken();
+    }
+    long int ParseCurrentTokenAsNumber() const { 
+        return lexer_instance_.ConvertBufferToNumber();
+    }
+    const std::string& GetBuffer() const { 
+        return lexer_instance_.GetBuffer();
+    }
+    int GetLineNo() const { 
+        return lexer_instance_.GetLineNo();
+    }
+    const std::string& GetTokenTranslation(const Lexer::Token& tok) const { 
+        return lexer_instance_.GetTokenTranslation(tok);
+    }
+    bool IsRelationalOp(const Lexer::Token& tok) const { 
+        return lexer_instance_.IsRelationalOp(tok);
+    }
+    RelationalOperator GetOperatorForToken(const Lexer::Token& tok) const {
+        return lexer_instance_.GetOperatorForToken(tok);
+    }
 
-    void RaiseParseError(Lexer::Token);
-    bool MustParseToken(Lexer::Token);
+    void RaiseParseError(const Lexer::Token&) const;
+    void RaiseParseError(const std::string&) const;
+    bool MustParseToken(const Lexer::Token&) const;
+
+    bool IsStatementBegin(const Lexer::Token&) const;
     
     IdentifierNode* ParseIdentifier();
     TypeDeclNode* ParseTypeDecl();
@@ -34,6 +55,15 @@ private:
     FormalParamNode* ParseFormalParameters();
     FunctionBodyNode* ParseFunctionBody();
     StatSequenceNode* ParseStatementSequence();
+    StatementNode* ParseStatement();
+    AssignmentNode* ParseAssignment();
+    FunctionCallNode* ParseFunctionCall();
+    ITENode* ParseITE();
+    WhileNode* ParseWhile();
+    ReturnNode* ParseReturn();
+    ExpressionNode* ParseExpression();
+    DesignatorNode* ParseDesignator();
+    RelationNode* ParseRelation();
 
     structlog LOGCFG_;
     Lexer& lexer_instance_;
@@ -41,6 +71,6 @@ private:
 
 
 
-} // end namespace papyrus
+} // namespace papyrus
 
-#endif
+#endif /* PAPYRUS_ASTCONSTRUCTOR_H */

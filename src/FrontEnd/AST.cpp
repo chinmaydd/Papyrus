@@ -158,9 +158,13 @@ void FormalParamNode::AddFormalParam(IdentifierNode* identifier) {
 ////////////////////////////////////
 // FunctionBody Node
 ////////////////////////////////////
-FunctionBodyNode::FunctionBodyNode(VarDeclNode* var_declarations, StatSequenceNode* func_statement_seq) :
-    var_declarations_(var_declarations),
-    func_statement_sequence_(func_statement_seq) {}
+void FunctionBodyNode::AddVariableDecl(VarDeclNode* var_decl) {
+    var_declarations_.push_back(var_decl);
+}
+
+void FunctionBodyNode::SetFunctionBodyStatSequence(StatSequenceNode* stat) {
+    func_statement_sequence_ = stat;
+}
 
 ////////////////////////////////////
 // FunctionDecl Node
@@ -173,11 +177,11 @@ FunctionDeclNode::FunctionDeclNode(IdentifierNode* identifier, FormalParamNode* 
 ////////////////////////////////////
 // Computation Node
 ////////////////////////////////////
-void ComputationNode::AddGlobalVariableDeclarations(VarDeclNode* var_declaration) {
+void ComputationNode::AddGlobalVariableDecl(VarDeclNode* var_declaration) {
     variable_declarations_.push_back(var_declaration);
 }
 
-void ComputationNode::AddFunctionDeclarations(FunctionDeclNode* func_declaration) {
+void ComputationNode::AddFunctionDecl(FunctionDeclNode* func_declaration) {
     function_declarations_.push_back(func_declaration);
 }
 

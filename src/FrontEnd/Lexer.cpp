@@ -217,3 +217,40 @@ Lexer::Token Lexer::GetNextToken() {
     }
     return current_token_;
 }
+
+bool Lexer::IsRelationalOp(const Token& tok) const {
+    return (TOK_RELOP_EQ  == tok ||  
+            TOK_RELOP_NEQ == tok ||  
+            TOK_RELOP_LT  == tok ||  
+            TOK_RELOP_LTE == tok || 
+            TOK_RELOP_GT  == tok || 
+            TOK_RELOP_GTE == tok);
+}
+
+RelationalOperator Lexer::GetOperatorForToken(const Token& tok) const {
+    RelationalOperator rel_op = RELOP_NONE;
+    switch(tok) {
+        case TOK_RELOP_EQ:
+            rel_op = RELOP_EQ;
+            break;
+        case TOK_RELOP_NEQ:
+            rel_op = RELOP_NEQ;
+            break;
+        case TOK_RELOP_LT:
+            rel_op = RELOP_LT;
+            break;
+        case TOK_RELOP_LTE:
+            rel_op = RELOP_LTE;
+            break;
+        case TOK_RELOP_GT:
+            rel_op = RELOP_GT;
+            break;
+        case TOK_RELOP_GTE:
+            rel_op = RELOP_GTE;
+            break;
+        default:
+            break;
+    }
+
+    return rel_op;
+}

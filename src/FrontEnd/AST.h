@@ -194,10 +194,11 @@ private:
 
 class FunctionBodyNode : public ASTNode {
 public:
-    FunctionBodyNode(VarDeclNode*, StatSequenceNode*);
+    void AddVariableDecl(VarDeclNode*);
+    void SetFunctionBodyStatSequence(StatSequenceNode*);
 
 private:
-    VarDeclNode* var_declarations_;
+    std::vector<VarDeclNode*> var_declarations_;
     StatSequenceNode* func_statement_sequence_;
 };
 
@@ -216,8 +217,8 @@ private:
 
 class ComputationNode : public ASTNode {
 public:
-    void AddGlobalVariableDeclarations(VarDeclNode*);
-    void AddFunctionDeclarations(FunctionDeclNode*);
+    void AddGlobalVariableDecl(VarDeclNode*);
+    void AddFunctionDecl(FunctionDeclNode*);
     void SetComputationBody(StatSequenceNode*);
 
 private:
@@ -226,6 +227,6 @@ private:
     StatSequenceNode* computation_body_;
 };
 
-} // end namespace papyrus
+} // namespace papyrus
 
-#endif
+#endif /* PAPYRUS_ASTNODE_H */
