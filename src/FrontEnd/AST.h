@@ -11,15 +11,15 @@
 ////////////////////////////////
 ////////////////////////////////
 namespace papyrus {
-class ASTNode {
-};
+class ASTNode {};
 
+class ValueNode : public ASTNode {};
 ////////////////////////////////
 ////////////////////////////////
 
 class IdentifierNode : public ASTNode {
 public:
-    IdentifierNode(std::string&);
+    IdentifierNode(const std::string&);
 
     const std::string& GetIdentifierName() const { return identifier_name_; }
 
@@ -27,7 +27,7 @@ protected:
     std::string identifier_name_;
 };
 
-class ConstantNode : public ASTNode {
+class ConstantNode : public ValueNode {
 public:
     ConstantNode(long int);
     long int GetConstantValue() const { return value_; }
@@ -39,37 +39,56 @@ protected:
 ////////////////////////////////
 ////////////////////////////////
 
-class ExpressionNode : public ASTNode {
+class DesignatorNode;
+class ExpressionNode;
+class FunctionCallNode;
+
+////////////////////////////////
+////////////////////////////////
+
+class FactorNode : public ASTNode {
 public:
-    enum ExpressionType {
-        EXPR_NONE = 0,
-        EXPR_TERM = 1,
-        EXPR_FACTOR = 2,
-        EXPR_DESIGNATOR = 3,
-        EXPR_CONSTANT = 4,
-        EXPR_EXPRESSION = 5,
-        EXPR_FUNCCALL = 6,
-        EXPR_UNKNOWN = 7,
+    enum FactorType {
+        FACT_DESIGNATOR = 0,
+        FACT_NUMBER = 1,
+        FACT_EXPR = 2,
+        FACT_FUNCCALL = 3,
     };
 
-    explicit ExpressionNode();
-    void SetPrimaryTerm(ExpressionNode*);
-    void SetSecondaryTerm(ExpressionNode*);
-    void SetOperation(ArithmeticOperator);
-    void SetExpressionType(ExpressionType);
+    FactorNode(DesignatorNode*);
+    FactorNode(ConstantNode*);
+    FactorNode(ExpressionNode*);
+    FactorNode(FunctionCallNode*);
 
 private:
-    ExpressionNode* primary_term_;
-    ExpressionNode* secondary_term_;
-    ArithmeticOperator op_;
-    bool is_binary_;
-    ExpressionType expression_type_;
+    ValueNode* factor_node_;
+    FactorType factor_type_;
+};
+
+class TermNode : public ASTNode {
+public:
+    TermNode(FactorNode*);
+    void AddSecondaryFactor(ArithmeticOperator, FactorNode*);
+
+private:
+    FactorNode* primary_factor_;
+    std::vector<std::pair<ArithmeticOperator, FactorNode*> > secondary_factors_;
+};
+
+class ExpressionNode : public ValueNode {
+public:
+    ExpressionNode(TermNode*);
+    void AddSecondaryTerm(ArithmeticOperator, TermNode*);
+
+private:
+    TermNode* primary_term_;
+    std::vector<std::pair<ArithmeticOperator, TermNode*> > secondary_terms_;
 };
 
 ////////////////////////////////
 ////////////////////////////////
 
-class DesignatorNode : public ASTNode {
+class DesignatorNode : public ValueNode {
 protected:
     IdentifierNode* identifier_;
     DesignatorNode(IdentifierNode*);
@@ -108,7 +127,7 @@ private:
 class StatementNode : public ASTNode {
 };
 
-class FunctionCallNode : public ExpressionNode, public StatementNode {
+class FunctionCallNode : public ValueNode, public StatementNode {
 public:
     FunctionCallNode(IdentifierNode*);
     void AddArgument(ExpressionNode*);
@@ -148,7 +167,7 @@ private:
 
 class ReturnNode : public StatementNode {
 public:
-    ReturnNode(ExpressionNode*);
+    void AddReturnExpression(ExpressionNode*);
 
 private:
     ExpressionNode* return_expression_;

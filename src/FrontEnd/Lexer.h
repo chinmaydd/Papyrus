@@ -78,14 +78,12 @@ public:
     int GetLineNo() const { 
         return current_lineno_;
     }
-    long int ConvertBufferToNumber() const { 
-        return std::stol(current_buffer_);
-    }
     const std::string& GetTokenTranslation(const Token& tok) const { 
         return token_translations_.at(tok);
     }
     bool IsRelationalOp(const Token&) const;
-    RelationalOperator GetOperatorForToken(const Token&) const;
+    RelationalOperator GetRelOperatorForToken(const Token&) const;
+    ArithmeticOperator GetBinOperatorForToken(const Token&) const;
 
 private:
     // Variables

@@ -27,15 +27,8 @@ int main(int argc, char *argv[]) {
     std::istream is(&fb);
     Lexer lexer(is);
 
-    // Testing!
-    // while (lexer.GetToken() != Lexer::TOK_DOT &&
-    //        lexer.GetToken() != Lexer::TOK_EOF) {
-    //     lexer.GetNextToken();
-    //     LOG(INFO) << lexer.GetBuffer();
-    // }
-    
-    ASTConstructor ASTConst(lexer);
-    ComputationNode* root = ASTConst.ComputeAST();
+    ASTConstructor* ASTConst = new ASTConstructor(lexer);
+    ComputationNode* root = ASTConst->ComputeAST();
 
     return 0;
 }

@@ -37,35 +37,55 @@ private:
             return lexer_instance_.GetToken();
         } else {
             current_token_ = lexer_instance_.GetToken();
+            current_buffer_ = lexer_instance_.GetBuffer();
+            current_line_no_ = lexer_instance_.GetLineNo();
+
             is_peek_ = true;
             return lexer_instance_.GetNextToken();
         }
     }
     // TODO: Need to fix all these!!!!
     long int ParseCurrentTokenAsNumber() const { 
-        return lexer_instance_.ConvertBufferToNumber();
+        if (is_peek_) {
+            return std::stol(current_buffer_);
+        } else {
+            return std::stol(GetBuffer());
+        }
     }
     const std::string& GetBuffer() const { 
-        return lexer_instance_.GetBuffer();
+        if (is_peek_) {
+            return current_buffer_;
+        } else {
+            return lexer_instance_.GetBuffer();
+        }
     }
     int GetLineNo() const { 
-        return lexer_instance_.GetLineNo();
+        if (is_peek_) {
+            return current_line_no_;
+        } else {
+            return lexer_instance_.GetLineNo();
+        }
     }
+
     const std::string& GetTokenTranslation(const Lexer::Token& tok) const { 
         return lexer_instance_.GetTokenTranslation(tok);
     }
     bool IsRelationalOp(const Lexer::Token& tok) const { 
         return lexer_instance_.IsRelationalOp(tok);
     }
-    RelationalOperator GetOperatorForToken(const Lexer::Token& tok) const {
-        return lexer_instance_.GetOperatorForToken(tok);
+    RelationalOperator GetRelOperatorForToken(const Lexer::Token& tok) const {
+        return lexer_instance_.GetRelOperatorForToken(tok);
+    }
+    ArithmeticOperator GetBinOperatorForToken(const Lexer::Token& tok) const {
+        return lexer_instance_.GetBinOperatorForToken(tok);
     }
 
     void RaiseParseError(const Lexer::Token&) const;
     void RaiseParseError(const std::string&) const;
-    bool MustParseToken(const Lexer::Token&) const;
+    bool MustParseToken(const Lexer::Token&, const std::string&, int) const;
 
     bool IsStatementBegin(const Lexer::Token&) const;
+    bool IsExpressionBegin(const Lexer::Token&) const;
     
     IdentifierNode* ParseIdentifier();
     TypeDeclNode* ParseTypeDecl();
@@ -83,11 +103,16 @@ private:
     ExpressionNode* ParseExpression();
     DesignatorNode* ParseDesignator();
     RelationNode* ParseRelation();
+    FactorNode* ParseFactor();
+    TermNode* ParseTerm();
 
     structlog LOGCFG_;
     Lexer& lexer_instance_;
+
     bool is_peek_;
+    int current_line_no_;
     Lexer::Token current_token_;
+    std::string current_buffer_;
 };
 
 

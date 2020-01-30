@@ -5,41 +5,50 @@ using namespace papyrus;
 ////////////////////////////////////
 // Identifier Node
 ////////////////////////////////////
-IdentifierNode::IdentifierNode(std::string& identifier_name) :
-    identifier_name_(identifier_name) {}
+IdentifierNode::IdentifierNode(const std::string& identifier_name) :
+    identifier_name_(identifier_name) {
+    // LOG(INFO) << identifier_name;
+}
 
 ////////////////////////////////////
 // Constant Node
 ////////////////////////////////////
 ConstantNode::ConstantNode(long int value) :
-    value_(value) {}
-
-////////////////////////////////////
-// Expression Node
-////////////////////////////////////
-ExpressionNode::ExpressionNode() :
-    primary_term_(nullptr),
-    secondary_term_(nullptr),
-    op_(BINOP_NONE),
-    is_binary_(false) {}
-
-void ExpressionNode::SetPrimaryTerm(ExpressionNode* primary) {
-    primary_term_ = primary;
+    value_(value) {
+    // LOG(INFO) << std::to_string(value);
 }
 
-void ExpressionNode::SetSecondaryTerm(ExpressionNode* secondary) {
-    // Do not set secondary term if primary is not set.
-    // XXX: Is this the best way to handdle this case?
-    if (primary_term_ == nullptr) {
-        return;
-    }
+////////////////////////////////////
+// FactorNode Node
+////////////////////////////////////
+FactorNode::FactorNode(DesignatorNode* desig) :
+    factor_node_(static_cast<ValueNode*>(desig)),
+    factor_type_(FactorType::FACT_DESIGNATOR) {}
 
-    secondary_term_  = secondary;
-    is_binary_ = true;
+FactorNode::FactorNode(ConstantNode* constant) :
+    factor_node_(static_cast<ValueNode*>(constant)),
+    factor_type_(FactorType::FACT_NUMBER) {}
+
+FactorNode::FactorNode(ExpressionNode* expr) :
+    factor_node_(static_cast<ValueNode*>(expr)),
+    factor_type_(FactorType::FACT_EXPR) {}
+
+FactorNode::FactorNode(FunctionCallNode* func_call) :
+    factor_node_(static_cast<ValueNode*>(func_call)),
+    factor_type_(FactorType::FACT_FUNCCALL) {}
+
+TermNode::TermNode(FactorNode* factor) :
+    primary_factor_(factor) {}
+
+void TermNode::AddSecondaryFactor(ArithmeticOperator op, FactorNode* factor) {
+    secondary_factors_.push_back({op, factor});
 }
 
-void ExpressionNode::SetOperation(ArithmeticOperator op) {
-    op_ = op;
+ExpressionNode::ExpressionNode(TermNode* term) :
+    primary_term_(term) {}
+
+void ExpressionNode::AddSecondaryTerm(ArithmeticOperator op, TermNode* term) {
+    secondary_terms_.push_back({op, term});
 }
 
 ////////////////////////////////////
@@ -66,7 +75,7 @@ void ArrIdentifierNode::AddIndirectionToArray(ExpressionNode* indirection) {
 }
 
 ////////////////////////////////////
-// Statement Node
+// Statement Nodes
 ////////////////////////////////////
 
 //////////////////////////////////////
@@ -103,9 +112,9 @@ void ITENode::AddElseClause(StatSequenceNode* else_sequence) {
 ////////////////////////////////////
 // Return Node
 ////////////////////////////////////
-ReturnNode::ReturnNode(ExpressionNode* return_expression) :
-    return_expression_(return_expression),
-    StatementNode() {}
+void ReturnNode::AddReturnExpression(ExpressionNode* return_expression) {
+    return_expression_ = return_expression;
+}
 
 ////////////////////////////////////
 // While Node

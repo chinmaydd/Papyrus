@@ -69,6 +69,7 @@ Lexer::Lexer(std::istream &i_buf) :
         RESERVE_WORD("if", TOK_IF);
         RESERVE_WORD("then", TOK_THEN);
         RESERVE_WORD("else", TOK_ELSE);
+        RESERVE_WORD("fi", TOK_FI);
         RESERVE_WORD("while", TOK_WHILE);
         RESERVE_WORD("do", TOK_DO);
         RESERVE_WORD("od", TOK_OD);
@@ -215,6 +216,9 @@ Lexer::Token Lexer::GetNextToken() {
                 break;
         }
     }
+
+    LOG(INFO) << token_translations_.at(current_token_);
+
     return current_token_;
 }
 
@@ -227,7 +231,7 @@ bool Lexer::IsRelationalOp(const Token& tok) const {
             TOK_RELOP_GTE == tok);
 }
 
-RelationalOperator Lexer::GetOperatorForToken(const Token& tok) const {
+RelationalOperator Lexer::GetRelOperatorForToken(const Token& tok) const {
     RelationalOperator rel_op = RELOP_NONE;
     switch(tok) {
         case TOK_RELOP_EQ:
@@ -253,4 +257,26 @@ RelationalOperator Lexer::GetOperatorForToken(const Token& tok) const {
     }
 
     return rel_op;
+}
+
+ArithmeticOperator Lexer::GetBinOperatorForToken(const Token& tok) const {
+    ArithmeticOperator bin_op = BINOP_NONE;
+    switch(tok) {
+        case TOK_BINOP_ADD:
+            bin_op = BINOP_ADD;
+            break;
+        case TOK_BINOP_SUB:
+            bin_op = BINOP_SUB;
+            break;
+        case TOK_BINOP_MUL:
+            bin_op = BINOP_MUL;
+            break;
+        case TOK_BINOP_DIV:
+            bin_op = BINOP_DIV;
+            break;
+        default:
+            break;
+    }
+
+    return bin_op;
 }
