@@ -66,9 +66,15 @@ public:
         TOK_EOF,
     };
 
+    //////////////////////////////
     Lexer(std::istream &i_buf);
+    //////////////////////////////
 
+    //////////////////////////////
     Token GetNextToken();
+    //////////////////////////////
+
+    //////////////////////////////
     const std::string& GetBuffer() const { 
         return current_buffer_;
     }
@@ -78,15 +84,24 @@ public:
     int GetLineNo() const { 
         return current_lineno_;
     }
+    //////////////////////////////
+
+    //////////////////////////////
     const std::string& GetTokenTranslation(const Token& tok) const { 
         return token_translations_.at(tok);
     }
+    //////////////////////////////
+
+    //////////////////////////////
     bool IsRelationalOp(const Token&) const;
     RelationalOperator GetRelOperatorForToken(const Token&) const;
     ArithmeticOperator GetBinOperatorForToken(const Token&) const;
+    //////////////////////////////
 
 private:
-    // Variables
+    //////////////////////////////
+    // Private variables
+    //////////////////////////////
     std::istream& input_buffer_;
     std::string current_buffer_;
     int current_lineno_;
@@ -94,19 +109,23 @@ private:
     char last_char_;
     Token current_token_;
 
+    //////////////////////////////
     // Map for Reserved words in the language
+    //////////////////////////////
     std::unordered_map<std::string, Token> reserved_words_;
     structlog LOGCFG_;
 
+    //////////////////////////////
     // Methods
-    // TODO: Add const, inline qualifiers
+    //////////////////////////////
     char ReadChar();
     char PeekChar();
     void ReadAndAdvance();
     void ConsumeLine();
-    void ConsumeWhitespaceAndComments();
+    Lexer::Token ConsumeWhitespaceAndComments();
     inline void Reserve(std::string&, Token&);
 
+    //////////////////////////////
     std::unordered_map<Token, std::string> token_translations_ {
         {TOK_LETTER, "LETTER"},
         {TOK_DIGIT, "DIGIT"},

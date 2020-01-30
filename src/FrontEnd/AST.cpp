@@ -3,23 +3,19 @@
 using namespace papyrus;
 
 ////////////////////////////////////
-// Identifier Node
+// IdentifierNode
 ////////////////////////////////////
 IdentifierNode::IdentifierNode(const std::string& identifier_name) :
-    identifier_name_(identifier_name) {
-    // LOG(INFO) << identifier_name;
-}
+    identifier_name_(identifier_name) {}
 
 ////////////////////////////////////
-// Constant Node
+// ConstantNode
 ////////////////////////////////////
 ConstantNode::ConstantNode(long int value) :
-    value_(value) {
-    // LOG(INFO) << std::to_string(value);
-}
+    value_(value) {}
 
 ////////////////////////////////////
-// FactorNode Node
+// FactorNode
 ////////////////////////////////////
 FactorNode::FactorNode(DesignatorNode* desig) :
     factor_node_(static_cast<ValueNode*>(desig)),
@@ -37,6 +33,9 @@ FactorNode::FactorNode(FunctionCallNode* func_call) :
     factor_node_(static_cast<ValueNode*>(func_call)),
     factor_type_(FactorType::FACT_FUNCCALL) {}
 
+////////////////////////////////////
+// TermNode
+////////////////////////////////////
 TermNode::TermNode(FactorNode* factor) :
     primary_factor_(factor) {}
 
@@ -44,6 +43,9 @@ void TermNode::AddSecondaryFactor(ArithmeticOperator op, FactorNode* factor) {
     secondary_factors_.push_back({op, factor});
 }
 
+////////////////////////////////////
+// ExpressionNode
+////////////////////////////////////
 ExpressionNode::ExpressionNode(TermNode* term) :
     primary_term_(term) {}
 
@@ -52,20 +54,20 @@ void ExpressionNode::AddSecondaryTerm(ArithmeticOperator op, TermNode* term) {
 }
 
 ////////////////////////////////////
-// Designator Node
+// DesignatorNode
 ////////////////////////////////////
 DesignatorNode::DesignatorNode(IdentifierNode* identifier) :
     identifier_(identifier) {
 }
 
 ////////////////////////////////////
-// VarIdentifier Node
+// VarIdentifierNode
 ////////////////////////////////////
 VarIdentifierNode::VarIdentifierNode(IdentifierNode* identifier) :
     DesignatorNode(identifier) {}
 
 ////////////////////////////////////
-// ArrayIdentifier Node
+// ArrayIdentifierNode
 ////////////////////////////////////
 ArrIdentifierNode::ArrIdentifierNode(IdentifierNode* identifier) :
     DesignatorNode(identifier) {}
@@ -75,11 +77,11 @@ void ArrIdentifierNode::AddIndirectionToArray(ExpressionNode* indirection) {
 }
 
 ////////////////////////////////////
-// Statement Nodes
+// StatementNode
 ////////////////////////////////////
 
 //////////////////////////////////////
-// FunctionCall Node
+// FunctionCallNode
 ////////////////////////////////////
 FunctionCallNode::FunctionCallNode(IdentifierNode* identifier) :
     identifier_(identifier),
@@ -90,7 +92,7 @@ void FunctionCallNode::AddArgument(ExpressionNode* expression) {
 }
 
 //////////////////////////////////////
-// Assignment Node
+// AssignmentNode
 ////////////////////////////////////
 AssignmentNode::AssignmentNode(DesignatorNode* designator, ExpressionNode* value) :
     designator_(designator),
@@ -98,7 +100,7 @@ AssignmentNode::AssignmentNode(DesignatorNode* designator, ExpressionNode* value
     StatementNode() {}
 
 ////////////////////////////////////
-// ITE Node
+// ITENode
 ////////////////////////////////////
 ITENode::ITENode(RelationNode* relation, StatSequenceNode* if_sequence) :
     relation_(relation),
@@ -110,14 +112,14 @@ void ITENode::AddElseClause(StatSequenceNode* else_sequence) {
 }
 
 ////////////////////////////////////
-// Return Node
+// ReturnNode
 ////////////////////////////////////
 void ReturnNode::AddReturnExpression(ExpressionNode* return_expression) {
     return_expression_ = return_expression;
 }
 
 ////////////////////////////////////
-// While Node
+// WhileNode
 ////////////////////////////////////
 WhileNode::WhileNode(RelationNode* loop_condition, StatSequenceNode* statement_sequence) :
     loop_condition_(loop_condition),
@@ -125,14 +127,14 @@ WhileNode::WhileNode(RelationNode* loop_condition, StatSequenceNode* statement_s
     StatementNode() {}
 
 ////////////////////////////////////
-// StatSequence Node
+// StatSequenceNode
 ////////////////////////////////////
 void StatSequenceNode::AddStatementToSequence(StatementNode* statement) {
     statements_.push_back(statement);
 }
 
 ////////////////////////////////////
-// Relation Node
+// RelationNode
 ////////////////////////////////////
 RelationNode::RelationNode(ExpressionNode* left_expr, RelationalOperator op, ExpressionNode* right_expr) :
     left_expr_(left_expr),
@@ -140,7 +142,7 @@ RelationNode::RelationNode(ExpressionNode* left_expr, RelationalOperator op, Exp
     right_expr_(right_expr) {}
 
 ////////////////////////////////////
-// TypeDecl Node
+// TypeDeclNode
 ////////////////////////////////////
 void TypeDeclNode::AddArrayDimension(ConstantNode* dimension) {
     dimensions_.push_back(dimension);
@@ -151,7 +153,7 @@ void TypeDeclNode::SetIfArray(bool is_array) {
 }
 
 ////////////////////////////////////
-// VarDecl Node
+// VarDeclNode
 ////////////////////////////////////
 VarDeclNode::VarDeclNode(TypeDeclNode* type_declaration, IdentifierNode* identifier) :
     type_declaration_(type_declaration) {
@@ -163,14 +165,14 @@ void VarDeclNode::AddIdentifierDecl(IdentifierNode* identifier) {
 }
 
 ////////////////////////////////////
-// FormalParam Node
+// FormalParamNode
 ////////////////////////////////////
 void FormalParamNode::AddFormalParam(IdentifierNode* identifier) {
     parameters_.push_back(identifier);
 }
 
 ////////////////////////////////////
-// FunctionBody Node
+// FunctionBodyNode
 ////////////////////////////////////
 void FunctionBodyNode::AddVariableDecl(VarDeclNode* var_decl) {
     var_declarations_.push_back(var_decl);
@@ -181,15 +183,18 @@ void FunctionBodyNode::SetFunctionBodyStatSequence(StatSequenceNode* stat) {
 }
 
 ////////////////////////////////////
-// FunctionDecl Node
+// FunctionDeclNode
 ////////////////////////////////////
-FunctionDeclNode::FunctionDeclNode(IdentifierNode* identifier, FormalParamNode* formal_parameters, FunctionBodyNode* func_body) :
+FunctionDeclNode::FunctionDeclNode(IdentifierNode* identifier, FunctionBodyNode* func_body) :
     identifier_(identifier),
-    formal_parameters_(formal_parameters),
     func_body_(func_body) {}
 
+void FunctionDeclNode::AddFormalParam(FormalParamNode* formal_param) {
+    formal_parameters_ = formal_param;
+}
+
 ////////////////////////////////////
-// Computation Node
+// ComputationNode
 ////////////////////////////////////
 void ComputationNode::AddGlobalVariableDecl(VarDeclNode* var_declaration) {
     variable_declarations_.push_back(var_declaration);

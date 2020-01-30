@@ -4,6 +4,39 @@ using namespace papyrus;
 
 #define RESERVE_WORD(a, b) reserved_words_.insert({a,b})
 
+//////////////////////////////
+Lexer::Lexer(std::istream &i_buf) : 
+    input_buffer_(i_buf),
+    current_buffer_(),
+    current_lineno_(1),
+    ch_('\0'),
+    last_char_(' '),
+    current_token_(Lexer::TOK_NONE),
+    reserved_words_(),
+    LOGCFG_() {
+        RESERVE_WORD("main", TOK_MAIN);
+        RESERVE_WORD("let", TOK_LET);
+        RESERVE_WORD("call", TOK_CALL);
+        RESERVE_WORD("if", TOK_IF);
+        RESERVE_WORD("then", TOK_THEN);
+        RESERVE_WORD("else", TOK_ELSE);
+        RESERVE_WORD("fi", TOK_FI);
+        RESERVE_WORD("while", TOK_WHILE);
+        RESERVE_WORD("do", TOK_DO);
+        RESERVE_WORD("od", TOK_OD);
+        RESERVE_WORD("return", TOK_RETURN);
+        RESERVE_WORD("var", TOK_VAR);
+        RESERVE_WORD("array", TOK_ARRAY);
+        RESERVE_WORD("function", TOK_FUNCTION);
+        RESERVE_WORD("procedure", TOK_PROCEDURE);
+}
+
+void Lexer::Reserve(std::string& word, Lexer::Token& token) {
+    RESERVE_WORD(word, token);
+}
+//////////////////////////////
+ 
+//////////////////////////////
 char Lexer::ReadChar() {
     last_char_ = ch_;
     input_buffer_.get(ch_); 
@@ -30,7 +63,7 @@ void Lexer::ConsumeLine() {
     }
 }
 
-void Lexer::ConsumeWhitespaceAndComments() {
+Lexer::Token Lexer::ConsumeWhitespaceAndComments() {
     char peek_char = PeekChar();
     while (peek_char != EOF) {
         if (peek_char == ' ' || peek_char == '\t' || peek_char == '\r') {
@@ -42,47 +75,19 @@ void Lexer::ConsumeWhitespaceAndComments() {
             ConsumeLine();
         } else if (PeekChar() == '/') {
             ReadChar();
-            if (PeekChar() == '/')
+            if (PeekChar() == '/') {
                 ConsumeLine();
-            else {
-                LOG(ERROR) << "[LEXER] Invalid character found after '/' on Line: " << current_lineno_;
+            } else {
+                return TOK_BINOP_DIV;
             }
-        } else
+        } else {
             break;
+        }
 
         peek_char = PeekChar();
     }
-}
 
-Lexer::Lexer(std::istream &i_buf) : 
-    input_buffer_(i_buf),
-    current_buffer_(),
-    current_lineno_(1),
-    ch_('\0'),
-    last_char_(' '),
-    current_token_(Lexer::TOK_NONE),
-    reserved_words_(),
-    LOGCFG_() {
-        RESERVE_WORD("main", TOK_MAIN);
-        RESERVE_WORD("let", TOK_LET);
-        RESERVE_WORD("call", TOK_CALL);
-        RESERVE_WORD("if", TOK_IF);
-        RESERVE_WORD("then", TOK_THEN);
-        RESERVE_WORD("else", TOK_ELSE);
-        RESERVE_WORD("fi", TOK_FI);
-        RESERVE_WORD("while", TOK_WHILE);
-        RESERVE_WORD("do", TOK_DO);
-        RESERVE_WORD("od", TOK_OD);
-        RESERVE_WORD("return", TOK_RETURN);
-        RESERVE_WORD("var", TOK_VAR);
-        RESERVE_WORD("array", TOK_ARRAY);
-        RESERVE_WORD("function", TOK_FUNCTION);
-        RESERVE_WORD("procedure", TOK_PROCEDURE);
-}
-    
-
-void Lexer::Reserve(std::string& word, Lexer::Token& token) {
-    RESERVE_WORD(word, token);
+    return TOK_NONE;
 }
 
 Lexer::Token Lexer::GetNextToken() {
@@ -92,7 +97,10 @@ Lexer::Token Lexer::GetNextToken() {
     current_buffer_ = "";
     current_token_ = TOK_NONE;
 
-    ConsumeWhitespaceAndComments();
+    if (TOK_BINOP_DIV == ConsumeWhitespaceAndComments()) {
+        current_token_ = TOK_BINOP_DIV;
+        return current_token_;
+    }
         
     if (std::isalpha(PeekChar())) {
         ReadAndAdvance();
@@ -221,7 +229,9 @@ Lexer::Token Lexer::GetNextToken() {
 
     return current_token_;
 }
+//////////////////////////////
 
+//////////////////////////////
 bool Lexer::IsRelationalOp(const Token& tok) const {
     return (TOK_RELOP_EQ  == tok ||  
             TOK_RELOP_NEQ == tok ||  
@@ -280,3 +290,4 @@ ArithmeticOperator Lexer::GetBinOperatorForToken(const Token& tok) const {
 
     return bin_op;
 }
+//////////////////////////////

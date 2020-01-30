@@ -4,12 +4,14 @@ using namespace papyrus;
 
 #define MUSTPARSE(x) MustParseToken(x, __func__, __LINE__)
 // #define STACKTRACE LOG(DEBUG) << __func__ << ":" << std::to_string(__LINE__)
-// #define STACKTRACE LOG(DEBUG) << ""
 
+////////////////////////////////
 ASTConstructor::ASTConstructor(Lexer& lexer) :
     lexer_instance_(lexer),
     LOGCFG_() {}
+////////////////////////////////
 
+////////////////////////////////
 void ASTConstructor::RaiseParseError(const Lexer::Token& expected_tok) const {
     LOG(ERROR) << "[PARSER] Error at Line: " << GetLineNo();
     LOG(ERROR) << "[PARSER] Expected: " << GetTokenTranslation(expected_tok) << ", found: " << GetBuffer();
@@ -30,7 +32,9 @@ bool ASTConstructor::MustParseToken(const Lexer::Token& expected_tok, const std:
     }
     return true;
 }
+////////////////////////////////
 
+////////////////////////////////
 bool ASTConstructor::IsStatementBegin(const Lexer::Token& token) const {
     return (Lexer::TOK_LET    == token || 
             Lexer::TOK_CALL   == token ||  
@@ -46,21 +50,25 @@ bool ASTConstructor::IsExpressionBegin(const Lexer::Token& token) const {
             Lexer::TOK_CALL       == token);
 
 }
+////////////////////////////////
 
-// ident = letter {letter | digit}.
+////////////////////////////////
+// Rule: ident = letter {letter | digit}.
+////////////////////////////////
 IdentifierNode* ASTConstructor::ParseIdentifier() {
-    
     FetchToken();
     MUSTPARSE(Lexer::TOK_IDENT);
 
     std::string identifier_name = GetBuffer();
     IdentifierNode* ident = new IdentifierNode(identifier_name);
+    
     return ident;
 }
 
-// typeDecl = “var” | “array” “[“ number “]” { “[“ number “]” }.
+////////////////////////////////
+// Rule: typeDecl = “var” | “array” “[“ number “]” { “[“ number “]” }.
+////////////////////////////////
 TypeDeclNode* ASTConstructor::ParseTypeDecl() {
-    
     FetchToken();
 
     TypeDeclNode* type_decl = new TypeDeclNode();
@@ -72,9 +80,12 @@ TypeDeclNode* ASTConstructor::ParseTypeDecl() {
 
         FetchToken();
         MUSTPARSE(Lexer::TOK_SQUARE_OPEN);
+
         FetchToken();
         MUSTPARSE(Lexer::TOK_NUM);
+
         ConstantNode* arr_dimension = new ConstantNode(ParseCurrentTokenAsNumber());
+
         FetchToken();
         MUSTPARSE(Lexer::TOK_SQUARE_CLOSED);
 
@@ -82,6 +93,9 @@ TypeDeclNode* ASTConstructor::ParseTypeDecl() {
 
         while (Lexer::TOK_SQUARE_OPEN == PeekNextToken()) {
             FetchToken();
+
+            FetchToken();
+            MUSTPARSE(Lexer::TOK_NUM);
 
             arr_dimension = new ConstantNode(ParseCurrentTokenAsNumber());
             type_decl->AddArrayDimension(arr_dimension);
@@ -92,16 +106,19 @@ TypeDeclNode* ASTConstructor::ParseTypeDecl() {
     } else {
         MUSTPARSE(Lexer::TOK_VARORARR);
     }
+
     return type_decl;
 }
 
-// varDecl = typeDecl ident { “,” ident } “;”
+////////////////////////////////
+// Rule: varDecl = typeDecl ident { “,” ident } “;”
+////////////////////////////////
 VarDeclNode* ASTConstructor::ParseVariableDecl() {
-    
     TypeDeclNode* type_decl = ParseTypeDecl();
-    IdentifierNode* ident = ParseIdentifier();
-    VarDeclNode* var_decl = new VarDeclNode(type_decl, ident);
 
+    IdentifierNode* ident = ParseIdentifier();
+
+    VarDeclNode* var_decl = new VarDeclNode(type_decl, ident);
     while (Lexer::TOK_COMMA == PeekNextToken()) {
         FetchToken();
         var_decl->AddIdentifierDecl(ParseIdentifier());
@@ -113,9 +130,10 @@ VarDeclNode* ASTConstructor::ParseVariableDecl() {
     return var_decl;
 }
 
-// formalParam = “(“ [ident { “,” ident }] “)” .
+////////////////////////////////
+// Rule: formalParam = “(“ [ident { “,” ident }] “)” .
+////////////////////////////////
 FormalParamNode* ASTConstructor::ParseFormalParameters() {
-    
     FetchToken();
     MUSTPARSE(Lexer::TOK_ROUND_OPEN);
 
@@ -138,12 +156,13 @@ FormalParamNode* ASTConstructor::ParseFormalParameters() {
     return formal_param;
 }
 
-// factor = designator | number | “(“ expression “)” | funcCall .
+////////////////////////////////
+// Rule: factor = designator | number | “(“ expression “)” | funcCall .
+////////////////////////////////
 FactorNode* ASTConstructor::ParseFactor() {
-    
     FactorNode* fact;
-    if (Lexer::TOK_IDENT == PeekNextToken()) {
 
+    if (Lexer::TOK_IDENT == PeekNextToken()) {
         fact = new FactorNode(ParseDesignator());
     } else if (Lexer::TOK_NUM == PeekNextToken()) {
         FetchToken();
@@ -167,9 +186,10 @@ FactorNode* ASTConstructor::ParseFactor() {
     return fact;
 }
 
-// term = factor { (“*” | “/”) factor}.
+////////////////////////////////
+// Rule: term = factor { (“*” | “/”) factor}.
+////////////////////////////////
 TermNode* ASTConstructor::ParseTerm() {
-    
     TermNode* term = new TermNode(ParseFactor());
     
     while (Lexer::TOK_BINOP_MUL == PeekNextToken() ||
@@ -182,9 +202,10 @@ TermNode* ASTConstructor::ParseTerm() {
     return term;
 }
 
-// expression = term {(“+” | “-”) term}.
+////////////////////////////////
+// Rule: expression = term {(“+” | “-”) term}.
+////////////////////////////////
 ExpressionNode* ASTConstructor::ParseExpression() {
-    
     ExpressionNode* expr = new ExpressionNode(ParseTerm());
 
     while (Lexer::TOK_BINOP_ADD == PeekNextToken() ||
@@ -197,9 +218,10 @@ ExpressionNode* ASTConstructor::ParseExpression() {
     return expr;
 }
 
-// designator = ident{ "[" expression "]" }.
+////////////////////////////////
+// Rule: designator = ident{ "[" expression "]" }.
+////////////////////////////////
 DesignatorNode* ASTConstructor::ParseDesignator() {
-    
     IdentifierNode* ident = ParseIdentifier();
 
     if (Lexer::TOK_SQUARE_OPEN == PeekNextToken()) {
@@ -221,11 +243,10 @@ DesignatorNode* ASTConstructor::ParseDesignator() {
     }
 }
 
-// assignment = “let” designator “<-” expression.
+////////////////////////////////
+// Rule: assignment = “let” designator “<-” expression.
+////////////////////////////////
 AssignmentNode* ASTConstructor::ParseAssignment() {
-    
-    MUSTPARSE(Lexer::TOK_LET);
-
     DesignatorNode* desig = ParseDesignator();
 
     FetchToken();
@@ -236,20 +257,22 @@ AssignmentNode* ASTConstructor::ParseAssignment() {
     return new AssignmentNode(desig, value);
 }
 
-// funcCall = “call” ident [ “(“ [expression { “,” expression } ] “)” ].
+////////////////////////////////
+// Rule: funcCall = “call” ident [ “(“ [expression { “,” expression } ] “)” ].
+////////////////////////////////
 FunctionCallNode* ASTConstructor::ParseFunctionCall() {
-    
-    MUSTPARSE(Lexer::TOK_CALL);
-
     FunctionCallNode* func_call = new FunctionCallNode(ParseIdentifier());
 
     if (Lexer::TOK_ROUND_OPEN == PeekNextToken()) {
         FetchToken();
-        func_call->AddArgument(ParseExpression());
 
-        while (Lexer::TOK_COMMA == PeekNextToken()) {
-            FetchToken();
+        if (IsExpressionBegin(PeekNextToken())) {
             func_call->AddArgument(ParseExpression());
+
+            while (Lexer::TOK_COMMA == PeekNextToken()) {
+                FetchToken();
+                func_call->AddArgument(ParseExpression());
+            }
         }
 
         FetchToken();
@@ -259,16 +282,17 @@ FunctionCallNode* ASTConstructor::ParseFunctionCall() {
     return func_call;
 }
 
-// relation = expression relOp expression .
+////////////////////////////////
+// Rule: relation = expression relOp expression .
+////////////////////////////////
 RelationNode* ASTConstructor::ParseRelation() {
-    
     ExpressionNode* left_expr = ParseExpression();
 
-    FetchToken();
-    if (!IsRelationalOp(GetCurrentToken())) {
+    if (!IsRelationalOp(PeekNextToken())) {
         RaiseParseError("Expected relational operator in relation");
     }
 
+    FetchToken();
     RelationalOperator rel_op = GetRelOperatorForToken(GetCurrentToken());
 
     ExpressionNode* right_expr = ParseExpression();
@@ -276,11 +300,10 @@ RelationNode* ASTConstructor::ParseRelation() {
     return new RelationNode(left_expr, rel_op, right_expr);
 }
 
-// ifStatement = “if” relation “then” statSequence [ “else” statSequence ] “fi”.
+////////////////////////////////
+// Rule: ifStatement = “if” relation “then” statSequence [ “else” statSequence ] “fi”.
+////////////////////////////////
 ITENode* ASTConstructor::ParseITE() {
-    
-    MUSTPARSE(Lexer::TOK_IF);
-
     RelationNode* condition = ParseRelation();
     
     FetchToken();
@@ -301,11 +324,10 @@ ITENode* ASTConstructor::ParseITE() {
     return ite;
 }
 
-// whileStatement = “while” relation “do” StatSequence “od”.
+////////////////////////////////
+// Rule: whileStatement = “while” relation “do” StatSequence “od”.
+////////////////////////////////
 WhileNode* ASTConstructor::ParseWhile() {
-    
-    MUSTPARSE(Lexer::TOK_WHILE);
-
     RelationNode* loop_condition = ParseRelation();
 
     FetchToken();
@@ -319,11 +341,10 @@ WhileNode* ASTConstructor::ParseWhile() {
     return new WhileNode(loop_condition, loop_body);
 }
 
-// returnStatement = “return” [ expression ] .
+////////////////////////////////
+// Rule: returnStatement = “return” [ expression ] .
+////////////////////////////////
 ReturnNode* ASTConstructor::ParseReturn() {
-
-    MUSTPARSE(Lexer::TOK_RETURN);
-
     ReturnNode* ret = new ReturnNode();
 
     if (IsExpressionBegin(PeekNextToken())) {
@@ -333,9 +354,10 @@ ReturnNode* ASTConstructor::ParseReturn() {
     return ret;
 }
 
-// statement = assignment | funcCall | ifStatement | whileStatement | returnStatement.
+////////////////////////////////
+// Rule: statement = assignment | funcCall | ifStatement | whileStatement | returnStatement.
+////////////////////////////////
 StatementNode* ASTConstructor::ParseStatement() {
-    
     StatementNode* statement;
 
     FetchToken();
@@ -356,9 +378,10 @@ StatementNode* ASTConstructor::ParseStatement() {
     return statement;
 }
 
-// statSequence = statement { “;” statement }.
+////////////////////////////////
+// Rule: statSequence = statement { “;” statement }.
+////////////////////////////////
 StatSequenceNode* ASTConstructor::ParseStatementSequence() {
-    
     StatSequenceNode* stat_seq = new StatSequenceNode();
 
     stat_seq->AddStatementToSequence(ParseStatement());
@@ -371,9 +394,10 @@ StatSequenceNode* ASTConstructor::ParseStatementSequence() {
     return stat_seq;
 }
 
-// funcBody = { varDecl } “{” [ statSequence ] “}”.
+////////////////////////////////
+// Rule: funcBody = { varDecl } “{” [ statSequence ] “}”.
+////////////////////////////////
 FunctionBodyNode* ASTConstructor::ParseFunctionBody() {
-    
     FunctionBodyNode* func_body = new FunctionBodyNode();
 
     while (Lexer::TOK_VAR == PeekNextToken() ||
@@ -393,31 +417,41 @@ FunctionBodyNode* ASTConstructor::ParseFunctionBody() {
     return func_body;
 }
 
-// funcDecl = (“function” | “procedure”) ident [formalParam] “;” funcBody “;” .
+////////////////////////////////
+// Rule: funcDecl = (“function” | “procedure”) ident [formalParam] “;” funcBody “;” .
+////////////////////////////////
 FunctionDeclNode* ASTConstructor::ParseFunctionDecl() {
-    
-    FetchToken();
-
     IdentifierNode* ident = ParseIdentifier();
-    FormalParamNode* formal_param = ParseFormalParameters();
+
+    FormalParamNode* formal_param = nullptr;
+    if (Lexer::TOK_ROUND_OPEN == PeekNextToken()) {
+        formal_param = ParseFormalParameters();
+    }
 
     FetchToken();
     MUSTPARSE(Lexer::TOK_SEMICOLON);
 
     FunctionBodyNode* func_body = ParseFunctionBody();
 
+    FunctionDeclNode* func_decl = new FunctionDeclNode(ident, func_body);
+    if (formal_param != nullptr) {
+        func_decl->AddFormalParam(formal_param);
+    }
+
     FetchToken();
     MUSTPARSE(Lexer::TOK_SEMICOLON);
 
-    return new FunctionDeclNode(ident, formal_param, func_body);
+    return func_decl;
 }
 
-// computation = “main” { varDecl } { funcDecl } “{” statSequence “}” “.” .
+////////////////////////////////
+// Rule: computation = “main” { varDecl } { funcDecl } “{” statSequence “}” “.” .
+////////////////////////////////
 ComputationNode* ASTConstructor::ComputeAST() {
-    ComputationNode* root = new ComputationNode();
-
     FetchToken();
     MUSTPARSE(Lexer::TOK_MAIN);
+
+    ComputationNode* root = new ComputationNode();
 
     while (Lexer::TOK_VAR == PeekNextToken() ||
            Lexer::TOK_ARRAY == PeekNextToken()) {
@@ -426,6 +460,8 @@ ComputationNode* ASTConstructor::ComputeAST() {
 
     while (Lexer::TOK_FUNCTION == PeekNextToken() ||
         Lexer::TOK_PROCEDURE == PeekNextToken()) {
+        FetchToken();
+
         root->AddFunctionDecl(ParseFunctionDecl());
     }
 

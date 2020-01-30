@@ -8,15 +8,16 @@
 #include <memory>
 #include <vector>
 
-////////////////////////////////
-////////////////////////////////
 namespace papyrus {
+////////////////////////////////
 class ASTNode {};
+////////////////////////////////
 
+////////////////////////////////
 class ValueNode : public ASTNode {};
 ////////////////////////////////
-////////////////////////////////
 
+////////////////////////////////
 class IdentifierNode : public ASTNode {
 public:
     IdentifierNode(const std::string&);
@@ -26,7 +27,9 @@ public:
 protected:
     std::string identifier_name_;
 };
+////////////////////////////////
 
+////////////////////////////////
 class ConstantNode : public ValueNode {
 public:
     ConstantNode(long int);
@@ -35,17 +38,15 @@ public:
 protected:
     long int value_;
 };
-
-////////////////////////////////
 ////////////////////////////////
 
+////////////////////////////////
 class DesignatorNode;
 class ExpressionNode;
 class FunctionCallNode;
-
-////////////////////////////////
 ////////////////////////////////
 
+////////////////////////////////
 class FactorNode : public ASTNode {
 public:
     enum FactorType {
@@ -64,7 +65,9 @@ private:
     ValueNode* factor_node_;
     FactorType factor_type_;
 };
+////////////////////////////////
 
+////////////////////////////////
 class TermNode : public ASTNode {
 public:
     TermNode(FactorNode*);
@@ -74,7 +77,9 @@ private:
     FactorNode* primary_factor_;
     std::vector<std::pair<ArithmeticOperator, FactorNode*> > secondary_factors_;
 };
+////////////////////////////////
 
+////////////////////////////////
 class ExpressionNode : public ValueNode {
 public:
     ExpressionNode(TermNode*);
@@ -84,21 +89,24 @@ private:
     TermNode* primary_term_;
     std::vector<std::pair<ArithmeticOperator, TermNode*> > secondary_terms_;
 };
-
-////////////////////////////////
 ////////////////////////////////
 
+////////////////////////////////
 class DesignatorNode : public ValueNode {
 protected:
     IdentifierNode* identifier_;
     DesignatorNode(IdentifierNode*);
 };
+////////////////////////////////
 
+////////////////////////////////
 class VarIdentifierNode : public DesignatorNode {
 public:
     VarIdentifierNode(IdentifierNode*);
 };
+////////////////////////////////
 
+////////////////////////////////
 class ArrIdentifierNode : public DesignatorNode {
 public:
     ArrIdentifierNode(IdentifierNode*);
@@ -107,10 +115,9 @@ public:
 private:
     std::vector<ExpressionNode*> indirections_;
 };
-
-////////////////////////////////
 ////////////////////////////////
 
+////////////////////////////////
 class RelationNode : public ASTNode {
 public:
     RelationNode(ExpressionNode*, RelationalOperator, ExpressionNode*);
@@ -120,13 +127,14 @@ private:
     RelationalOperator op_;
     ExpressionNode* right_expr_;
 };
-
-////////////////////////////////
 ////////////////////////////////
 
+////////////////////////////////
 class StatementNode : public ASTNode {
 };
+////////////////////////////////
 
+////////////////////////////////
 class FunctionCallNode : public ValueNode, public StatementNode {
 public:
     FunctionCallNode(IdentifierNode*);
@@ -136,7 +144,9 @@ private:
     IdentifierNode* identifier_;
     std::vector<ExpressionNode*> arguments_;
 };
+////////////////////////////////
 
+////////////////////////////////
 class AssignmentNode : public StatementNode {
 public:
     AssignmentNode(DesignatorNode*, ExpressionNode*);
@@ -145,7 +155,9 @@ private:
     DesignatorNode* designator_;
     ExpressionNode* value_;
 };
+////////////////////////////////
 
+////////////////////////////////
 class StatSequenceNode : public ASTNode {
 public:
     void AddStatementToSequence(StatementNode*);
@@ -153,7 +165,9 @@ public:
 private:
     std::vector<StatementNode*> statements_;
 };
+////////////////////////////////
 
+////////////////////////////////
 class ITENode : public StatementNode {
 public:
     ITENode(RelationNode*, StatSequenceNode*);
@@ -164,7 +178,9 @@ private:
     StatSequenceNode* if_sequence_;
     StatSequenceNode* else_sequence_;
 };
+////////////////////////////////
 
+////////////////////////////////
 class ReturnNode : public StatementNode {
 public:
     void AddReturnExpression(ExpressionNode*);
@@ -172,7 +188,9 @@ public:
 private:
     ExpressionNode* return_expression_;
 };
+////////////////////////////////
 
+////////////////////////////////
 class WhileNode : public StatementNode {
 public:
     WhileNode(RelationNode*, StatSequenceNode*);
@@ -181,10 +199,9 @@ private:
     RelationNode* loop_condition_;
     StatSequenceNode* statement_sequence_;
 };
-
-////////////////////////////////
 ////////////////////////////////
 
+////////////////////////////////
 class TypeDeclNode : public ASTNode {
 public:
     void AddArrayDimension(ConstantNode*);
@@ -194,7 +211,9 @@ private:
     bool is_array_;
     std::vector<ConstantNode*> dimensions_;
 };
+////////////////////////////////
 
+////////////////////////////////
 class VarDeclNode : public ASTNode {
 public:
     VarDeclNode(TypeDeclNode*, IdentifierNode*);
@@ -204,10 +223,9 @@ private:
     TypeDeclNode* type_declaration_;
     std::vector<IdentifierNode*> identifiers_;
 };
-
-////////////////////////////////
 ////////////////////////////////
 
+////////////////////////////////
 class FormalParamNode : public ASTNode {
 public:
     void AddFormalParam(IdentifierNode*);
@@ -215,7 +233,9 @@ public:
 private:
     std::vector<IdentifierNode*> parameters_;
 };
+////////////////////////////////
 
+////////////////////////////////
 class FunctionBodyNode : public ASTNode {
 public:
     void AddVariableDecl(VarDeclNode*);
@@ -225,20 +245,22 @@ private:
     std::vector<VarDeclNode*> var_declarations_;
     StatSequenceNode* func_statement_sequence_;
 };
+////////////////////////////////
 
+////////////////////////////////
 class FunctionDeclNode : public ASTNode {
 public:
-    FunctionDeclNode(IdentifierNode*, FormalParamNode*, FunctionBodyNode*);
+    FunctionDeclNode(IdentifierNode*, FunctionBodyNode*);
+    void AddFormalParam(FormalParamNode*);
 
 private:
     IdentifierNode* identifier_;
     FormalParamNode* formal_parameters_;
     FunctionBodyNode* func_body_;
 };
-
-////////////////////////////////
 ////////////////////////////////
 
+////////////////////////////////
 class ComputationNode : public ASTNode {
 public:
     void AddGlobalVariableDecl(VarDeclNode*);
@@ -250,6 +272,7 @@ private:
     std::vector<FunctionDeclNode*> function_declarations_;
     StatSequenceNode* computation_body_;
 };
+////////////////////////////////
 
 } // namespace papyrus
 
