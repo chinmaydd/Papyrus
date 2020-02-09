@@ -3,7 +3,7 @@
 using namespace papyrus;
 
 #define MUSTPARSE(x) MustParseToken(x, __func__, __LINE__)
-// #define STACKTRACE LOG(DEBUG) << __func__ << ":" << std::to_string(__LINE__)
+#define STACKTRACE LOG(DEBUG) << __func__ << ":" << std::to_string(__LINE__)
 
 ////////////////////////////////
 ASTConstructor::ASTConstructor(Lexer& lexer) :

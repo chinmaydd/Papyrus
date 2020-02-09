@@ -20,6 +20,6 @@ enum ArithmeticOperator {
     BINOP_DIV,
 };
 
-} // end namespace papyrus
+} // namespace papyrus
 
 #endif

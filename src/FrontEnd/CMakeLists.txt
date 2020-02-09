@@ -6,5 +6,3 @@ set(_SOURCE_FILES
 
 add_library(FrontEnd OBJECT
   ${_SOURCE_FILES})
-
-# TODO: Add code for unit tests
