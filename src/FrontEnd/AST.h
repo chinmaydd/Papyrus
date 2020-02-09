@@ -3,6 +3,8 @@
 
 #include "Papyrus/Logger/Logger.h"
 #include "Operation.h"
+#include "IR/Instruction.h"
+#include "IR/IRContextInfo.h"
 
 #include <string>
 #include <memory>
@@ -10,7 +12,10 @@
 
 namespace papyrus {
 ////////////////////////////////
-class ASTNode {};
+class ASTNode {
+protected:
+    void GenerateIR(IRContextInfo&) const;
+};
 ////////////////////////////////
 
 ////////////////////////////////
@@ -21,7 +26,6 @@ class ValueNode : public ASTNode {};
 class IdentifierNode : public ASTNode {
 public:
     IdentifierNode(const std::string&);
-
     const std::string& GetIdentifierName() const { return identifier_name_; }
 
 protected:
