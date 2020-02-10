@@ -68,5 +68,5 @@ void FunctionBodyNode::GenerateIR(IRCtx& ctx) {
 void FunctionDeclNode::GenerateIR(IRCtx& ctx) {
 }
 
-void ComputationNode::GenerateIR(IRCtx& ctx) {
+void ComputationNode::GenerateIR(IRCtx& ctx) const {
 }

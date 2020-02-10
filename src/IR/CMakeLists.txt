@@ -1,5 +1,4 @@
 set(_SOURCE_FILES
-    BasicBlock.cpp
     Instruction.cpp
     IRConstructor.cpp
     )

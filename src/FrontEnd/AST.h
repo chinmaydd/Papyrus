@@ -1,9 +1,8 @@
-#ifndef PAPYRUS_ASTNODE_H
-#define PAPYRUS_ASTNODE_H
+#ifndef PAPYRUS_AST_H
+#define PAPYRUS_AST_H
 
 #include "Papyrus/Logger/Logger.h"
 #include "Operation.h"
-#include "IR/Instruction.h"
 #include "IR/IRContextInfo.h"
 
 #include <string>
@@ -280,4 +279,4 @@ private:
 
 } // namespace papyrus
 
-#endif /* PAPYRUS_ASTNODE_H */
+#endif /* PAPYRUS_AST_H */
