@@ -2,6 +2,8 @@
 #define PAPYRUS_IRCONSTRUCTOR_H
 
 #include "Papyrus/Logger/Logger.h"
+#include "FrontEnd/AST.h"
+#include "Graph/Graph.h"
 
 namespace papyrus {
 class IRConstructor {
@@ -9,9 +11,9 @@ public:
     IRConstructor(const ComputationNode*);
 
 private:
-    const ComputationNode* root;
+    const ComputationNode* ast_root_;
 };
 
 } // namespace papyrus
 
-#endif
+#endif /* PAPYRUS_IRCONSTRUCTOR_H */
