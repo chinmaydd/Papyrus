@@ -4,6 +4,44 @@
 #include "Papyrus/Logger/Logger.h"
 #include "Value.h"
 
+using ValueIndex = int;
+using NodeIndex = int;
+
+class Node {
+private:
+    NodeData* data;
+    NodeType* type;
+    NodeIdx predecessors;
+    NodeIdx successors;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 namespace papyrus {
 class Node {
 public:
@@ -20,9 +58,13 @@ public:
     const NodeType GetNodeType() const { return node_type_; }
     const NodeIndex GetNodeIndex() const { return node_idx_; }
 
-protected:
+private:
     NodeIndex node_idx_;
     NodeType node_type_;
+    std::vector<ValueIndex> operands_;
+    NodeIndex bb_idx_;
+    std::vector<NodeIndex> successors_;
+    std::vector<NodeIndex> predecessors_;
 };
 
 } // namespace papyrus

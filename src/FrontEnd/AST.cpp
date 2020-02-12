@@ -57,8 +57,7 @@ void ExpressionNode::AddSecondaryTerm(ArithmeticOperator op, TermNode* term) {
 // DesignatorNode
 ////////////////////////////////////
 DesignatorNode::DesignatorNode(IdentifierNode* identifier) :
-    identifier_(identifier) {
-}
+    identifier_(identifier) {}
 
 ////////////////////////////////////
 // VarIdentifierNode

@@ -6,6 +6,10 @@
 
 namespace papyrus {
 class ASTWalker {
+    bool are_globals_declared_;
+    Type current_type_;
+
+    Type getCurrentType();
 };
 } // namespace papyrus
 

@@ -3,13 +3,24 @@
 
 #include "Papyrus/Logger/Logger.h"
 
+#include <string>
+
 namespace papyrus {
-class Value {
-public:
-    enum ValueType {
-    };
+class Value {};
+
+class ConstantValue : public Value {
+
+private:
+    long int value_;
+
 };
 
-} // namespace papyrus
+class NamedValue :  public Value {
+
+private:
+    std::string identifier_;
+};
+
+}
 
 #endif /* PAPYRUS_VALUE_H */

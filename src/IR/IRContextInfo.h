@@ -8,9 +8,11 @@ class IRContextInfo {
 public:
     IRContextInfo();
 
+    void AddGlobalVariable(Variable*);
+
 private:
-
-
+    std::unordered_map<std::string, Function*> function_map_;
+    std::unordered_map<std::string, Variable*> global_variables_;
 }; 
 
 } // namespace papyrus
