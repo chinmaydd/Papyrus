@@ -5,14 +5,17 @@
 
 #include <vector>
 
-using BBIndex = int;
+using ValueIndex = int;
+using NodeIndex = int;
 
 namespace papyrus {
 class Function {
 
 private:
     Graph* graph_;
-    std::vector<BBIndex> bb_indices_;
+    ValueMap* value_map_;
+    std::vector<NodeIndex> bb_indices_;
+
     
 
 }

@@ -11,10 +11,7 @@
 
 namespace papyrus {
 ////////////////////////////////
-class ASTNode {
-protected:
-    void GenerateIR(IRContextInfo&) const;
-};
+class ASTNode {};
 ////////////////////////////////
 
 ////////////////////////////////
