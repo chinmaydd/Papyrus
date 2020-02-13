@@ -3,13 +3,15 @@
 
 #include "Papyrus/Logger/Logger.h"
 #include "Operation.h"
-#include "IR/IRContextInfo.h"
 
 #include <string>
 #include <memory>
 #include <vector>
 
 namespace papyrus {
+// TODO: Remove Forward Declaration
+class IRCtxInfo;
+
 ////////////////////////////////
 class ASTNode {};
 ////////////////////////////////
@@ -32,11 +34,12 @@ protected:
 ////////////////////////////////
 class ConstantNode : public ValueNode {
 public:
-    ConstantNode(long int);
-    long int GetConstantValue() const { return value_; }
+    ConstantNode(int);
+    const int GetConstantValue() const { return value_; }
 
 protected:
-    long int value_;
+    // XXX: Keeping this as int, hope it does not cause a problem later.
+    int value_;
 };
 ////////////////////////////////
 
@@ -205,8 +208,17 @@ private:
 class TypeDeclNode : public ASTNode {
 public:
     void AddArrayDimension(ConstantNode*);
-    const bool IsArray() const { return is_array_;};
+    std::vector<int> GetDimensions() const {
+        std::vector<int> dim;
+        for (auto constant: dimensions_) {
+            dim.push_back(constant->GetConstantValue());
+        }
+        return dim;
+    }
+
+    const bool IsArray() const { return is_array_; }
     void SetIfArray(bool);
+
 private:
     bool is_array_;
     std::vector<ConstantNode*> dimensions_;
@@ -218,6 +230,13 @@ class VarDeclNode : public ASTNode {
 public:
     VarDeclNode(TypeDeclNode*, IdentifierNode*);
     void AddIdentifierDecl(IdentifierNode*);
+    const bool IsArray() const { return type_declaration_->IsArray(); }
+    const std::vector<int> GetDimensions() const { 
+        return type_declaration_->GetDimensions();
+    }
+    const std::vector<IdentifierNode*>& GetIdentifiers() const {
+        return identifiers_;
+    }
 
 private:
     TypeDeclNode* type_declaration_;
@@ -266,6 +285,8 @@ public:
     void AddGlobalVariableDecl(VarDeclNode*);
     void AddFunctionDecl(FunctionDeclNode*);
     void SetComputationBody(StatSequenceNode*);
+    
+    void GenerateIR(IRCtxInfo&);
 
 private:
     std::vector<VarDeclNode*> variable_declarations_;

@@ -3,7 +3,7 @@
 
 #include "Papyrus/Logger/Logger.h"
 #include "FrontEnd/AST.h"
-#include "Graph/Graph.h"
+#include "Graph.h"
 
 namespace papyrus {
 class IRConstructor {

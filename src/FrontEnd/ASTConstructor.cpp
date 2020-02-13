@@ -7,8 +7,7 @@ using namespace papyrus;
 
 ////////////////////////////////
 ASTConstructor::ASTConstructor(Lexer& lexer) :
-    lexer_instance_(lexer),
-    LOGCFG_() {}
+    lexer_instance_(lexer) {}
 ////////////////////////////////
 
 ////////////////////////////////
