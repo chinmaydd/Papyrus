@@ -11,7 +11,7 @@ IdentifierNode::IdentifierNode(const std::string& identifier_name) :
 ////////////////////////////////////
 // ConstantNode
 ////////////////////////////////////
-ConstantNode::ConstantNode(long int value) :
+ConstantNode::ConstantNode(int value) :
     value_(value) {}
 
 ////////////////////////////////////

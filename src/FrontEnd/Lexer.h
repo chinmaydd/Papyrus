@@ -113,7 +113,6 @@ private:
     // Map for Reserved words in the language
     //////////////////////////////
     std::unordered_map<std::string, Token> reserved_words_;
-    structlog LOGCFG_;
 
     //////////////////////////////
     // Methods

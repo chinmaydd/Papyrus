@@ -12,8 +12,7 @@ Lexer::Lexer(std::istream &i_buf) :
     ch_('\0'),
     last_char_(' '),
     current_token_(Lexer::TOK_NONE),
-    reserved_words_(),
-    LOGCFG_() {
+    reserved_words_() {
         RESERVE_WORD("main", TOK_MAIN);
         RESERVE_WORD("let", TOK_LET);
         RESERVE_WORD("call", TOK_CALL);

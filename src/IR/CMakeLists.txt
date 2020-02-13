@@ -1,5 +1,5 @@
 set(_SOURCE_FILES
-    Instruction.cpp
+    ASTWalker.cpp
     IRConstructor.cpp
     )
 
