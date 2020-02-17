@@ -164,6 +164,8 @@ private:
 class StatSequenceNode : public ASTNode {
 public:
     void AddStatementToSequence(StatementNode*);
+    std::vector<StatementNode*>::const_iterator GetStatementBegin() const { return statements_.cbegin(); }
+    std::vector<StatementNode*>::const_iterator GetStatementEnd() const { return statements_.cend(); }
 
 private:
     std::vector<StatementNode*> statements_;
@@ -260,6 +262,13 @@ public:
     void AddVariableDecl(VarDeclNode*);
     void SetFunctionBodyStatSequence(StatSequenceNode*);
 
+    const std::vector<VarDeclNode*>& GetLocals() const { return var_declarations_; }
+    
+    const std::vector<StatementNode*>::const_iterator GetStatementBegin() const { return func_statement_sequence_->GetStatementBegin(); }
+    const std::vector<StatementNode*>::const_iterator GetStatementEnd() const { return func_statement_sequence_->GetStatementEnd(); }
+
+    void GenerateIR(IRCtxInfo& ctx);
+
 private:
     std::vector<VarDeclNode*> var_declarations_;
     StatSequenceNode* func_statement_sequence_;
@@ -271,6 +280,11 @@ class FunctionDeclNode : public ASTNode {
 public:
     FunctionDeclNode(IdentifierNode*, FunctionBodyNode*);
     void AddFormalParam(FormalParamNode*);
+
+    const std::string& GetFunctionName() const { return identifier_->GetIdentifierName(); }
+    const std::vector<VarDeclNode*>& GetLocals() const { return func_body_->GetLocals(); }
+
+    void GenerateIR(IRCtxInfo&);
 
 private:
     IdentifierNode* identifier_;
