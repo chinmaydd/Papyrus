@@ -1,4 +1,5 @@
 set(_SOURCE_FILES
+    Graph.cpp
     ASTWalker.cpp
     IRConstructor.cpp
     )

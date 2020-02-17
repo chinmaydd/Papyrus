@@ -22,6 +22,7 @@ class Value;
 class IRCtxInfo {
 public:
     void AddGlobalVariable(GlobalVariable*);
+    void AddFunction(Function*);
 
 private:
     Value* global_base_;
@@ -35,16 +36,23 @@ private:
 };
 
 class Function {
+public:
+    Function(const std::string&);
+    const std::string& GetFunctionName() const { return func_name_; }
+
+    void AddLocalVariable(LocalVariable*);
+
 private:
+    std::string func_name_;
     Value* local_base_;
     std::unordered_map<std::string, LocalVariable*> locals_;
-    Graph* ir;
+    Graph* ir_;
 };
 
 class Variable {
 public:
     Variable(bool, const std::string&, const std::vector<int>&);
-    const std::string& GetIdentifier() const { return identifier_; };
+    const std::string& GetIdentifierName() const { return identifier_; };
 
 protected:
     std::string identifier_;
@@ -53,6 +61,8 @@ protected:
 };
 
 class LocalVariable : public Variable {
+public:
+    LocalVariable(const std::string&, bool, const std::vector<int>&);
 };
 
 class GlobalVariable : public Variable {
@@ -64,25 +74,37 @@ class Value {
 };
 
 enum NodeType {
+    NODE_ENTRY,
     NODE_BB,
     NODE_OP,
     // XXX: To be filled up later.
 };
 
 class NodeData {
+public:
+    NodeData();
 private:
     std::vector<ValueIndex> operands_;
 };
 
 class Node {
+public:
+    Node(NodeType);
+
+    const bool IsEntryNode() const { return node_type_ == NODE_ENTRY; }
 private:
+    NodeType node_type_;
     NodeData* node_data_;
     std::unordered_map<NodeIndex, bool> successors_;
     std::unordered_map<NodeIndex, bool> predecessors_;
 };
 
 class Graph {
+public:
+    Graph();
+
 private:
+    Node* root_;
     std::unordered_map<NodeIndex, Node*> node_map_;
 };
 
