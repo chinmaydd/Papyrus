@@ -63,15 +63,17 @@ DesignatorNode::DesignatorNode(IdentifierNode* identifier) :
 // VarIdentifierNode
 ////////////////////////////////////
 VarIdentifierNode::VarIdentifierNode(IdentifierNode* identifier) :
-    DesignatorNode(identifier),
-    desig_type_(DESIG_VAR) {}
+    DesignatorNode(identifier) {
+    desig_type_ = DESIG_VAR;
+}
 
 ////////////////////////////////////
 // ArrayIdentifierNode
 ////////////////////////////////////
 ArrIdentifierNode::ArrIdentifierNode(IdentifierNode* identifier) :
-    DesignatorNode(identifier),
-    desig_type_(DESIG_ARR) {}
+    DesignatorNode(identifier) {
+    desig_type_ = DESIG_ARR;
+}
 
 void ArrIdentifierNode::AddIndirectionToArray(ExpressionNode* indirection) {
     indirections_.push_back(indirection);
@@ -167,18 +169,6 @@ void TypeDeclNode::SetIfArray(bool is_array) {
 }
 
 ////////////////////////////////////
-// VarDeclNode
-////////////////////////////////////
-VarDeclNode::VarDeclNode(TypeDeclNode* type_declaration, IdentifierNode* identifier) :
-    type_declaration_(type_declaration) {
-        identifiers_.push_back(identifier);
-}
-
-void VarDeclNode::AddIdentifierDecl(IdentifierNode* identifier) {
-    identifiers_.push_back(identifier);
-}
-
-////////////////////////////////////
 // FormalParamNode
 ////////////////////////////////////
 void FormalParamNode::AddFormalParam(IdentifierNode* identifier) {
@@ -188,10 +178,6 @@ void FormalParamNode::AddFormalParam(IdentifierNode* identifier) {
 ////////////////////////////////////
 // FunctionBodyNode
 ////////////////////////////////////
-void FunctionBodyNode::AddVariableDecl(VarDeclNode* var_decl) {
-    var_declarations_.push_back(var_decl);
-}
-
 void FunctionBodyNode::SetFunctionBodyStatSequence(StatSequenceNode* stat) {
     func_statement_sequence_ = stat;
 }
@@ -210,10 +196,6 @@ void FunctionDeclNode::AddFormalParam(FormalParamNode* formal_param) {
 ////////////////////////////////////
 // ComputationNode
 ////////////////////////////////////
-void ComputationNode::AddGlobalVariableDecl(VarDeclNode* var_declaration) {
-    variable_declarations_.push_back(var_declaration);
-}
-
 void ComputationNode::AddFunctionDecl(FunctionDeclNode* func_declaration) {
     function_declarations_.push_back(func_declaration);
 }

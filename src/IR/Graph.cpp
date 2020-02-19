@@ -13,10 +13,6 @@ void Function::SetIR(Graph *ir) {
     ir_ = ir;
 }
 
-void Function::AddLocalVariable(LocalVariable* var) {
-    locals_[var->GetIdentifierName()] = var;
-}
-
 Node::Node(NodeType node_type) :
     node_type_(node_type) {}
 

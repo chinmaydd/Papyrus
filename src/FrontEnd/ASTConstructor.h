@@ -5,6 +5,7 @@
 #include "Operation.h"
 #include "AST.h"
 #include "Lexer.h"
+#include "IR/Variable.h"
 
 #include <memory>
     
@@ -13,7 +14,7 @@ namespace papyrus {
 class ASTConstructor {
 public:
     ASTConstructor(Lexer&);
-    ComputationNode* ComputeAST();
+    void ConstructAST();
 
 private:
     ////////////////////////////////
@@ -95,11 +96,27 @@ private:
     bool IsStatementBegin(const Lexer::Token&) const;
     bool IsExpressionBegin(const Lexer::Token&) const;
     ////////////////////////////////
-    
+
+    ///////////////////////////////
+    std::string current_scope_;
+    std::unordered_map<std::string, std::unordered_map<std::string, Symbol*> > symbol_table_;
+    std::unordered_map<std::string, Symbol*> local_symbol_table_;
+    std::unordered_map<std::string, Symbol*> global_symbol_table_;
+
+    void AddSymbol(const IdentifierNode*, const TypeDeclNode*);
+    bool IsDefined(const std::string& identifier) {
+        return IsGlobal(identifier) || IsLocal(identifier);
+    }
+    bool IsGlobal(const std::string& identifier) const {
+        return global_symbol_table_.find(identifier) != global_symbol_table_.end();
+    }
+    bool IsLocal(const std::string identifier) const {
+        return local_symbol_table_.find(identifier) != 
+               local_symbol_table_.end();
+    }
+
     ////////////////////////////////
     IdentifierNode* ParseIdentifier();
-    TypeDeclNode* ParseTypeDecl();
-    VarDeclNode* ParseVariableDecl();
     FunctionDeclNode* ParseFunctionDecl();
     FormalParamNode* ParseFormalParameters();
     FunctionBodyNode* ParseFunctionBody();
@@ -115,12 +132,12 @@ private:
     RelationNode* ParseRelation();
     FactorNode* ParseFactor();
     TermNode* ParseTerm();
-    ////////////////////////////////
-
+    TypeDeclNode* ParseTypeDecl();
+    void ParseVariableDecl();
     ////////////////////////////////
     Lexer& lexer_instance_;
     ////////////////////////////////
-
+    ComputationNode* root_;
     ////////////////////////////////
     bool is_peek_;
     int current_line_no_;

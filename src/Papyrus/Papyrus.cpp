@@ -2,9 +2,9 @@
 #include "Papyrus/Logger/Logger.h"
 
 #include "FrontEnd/Lexer.h"
-#include "FrontEnd/AST.h"
 #include "FrontEnd/ASTConstructor.h"
 #include "IR/Graph.h"
+#include "IR/IRConstructor.h"
 
 using namespace papyrus;
 
@@ -27,13 +27,14 @@ int main(int argc, char *argv[]) {
 
     std::istream is(&fb);
     Lexer lexer(is);
-
-    ASTConstructor* ASTConst = new ASTConstructor(lexer);
-    ComputationNode* root = ASTConst->ComputeAST();
+    
+    ASTConstructor astconst(lexer);
+    astconst.ConstructAST();
 
     IRCtxInfo ctx = IRCtxInfo();
+    IRConstructor irconst = IRConstructor(astconst, ctx);
 
-    root->GenerateIR(ctx);
+    irconst.construct();
 
     return 0;
 }
