@@ -4,6 +4,7 @@
 #include "FrontEnd/Lexer.h"
 #include "FrontEnd/AST.h"
 #include "FrontEnd/ASTConstructor.h"
+#include "IR/Graph.h"
 
 using namespace papyrus;
 
@@ -29,6 +30,10 @@ int main(int argc, char *argv[]) {
 
     ASTConstructor* ASTConst = new ASTConstructor(lexer);
     ComputationNode* root = ASTConst->ComputeAST();
+
+    IRCtxInfo ctx = IRCtxInfo();
+
+    root->GenerateIR(ctx);
 
     return 0;
 }

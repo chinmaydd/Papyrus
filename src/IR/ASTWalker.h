@@ -4,6 +4,8 @@
 #include "FrontEnd/AST.h"
 #include "Graph.h"
 
+#include <memory>
+
 namespace papyrus {
 } // namespace papyrus
 

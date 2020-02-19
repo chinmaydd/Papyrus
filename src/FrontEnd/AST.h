@@ -9,7 +9,6 @@
 #include <vector>
 
 namespace papyrus {
-// TODO: Remove Forward Declaration
 class IRCtxInfo;
 
 ////////////////////////////////
@@ -96,9 +95,19 @@ private:
 
 ////////////////////////////////
 class DesignatorNode : public ValueNode {
+public:
+    enum DesignatorType {
+        DESIG_NONE,
+        DESIG_VAR,
+        DESIG_ARR,
+        DESIG_ANY
+    };
+
+    DesignatorType GetDesignatorType() const { return desig_type_; }
 protected:
     IdentifierNode* identifier_;
     DesignatorNode(IdentifierNode*);
+    DesignatorType desig_type_;
 };
 ////////////////////////////////
 
@@ -133,7 +142,21 @@ private:
 ////////////////////////////////
 
 ////////////////////////////////
+enum StatementType {
+    STAT_NONE,
+    STAT_FUNCCALL,
+    STAT_ASSIGN,
+    STAT_ITE,
+    STAT_RETURN,
+    STAT_WHILE,
+    STAT_ANY,
+};
+
 class StatementNode : public ASTNode {
+public:
+    const StatementType GetStatementType() const { return statement_type_; }
+protected:
+    StatementType statement_type_;
 };
 ////////////////////////////////
 
@@ -153,6 +176,8 @@ private:
 class AssignmentNode : public StatementNode {
 public:
     AssignmentNode(DesignatorNode*, ExpressionNode*);
+    const ExpressionNode* GetAssignedExpression() const { return value_; }
+    const DesignatorNode* GetDesignator() const { return designator_; }
 
 private:
     DesignatorNode* designator_;
@@ -188,6 +213,7 @@ private:
 ////////////////////////////////
 class ReturnNode : public StatementNode {
 public:
+    ReturnNode();
     void AddReturnExpression(ExpressionNode*);
 
 private:
@@ -231,6 +257,7 @@ private:
 class VarDeclNode : public ASTNode {
 public:
     VarDeclNode(TypeDeclNode*, IdentifierNode*);
+
     void AddIdentifierDecl(IdentifierNode*);
     const bool IsArray() const { return type_declaration_->IsArray(); }
     const std::vector<int> GetDimensions() const { 

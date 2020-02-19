@@ -63,13 +63,15 @@ DesignatorNode::DesignatorNode(IdentifierNode* identifier) :
 // VarIdentifierNode
 ////////////////////////////////////
 VarIdentifierNode::VarIdentifierNode(IdentifierNode* identifier) :
-    DesignatorNode(identifier) {}
+    DesignatorNode(identifier),
+    desig_type_(DESIG_VAR) {}
 
 ////////////////////////////////////
 // ArrayIdentifierNode
 ////////////////////////////////////
 ArrIdentifierNode::ArrIdentifierNode(IdentifierNode* identifier) :
-    DesignatorNode(identifier) {}
+    DesignatorNode(identifier),
+    desig_type_(DESIG_ARR) {}
 
 void ArrIdentifierNode::AddIndirectionToArray(ExpressionNode* indirection) {
     indirections_.push_back(indirection);
@@ -84,7 +86,9 @@ void ArrIdentifierNode::AddIndirectionToArray(ExpressionNode* indirection) {
 ////////////////////////////////////
 FunctionCallNode::FunctionCallNode(IdentifierNode* identifier) :
     identifier_(identifier),
-    StatementNode() {}
+    StatementNode() {
+        statement_type_ = StatementType::STAT_FUNCCALL;
+}
 
 void FunctionCallNode::AddArgument(ExpressionNode* expression) {
     arguments_.push_back(expression);
@@ -96,7 +100,9 @@ void FunctionCallNode::AddArgument(ExpressionNode* expression) {
 AssignmentNode::AssignmentNode(DesignatorNode* designator, ExpressionNode* value) :
     designator_(designator),
     value_(value),
-    StatementNode() {}
+    StatementNode() {
+        statement_type_ = StatementType::STAT_ASSIGN;
+}
 
 ////////////////////////////////////
 // ITENode
@@ -104,7 +110,9 @@ AssignmentNode::AssignmentNode(DesignatorNode* designator, ExpressionNode* value
 ITENode::ITENode(RelationNode* relation, StatSequenceNode* if_sequence) :
     relation_(relation),
     if_sequence_(if_sequence),
-    StatementNode() {}
+    StatementNode() {
+        statement_type_ = STAT_ITE;
+}
 
 void ITENode::AddElseClause(StatSequenceNode* else_sequence) {
     else_sequence_ = else_sequence;
@@ -113,6 +121,11 @@ void ITENode::AddElseClause(StatSequenceNode* else_sequence) {
 ////////////////////////////////////
 // ReturnNode
 ////////////////////////////////////
+ReturnNode::ReturnNode() :
+    StatementNode() {
+        statement_type_ = STAT_RETURN;
+}
+
 void ReturnNode::AddReturnExpression(ExpressionNode* return_expression) {
     return_expression_ = return_expression;
 }
@@ -123,7 +136,9 @@ void ReturnNode::AddReturnExpression(ExpressionNode* return_expression) {
 WhileNode::WhileNode(RelationNode* loop_condition, StatSequenceNode* statement_sequence) :
     loop_condition_(loop_condition),
     statement_sequence_(statement_sequence),
-    StatementNode() {}
+    StatementNode() {
+        statement_type_ = STAT_WHILE;
+}
 
 ////////////////////////////////////
 // StatSequenceNode
