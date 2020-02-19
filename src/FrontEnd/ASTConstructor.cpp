@@ -407,6 +407,7 @@ FunctionBodyNode* ASTConstructor::ParseFunctionBody() {
     FetchToken();
     MUSTPARSE(Lexer::TOK_CURLY_OPEN);
 
+
     StatSequenceNode* stat_sequence = ParseStatementSequence();
     func_body->SetFunctionBodyStatSequence(stat_sequence);
 
@@ -467,10 +468,15 @@ ComputationNode* ASTConstructor::ComputeAST() {
     FetchToken();
     MUSTPARSE(Lexer::TOK_CURLY_OPEN);
     
-    root->SetComputationBody(ParseStatementSequence());
+    if (Lexer::TOK_CURLY_CLOSED != PeekNextToken()) {
+        root->SetComputationBody(ParseStatementSequence());
+    }
 
     FetchToken();
     MUSTPARSE(Lexer::TOK_CURLY_CLOSED);
+
+    FetchToken();
+    MUSTPARSE(Lexer::TOK_DOT);
 
     return root;
 }

@@ -224,7 +224,7 @@ Lexer::Token Lexer::GetNextToken() {
         }
     }
 
-    LOG(INFO) << token_translations_.at(current_token_);
+    LOG(INFO) << "[LEXER] " << token_translations_.at(current_token_);
 
     return current_token_;
 }

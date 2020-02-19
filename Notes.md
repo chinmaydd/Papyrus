@@ -17,6 +17,7 @@ ble x y branch to y on x less or equal
 blt x y branch to y on x less
 bge x y branch to y on x greater or equal
 bgt x y branch to y on x greater
+call x call function at addr x?
 
 read read
 write x write
