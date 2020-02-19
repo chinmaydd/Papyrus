@@ -9,7 +9,7 @@
 #include <vector>
 
 namespace papyrus {
-class IRCtxInfo;
+class IRConstructor;
 
 ////////////////////////////////
 class ASTNode {};
@@ -272,7 +272,6 @@ public:
     const std::vector<StatementNode*>::const_iterator GetStatementBegin() const { return func_statement_sequence_->GetStatementBegin(); }
     const std::vector<StatementNode*>::const_iterator GetStatementEnd() const { return func_statement_sequence_->GetStatementEnd(); }
 
-    void GenerateIR(IRCtxInfo& ctx);
 
 private:
     StatSequenceNode* func_statement_sequence_;
@@ -287,7 +286,7 @@ public:
 
     const std::string& GetFunctionName() const { return identifier_->GetIdentifierName(); }
 
-    void GenerateIR(IRCtxInfo&);
+    void GenerateIR(IRConstructor*) const;
 
 private:
     IdentifierNode* identifier_;
@@ -301,9 +300,9 @@ class ComputationNode : public ASTNode {
 public:
     void AddFunctionDecl(FunctionDeclNode*);
     void SetComputationBody(StatSequenceNode*);
-    
-    void GenerateIR(IRCtxInfo&);
 
+    void GenerateIR(IRConstructor*) const;
+    
 private:
     std::vector<FunctionDeclNode*> function_declarations_;
     StatSequenceNode* computation_body_;

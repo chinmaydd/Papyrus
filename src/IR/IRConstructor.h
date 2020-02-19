@@ -6,6 +6,9 @@
 #include "Graph.h"
 
 namespace papyrus {
+class ASTConstructor;
+class IRCtxInfo;
+
 class IRConstructor {
 public:
     IRConstructor(ASTConstructor&, IRCtxInfo&);
