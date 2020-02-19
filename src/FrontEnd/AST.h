@@ -94,15 +94,16 @@ private:
 ////////////////////////////////
 
 ////////////////////////////////
+enum DesignatorType {
+    DESIG_NONE,
+    DESIG_VAR,
+    DESIG_ARR,
+    DESIG_ANY
+};
+
 class DesignatorNode : public ValueNode {
 public:
-    enum DesignatorType {
-        DESIG_NONE,
-        DESIG_VAR,
-        DESIG_ARR,
-        DESIG_ANY
-    };
-
+    const std::string& GetIdentifierName() const { return identifier_->GetIdentifierName(); }
     DesignatorType GetDesignatorType() const { return desig_type_; }
 protected:
     IdentifierNode* identifier_;
@@ -254,26 +255,6 @@ private:
 ////////////////////////////////
 
 ////////////////////////////////
-class VarDeclNode : public ASTNode {
-public:
-    VarDeclNode(TypeDeclNode*, IdentifierNode*);
-
-    void AddIdentifierDecl(IdentifierNode*);
-    const bool IsArray() const { return type_declaration_->IsArray(); }
-    const std::vector<int> GetDimensions() const { 
-        return type_declaration_->GetDimensions();
-    }
-    const std::vector<IdentifierNode*>& GetIdentifiers() const {
-        return identifiers_;
-    }
-
-private:
-    TypeDeclNode* type_declaration_;
-    std::vector<IdentifierNode*> identifiers_;
-};
-////////////////////////////////
-
-////////////////////////////////
 class FormalParamNode : public ASTNode {
 public:
     void AddFormalParam(IdentifierNode*);
@@ -286,18 +267,14 @@ private:
 ////////////////////////////////
 class FunctionBodyNode : public ASTNode {
 public:
-    void AddVariableDecl(VarDeclNode*);
     void SetFunctionBodyStatSequence(StatSequenceNode*);
 
-    const std::vector<VarDeclNode*>& GetLocals() const { return var_declarations_; }
-    
     const std::vector<StatementNode*>::const_iterator GetStatementBegin() const { return func_statement_sequence_->GetStatementBegin(); }
     const std::vector<StatementNode*>::const_iterator GetStatementEnd() const { return func_statement_sequence_->GetStatementEnd(); }
 
     void GenerateIR(IRCtxInfo& ctx);
 
 private:
-    std::vector<VarDeclNode*> var_declarations_;
     StatSequenceNode* func_statement_sequence_;
 };
 ////////////////////////////////
@@ -309,7 +286,6 @@ public:
     void AddFormalParam(FormalParamNode*);
 
     const std::string& GetFunctionName() const { return identifier_->GetIdentifierName(); }
-    const std::vector<VarDeclNode*>& GetLocals() const { return func_body_->GetLocals(); }
 
     void GenerateIR(IRCtxInfo&);
 
@@ -323,14 +299,12 @@ private:
 ////////////////////////////////
 class ComputationNode : public ASTNode {
 public:
-    void AddGlobalVariableDecl(VarDeclNode*);
     void AddFunctionDecl(FunctionDeclNode*);
     void SetComputationBody(StatSequenceNode*);
     
     void GenerateIR(IRCtxInfo&);
 
 private:
-    std::vector<VarDeclNode*> variable_declarations_;
     std::vector<FunctionDeclNode*> function_declarations_;
     StatSequenceNode* computation_body_;
 };

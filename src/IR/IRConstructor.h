@@ -2,16 +2,18 @@
 #define PAPYRUS_IRCONSTRUCTOR_H
 
 #include "Papyrus/Logger/Logger.h"
-#include "FrontEnd/AST.h"
+#include "FrontEnd/ASTConstructor.h"
 #include "Graph.h"
 
 namespace papyrus {
 class IRConstructor {
 public:
-    IRConstructor(const ComputationNode*);
+    IRConstructor(ASTConstructor&, IRCtxInfo&);
+    void construct();
 
 private:
-    const ComputationNode* ast_root_;
+    ASTConstructor& astconst_;
+    IRCtxInfo& irctx_;
 };
 
 } // namespace papyrus

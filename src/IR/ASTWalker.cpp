@@ -10,26 +10,9 @@ using namespace papyrus;
 
 //////////////////////////////
 
-void IRCtxInfo::AddGlobalVariable(GlobalVariable* var) {
-    globals_[var->GetIdentifierName()] = var;
-}
-
 void IRCtxInfo::AddFunction(Function* func) {
     functions_[func->GetFunctionName()] = func;
 }
-
-//////////////////////////////
-
-Variable::Variable(bool is_array, const std::string& identifier, const std::vector<int>& dimensions) :
-    identifier_(identifier),
-    is_array_(is_array),
-    dimensions_(dimensions) {}
-
-GlobalVariable::GlobalVariable(const std::string& identifier, bool is_array, const std::vector<int>& dimensions) :
-    Variable(is_array, identifier, dimensions) {}
-
-LocalVariable::LocalVariable(const std::string& identifier, bool is_array, const std::vector<int>& dimensions) :
-    Variable(is_array, identifier, dimensions) {}
 
 //////////////////////////////
 
@@ -37,12 +20,19 @@ ValueIndex GenerateExpressionIR(const ExpressionNode* expr, Graph *ir, IRCtxInfo
     return -1;
 }
 
-Variable* CreateVariableFromDesignator(const DesignatorNode* desig_node, Function* func, IRCtxInfo& ctx) {
-    Variable* var;
-    if (desig_node->GetDesignatorType() == DESIG_VAR) {
+// Variable* CreateVariableFromDesignator(const DesignatorNode* desig_node, Function* func, IRCtxInfo& ctx) {
+//     Variable* var;
+//     if (desig_node->GetDesignatorType() == DesignatorType::DESIG_VAR) {
+//         //
+//     } else {
+//         //
+//     }
+// 
+//     return nullptr;
+// }
 
-    } else (desig_node->GetDesignatorType() == DESIG_ARR) {
-    }
+ValueIndex GenerateStorage(const DesignatorNode* desig_node, Function* func, IRCtxInfo& ctx) {
+
 }
 
 void GenerateStatementIR(StatementNode* statement, Function *func, IRCtxInfo& ctx) {
@@ -53,20 +43,12 @@ void GenerateStatementIR(StatementNode* statement, Function *func, IRCtxInfo& ct
             {}
         case StatementType::STAT_ASSIGN: 
             {
-                /*
-                 * Convert designator to storage
-                 * store and update?
-                 */
                 AssignmentNode* assign_node = static_cast<AssignmentNode*>(statement);
-                ValueIndex val_idx = GenerateExpressionIR(assign_node->GetAssignedExpression(), ir, ctx);
-                Variable* var = CreateVariableFromDesignator(assign_node->GetDesignator(), func, ctx);
+                ValueIndex expr = GenerateExpressionIR(assign_node->GetAssignedExpression(), ir, ctx);
 
-                // So here, 
-                // we need to have a store instruction
-                // store val -> x
-
+                ValueIndex store = GenerateStorage(assign_node->GetDesignator(), func, ctx);
                 // ir->AddInstruction(INS_STORE, val_idx, var_store);
-                ir->WriteVariable(var->GetIdentifierName(), ir->CurrentBB(), val_idx);
+                // ir->WriteVariable(var->GetIdentifierName(), ir->CurrentBB(), val_idx);
             }
     }
 }
@@ -101,17 +83,6 @@ void FunctionDeclNode::GenerateIR(IRCtxInfo& ctx) {
     // XXX: For formal parameter passing, also think about how to perform
     // type checking.
 
-    bool t_is_array;
-    std::vector<int> t_dimensions;
-    for (auto variable_decl: func_body_->GetLocals()) {
-        t_is_array = variable_decl->IsArray();
-        t_dimensions = variable_decl->GetDimensions();
-
-        for (auto t_identifier: variable_decl->GetIdentifiers()) {
-            func->AddLocalVariable(new LocalVariable(t_identifier->GetIdentifierName(), t_is_array, t_dimensions, false));
-        }
-    }
-
     // XXX: FIX THIS! (Sometime later)
     // This is extremely terrible design. Ideally, we would want to 
     // walk over the AST and have functions which generate relevant
@@ -130,18 +101,18 @@ void FunctionDeclNode::GenerateIR(IRCtxInfo& ctx) {
 // at concretizing this later as and when the need arises.
 void ComputationNode::GenerateIR(IRCtxInfo& ctx) {
     // Let us first parse global variables.
-    LOG(INFO) << "[IR] Parsing Global Variables";
+    // LOG(INFO) << "[IR] Parsing Global Variables";
 
-    bool t_is_array;
-    std::vector<int> t_dimensions;
-    for (auto variable_decl: variable_declarations_) {
-        t_is_array = variable_decl->IsArray();
-        t_dimensions = variable_decl->GetDimensions();
+    // bool t_is_array;
+    // std::vector<int> t_dimensions;
+    // for (auto variable_decl: variable_declarations_) {
+    //     t_is_array = variable_decl->IsArray();
+    //     t_dimensions = variable_decl->GetDimensions();
 
-        for (auto t_identifier: variable_decl->GetIdentifiers()) {
-            ctx.AddGlobalVariable(new GlobalVariable(t_identifier->GetIdentifierName(), t_is_array, t_dimensions, true));
-        }
-    }
+    //     for (auto t_identifier: variable_decl->GetIdentifiers()) {
+    //         ctx.AddGlobalVariable(new Variable(t_identifier->GetIdentifierName(), t_dimensions, t_is_array, true));
+    //     }
+    // }
 
     LOG(INFO) << "[IR] Parsing Functions";
 

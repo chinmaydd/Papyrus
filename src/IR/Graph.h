@@ -3,6 +3,7 @@
 
 #include "Papyrus/Logger/Logger.h"
 #include "FrontEnd/AST.h"
+#include "Variable.h"
 
 #include <vector>
 #include <unordered_map>
@@ -14,21 +15,17 @@ using NodeIndex = int;
 namespace papyrus {
 
 class Graph;
-class GlobalVariable;
-class LocalVariable;
 class Function;
 class Value;
 
 class IRCtxInfo {
 public:
     IRCtxInfo();
-    void AddGlobalVariable(GlobalVariable*);
     void AddFunction(Function*);
 
 private:
     Value* global_base_;
-    std::unordered_map<ValueIndex, Value*> globa_value_map_;
-    std::unordered_map<std::string, GlobalVariable*> globals_;
+    std::unordered_map<ValueIndex, Value*> global_value_map_;
     std::unordered_map<std::string, Function*> functions_;
 
     // XXX: This should be initialised to 0
@@ -41,41 +38,26 @@ public:
     Function(const std::string&);
     const std::string& GetFunctionName() const { return func_name_; }
 
-    void AddLocalVariable(LocalVariable*);
     Graph* GetIR() { return ir_; }
     void SetIR(Graph*);
 
 private:
     std::string func_name_;
     Value* local_base_;
-    std::unordered_map<std::string, LocalVariable*> locals_;
     Graph* ir_;
 };
 
-class Variable {
-public:
-    Variable(bool, const std::string&, const std::vector<int>&);
-    const std::string& GetIdentifierName() const { return identifier_; };
-    bool IsGlobal() const { return is_global_; }
-
-protected:
-    std::string identifier_;
-    bool is_array_;
-    std::vector<int> indirections_;
-    bool is_global_;
-};
-
-class LocalVariable : public Variable {
-public:
-    LocalVariable(const std::string&, bool, const std::vector<int>&, bool);
-};
-
-class GlobalVariable : public Variable {
-public:
-    GlobalVariable(const std::string&, bool, const std::vector<int>&, bool);
-};
-
 class Value {
+};
+
+class ConstantValue : public Value {
+private:
+    int val_;
+};
+
+class NamedValue : public Value {
+private:
+    std::string name_;
 };
 
 enum NodeType {
