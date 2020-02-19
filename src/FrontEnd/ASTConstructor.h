@@ -15,6 +15,7 @@ class ASTConstructor {
 public:
     ASTConstructor(Lexer&);
     void ConstructAST();
+    const ComputationNode* GetRoot() const { return root_; }
 
 private:
     ////////////////////////////////

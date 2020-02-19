@@ -2,7 +2,7 @@
 #define PAPYRUS_GRAPH_H
 
 #include "Papyrus/Logger/Logger.h"
-#include "FrontEnd/AST.h"
+#include "FrontEnd/ASTConstructor.h"
 #include "Variable.h"
 
 #include <vector>
