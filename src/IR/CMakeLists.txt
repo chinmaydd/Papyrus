@@ -1,7 +1,7 @@
 set(_SOURCE_FILES
-    Graph.cpp
-    IRConstructor.cpp
     Variable.cpp
+    IR.cpp
+    IRConstructor.cpp
     )
 
 add_library(IR OBJECT

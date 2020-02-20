@@ -28,6 +28,23 @@ bool ASTConstructor::MustParseToken(const Lexer::Token& expected_tok, const std:
 }
 ////////////////////////////////
 
+void ASTConstructor::AddSymbol(const IdentifierNode* ident, const TypeDeclNode* type_decl) {
+    Symbol *s = new Symbol(ident->GetIdentifierName(),
+                           type_decl->GetDimensions(),
+                           type_decl->IsArray(),
+                           current_scope_ == "main");
+
+    if (current_scope_ == "main") {
+        global_symbol_table_[ident->GetIdentifierName()] = s;
+    } else {
+        local_symbol_table_[ident->GetIdentifierName()] = s;
+    }
+}
+
+void ASTConstructor::AddSymbol(const IdentifierNode* ident) {
+    local_symbol_table_[ident->GetIdentifierName()] = nullptr;
+}
+
 ////////////////////////////////
 bool ASTConstructor::IsStatementBegin(const Lexer::Token& token) const {
     return (Lexer::TOK_LET    == token || 
@@ -104,19 +121,6 @@ TypeDeclNode* ASTConstructor::ParseTypeDecl() {
     return type_decl;
 }
 
-void ASTConstructor::AddSymbol(const IdentifierNode* ident, const TypeDeclNode* type_decl) {
-    Symbol *s = new Symbol(ident->GetIdentifierName(),
-                           type_decl->GetDimensions(),
-                           type_decl->IsArray(),
-                           current_scope_ == "main");
-
-    if (current_scope_ == "main") {
-        global_symbol_table_[ident->GetIdentifierName()] = s;
-    } else {
-        local_symbol_table_[ident->GetIdentifierName()] = s;
-    }
-}
-
 ////////////////////////////////
 // Rule: varDecl = typeDecl ident { “,” ident } “;”
 ////////////////////////////////
@@ -139,27 +143,23 @@ void ASTConstructor::ParseVariableDecl() {
 ////////////////////////////////
 // Rule: formalParam = “(“ [ident { “,” ident }] “)” .
 ////////////////////////////////
-FormalParamNode* ASTConstructor::ParseFormalParameters() {
+void ASTConstructor::ParseFormalParameters() {
     FetchToken();
     MUSTPARSE(Lexer::TOK_ROUND_OPEN);
 
-    FormalParamNode* formal_param = new FormalParamNode();
-
     if (Lexer::TOK_IDENT == PeekNextToken()) {
         IdentifierNode* ident = ParseIdentifier();
-        formal_param->AddFormalParam(ident);
+        AddSymbol(ident);
 
         while (Lexer::TOK_COMMA == PeekNextToken()) {
             FetchToken();
             ident = ParseIdentifier();
-            formal_param->AddFormalParam(ident);
+            AddSymbol(ident);
         }
     }
 
     FetchToken();
     MUSTPARSE(Lexer::TOK_ROUND_CLOSED);
-
-    return formal_param;
 }
 
 ////////////////////////////////
@@ -229,11 +229,6 @@ ExpressionNode* ASTConstructor::ParseExpression() {
 ////////////////////////////////
 DesignatorNode* ASTConstructor::ParseDesignator() {
     IdentifierNode* ident = ParseIdentifier();
-
-    if (!IsDefined(ident->GetIdentifierName())) {
-        std::string error_str = "Identifier " + ident->GetIdentifierName() + " not defined.";
-        RaiseParseError(error_str);
-    }
 
     if (Lexer::TOK_SQUARE_OPEN == PeekNextToken()) {
         ArrIdentifierNode* designator = new ArrIdentifierNode(ident);
@@ -435,11 +430,13 @@ FunctionBodyNode* ASTConstructor::ParseFunctionBody() {
 FunctionDeclNode* ASTConstructor::ParseFunctionDecl() {
     IdentifierNode* ident = ParseIdentifier();
 
+    ////////////////////////////////////////////
     current_scope_ = ident->GetIdentifierName();
+    symbol_table_[current_scope_] = {};
+    ////////////////////////////////////////////
 
-    FormalParamNode* formal_param = nullptr;
     if (Lexer::TOK_ROUND_OPEN == PeekNextToken()) {
-        formal_param = ParseFormalParameters();
+        ParseFormalParameters();
     }
 
     FetchToken();
@@ -448,9 +445,6 @@ FunctionDeclNode* ASTConstructor::ParseFunctionDecl() {
     FunctionBodyNode* func_body = ParseFunctionBody();
 
     FunctionDeclNode* func_decl = new FunctionDeclNode(ident, func_body);
-    if (formal_param != nullptr) {
-        func_decl->AddFormalParam(formal_param);
-    }
 
     FetchToken();
     MUSTPARSE(Lexer::TOK_SEMICOLON);
@@ -471,7 +465,9 @@ void ASTConstructor::ConstructAST() {
 
     ComputationNode* root = new ComputationNode();
 
+    ////////////////////////////////////////////
     current_scope_ = "global";
+    ////////////////////////////////////////////
     while (Lexer::TOK_VAR == PeekNextToken() ||
            Lexer::TOK_ARRAY == PeekNextToken()) {
         ParseVariableDecl();
@@ -490,7 +486,9 @@ void ASTConstructor::ConstructAST() {
     FetchToken();
     MUSTPARSE(Lexer::TOK_CURLY_OPEN);
     
-    current_scope_ = "main";
+    ////////////////////////////////////////////
+    current_scope_ = "global";
+    ////////////////////////////////////////////
     if (Lexer::TOK_CURLY_CLOSED != PeekNextToken()) {
         root->SetComputationBody(ParseStatementSequence());
     }

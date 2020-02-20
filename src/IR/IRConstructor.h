@@ -3,7 +3,7 @@
 
 #include "Papyrus/Logger/Logger.h"
 #include "FrontEnd/ASTConstructor.h"
-#include "Graph.h"
+#include "IR.h"
 
 namespace papyrus {
 class ASTConstructor;
@@ -13,6 +13,9 @@ class IRConstructor {
 public:
     IRConstructor(ASTConstructor&, IRCtxInfo&);
     void construct();
+
+    IRCtxInfo& GetIRCtxInfo() { return irctx_; }
+    ASTConstructor& GetASTConst() { return astconst_; }
 
 private:
     ASTConstructor& astconst_;
