@@ -8,6 +8,8 @@
 #include <memory>
 #include <vector>
 
+using ValueIndex = int;
+
 namespace papyrus {
 class IRConstructor;
 
@@ -87,6 +89,8 @@ public:
     ExpressionNode(TermNode*);
     void AddSecondaryTerm(ArithmeticOperator, TermNode*);
 
+    ValueIndex GenerateIR(IRConstructor*) const;
+
 private:
     TermNode* primary_term_;
     std::vector<std::pair<ArithmeticOperator, TermNode*> > secondary_terms_;
@@ -105,6 +109,9 @@ class DesignatorNode : public ValueNode {
 public:
     const std::string& GetIdentifierName() const { return identifier_->GetIdentifierName(); }
     DesignatorType GetDesignatorType() const { return desig_type_; }
+
+    ValueIndex GenerateIR(IRConstructor*) const;
+
 protected:
     IdentifierNode* identifier_;
     DesignatorNode(IdentifierNode*);
@@ -156,6 +163,9 @@ enum StatementType {
 class StatementNode : public ASTNode {
 public:
     const StatementType GetStatementType() const { return statement_type_; }
+
+    void GenerateIR(IRConstructor*) const;
+
 protected:
     StatementType statement_type_;
 };
@@ -177,8 +187,11 @@ private:
 class AssignmentNode : public StatementNode {
 public:
     AssignmentNode(DesignatorNode*, ExpressionNode*);
+
     const ExpressionNode* GetAssignedExpression() const { return value_; }
     const DesignatorNode* GetDesignator() const { return designator_; }
+
+    void GenerateIR(IRConstructor*) const;
 
 private:
     DesignatorNode* designator_;
@@ -255,16 +268,6 @@ private:
 ////////////////////////////////
 
 ////////////////////////////////
-class FormalParamNode : public ASTNode {
-public:
-    void AddFormalParam(IdentifierNode*);
-
-private:
-    std::vector<IdentifierNode*> parameters_;
-};
-////////////////////////////////
-
-////////////////////////////////
 class FunctionBodyNode : public ASTNode {
 public:
     void SetFunctionBodyStatSequence(StatSequenceNode*);
@@ -272,6 +275,7 @@ public:
     const std::vector<StatementNode*>::const_iterator GetStatementBegin() const { return func_statement_sequence_->GetStatementBegin(); }
     const std::vector<StatementNode*>::const_iterator GetStatementEnd() const { return func_statement_sequence_->GetStatementEnd(); }
 
+    void GenerateIR(IRConstructor*) const;
 
 private:
     StatSequenceNode* func_statement_sequence_;
@@ -282,7 +286,6 @@ private:
 class FunctionDeclNode : public ASTNode {
 public:
     FunctionDeclNode(IdentifierNode*, FunctionBodyNode*);
-    void AddFormalParam(FormalParamNode*);
 
     const std::string& GetFunctionName() const { return identifier_->GetIdentifierName(); }
 
@@ -290,7 +293,6 @@ public:
 
 private:
     IdentifierNode* identifier_;
-    FormalParamNode* formal_parameters_;
     FunctionBodyNode* func_body_;
 };
 ////////////////////////////////

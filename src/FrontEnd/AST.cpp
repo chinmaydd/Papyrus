@@ -169,13 +169,6 @@ void TypeDeclNode::SetIfArray(bool is_array) {
 }
 
 ////////////////////////////////////
-// FormalParamNode
-////////////////////////////////////
-void FormalParamNode::AddFormalParam(IdentifierNode* identifier) {
-    parameters_.push_back(identifier);
-}
-
-////////////////////////////////////
 // FunctionBodyNode
 ////////////////////////////////////
 void FunctionBodyNode::SetFunctionBodyStatSequence(StatSequenceNode* stat) {
@@ -188,10 +181,6 @@ void FunctionBodyNode::SetFunctionBodyStatSequence(StatSequenceNode* stat) {
 FunctionDeclNode::FunctionDeclNode(IdentifierNode* identifier, FunctionBodyNode* func_body) :
     identifier_(identifier),
     func_body_(func_body) {}
-
-void FunctionDeclNode::AddFormalParam(FormalParamNode* formal_param) {
-    formal_parameters_ = formal_param;
-}
 
 ////////////////////////////////////
 // ComputationNode

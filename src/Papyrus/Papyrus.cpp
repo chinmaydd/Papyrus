@@ -3,7 +3,7 @@
 
 #include "FrontEnd/Lexer.h"
 #include "FrontEnd/ASTConstructor.h"
-#include "IR/Graph.h"
+#include "IR/IR.h"
 #include "IR/IRConstructor.h"
 
 using namespace papyrus;

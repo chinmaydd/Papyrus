@@ -17,6 +17,13 @@ public:
     void ConstructAST();
     const ComputationNode* GetRoot() const { return root_; }
 
+    const std::unordered_map<std::string, Symbol*>& GetGlobalSymTable() const {
+        return global_symbol_table_;
+    }
+    const std::unordered_map<std::string, Symbol*>& GetLocalSymTable(const std::string& func_name) const {
+        return symbol_table_.at(func_name);
+    }
+
 private:
     ////////////////////////////////
     Lexer::Token GetCurrentToken() const {
@@ -105,6 +112,8 @@ private:
     std::unordered_map<std::string, Symbol*> global_symbol_table_;
 
     void AddSymbol(const IdentifierNode*, const TypeDeclNode*);
+    void AddSymbol(const IdentifierNode*);
+
     bool IsDefined(const std::string& identifier) {
         return IsGlobal(identifier) || IsLocal(identifier);
     }
@@ -119,7 +128,6 @@ private:
     ////////////////////////////////
     IdentifierNode* ParseIdentifier();
     FunctionDeclNode* ParseFunctionDecl();
-    FormalParamNode* ParseFormalParameters();
     FunctionBodyNode* ParseFunctionBody();
     StatSequenceNode* ParseStatementSequence();
     StatementNode* ParseStatement();
@@ -135,6 +143,7 @@ private:
     TermNode* ParseTerm();
     TypeDeclNode* ParseTypeDecl();
     void ParseVariableDecl();
+    void ParseFormalParameters();
     ////////////////////////////////
     Lexer& lexer_instance_;
     ////////////////////////////////
