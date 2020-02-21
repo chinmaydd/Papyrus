@@ -16,14 +16,25 @@ ValueIndex Function::AddValue(Value* val) {
     return value_counter_;
 }
 
-IRCtxInfo::IRCtxInfo() {}
-
-void IRCtxInfo::AddFunction(const std::string& func_name, Function *func) {
-    functions_[func_name] = func;
+void Function::AddVariable(std::string var_name, Variable* var) {
+    variable_map_[var_name] = var;
 }
 
-void IRCtxInfo::AddInstruction(InstTy insty) {}
-void IRCtxInfo::AddInstruction(InstTy insty, ValueIndex arg_1) {}
+ValueIndex Function::CreateConstant(int constant) {
+    value_counter_++;
 
-void IRCtxInfo::AddInstruction(InstTy insty, ValueIndex arg_1, ValueIndex arg_2) {
+    ConstantValue* c = new ConstantValue(constant);
+    local_value_map_[value_counter_] = c;
+
+    return value_counter_;
+
+}
+
+int Function::GetOffsetForVariable(const std::string& var_name) const {
+    if (variable_map_.find(var_name) != variable_map_.end()) {
+        return variable_map_.at(var_name)->GetOffset();
+    } else {
+        // search global context
+        return -1;
+    }
 }

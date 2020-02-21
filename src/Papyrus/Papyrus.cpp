@@ -31,8 +31,7 @@ int main(int argc, char *argv[]) {
     ASTConstructor astconst(lexer);
     astconst.ConstructAST();
 
-    IRCtxInfo ctx = IRCtxInfo();
-    IRConstructor irconst = IRConstructor(astconst, ctx);
+    IRConstructor irconst = IRConstructor(astconst);
 
     irconst.construct();
 
