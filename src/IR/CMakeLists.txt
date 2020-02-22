@@ -1,6 +1,7 @@
 set(_SOURCE_FILES
     Variable.cpp
     IR.cpp
+    ASTWalk.cpp
     IRConstructor.cpp
     )
 

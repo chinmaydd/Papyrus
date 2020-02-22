@@ -8,6 +8,7 @@
 #include "IR/Variable.h"
 
 #include <memory>
+#include <map>
     
 namespace papyrus {
 ////////////////////////////////
@@ -17,10 +18,10 @@ public:
     void ConstructAST();
     const ComputationNode* GetRoot() const { return root_; }
 
-    const std::unordered_map<std::string, Symbol*>& GetGlobalSymTable() const {
+    const std::map<std::string, Symbol*>& GetGlobalSymTable() const {
         return global_symbol_table_;
     }
-    const std::unordered_map<std::string, Symbol*>& GetLocalSymTable(const std::string& func_name) const {
+    const std::map<std::string, Symbol*>& GetLocalSymTable(const std::string& func_name) const {
         return symbol_table_.at(func_name);
     }
 
@@ -107,9 +108,9 @@ private:
 
     ///////////////////////////////
     std::string current_scope_;
-    std::unordered_map<std::string, std::unordered_map<std::string, Symbol*> > symbol_table_;
-    std::unordered_map<std::string, Symbol*> local_symbol_table_;
-    std::unordered_map<std::string, Symbol*> global_symbol_table_;
+    std::map<std::string, std::map<std::string, Symbol*> > symbol_table_;
+    std::map<std::string, Symbol*> local_symbol_table_;
+    std::map<std::string, Symbol*> global_symbol_table_;
 
     void AddSymbol(const IdentifierNode*, const TypeDeclNode*);
     void AddSymbol(const IdentifierNode*);

@@ -2,11 +2,10 @@
 #define PAPYRUS_IR_H
 
 #include "Papyrus/Logger/Logger.h"
-
-#include "FrontEnd/ASTConstructor.h"
 #include "Variable.h"
 
 #include <vector>
+#include <map>
 #include <unordered_map>
 #include <string>
 
@@ -16,14 +15,19 @@ using InstructionIndex = int;
 
 namespace papyrus {
 
+class IRConstructor;
+
 class Value {
 public:
     enum ValueType {
         VAL_NONE,
         VAL_CONST,
+        VAL_GLOBAL,
+        VAL_LOCAL,
         VAL_ANY,
     };
     const ValueType GetValueType() const { return vty; }
+
 protected:
     ValueType vty;
     std::vector<InstructionIndex> uses_;
@@ -32,6 +36,7 @@ protected:
 class ConstantValue : public Value {
 public:
     ConstantValue(int);
+
 private:
     int val_;
 };
@@ -48,46 +53,57 @@ public:
         INS_CALL,
         INS_ADDA,
     };
+
 private:
     InstructionType ins_type_;
+
     std::vector<ValueIndex> arguments_;
     ValueIndex result_;
+
     BBIndex containing_bb_;
+    std::string containing_function_;
 };
 
 class BasicBlock {
 public:
-    BasicBlock();
+    BasicBlock(BBIndex);
+    void AddPredecessor(BBIndex);
+    void AddSuccessor(BBIndex);
 
 private:
     BBIndex idx_;
-    std::unordered_map<InstructionIndex, Instruction*> instructions_;
+    std::map<InstructionIndex, Instruction*> instructions_;
+
+    std::vector<BBIndex> predecessors_;
+    std::vector<BBIndex> successors_;
 };
 
 class Function {
 public:
     Function(const std::string&);
+
     const std::string& GetFunctionName() const { return func_name_; }
 
-    ValueIndex AddValue(Value*);
-    ValueIndex GetLocalBase() const { return local_base_value_; }
+    ValueIndex GetLocalBase() const { return local_base_; }
 
     void AddVariable(std::string, Variable*);
-    ValueIndex CreateConstant(int);
     int GetOffsetForVariable(const std::string&) const;
+
+    ValueIndex CreateConstant(int);
+
+    void SetEntry(BBIndex);
+    void SetExit(BBIndex);
 
 private:
     std::string func_name_;
-    Value* local_base_;
-    ValueIndex local_base_value_;
 
-    ValueIndex value_counter_;
-    std::unordered_map<std::string, Variable*> variable_map_;
-    std::unordered_map<ValueIndex, Value*> local_value_map_;
+    ValueIndex local_base_;
+
+    BBIndex entry_idx_;
+    BBIndex exit_idx_;
+
+    std::map<std::string, Variable*> variable_map_;
     std::unordered_map<std::string, std::unordered_map<BBIndex, ValueIndex> > local_defs_;
-    
-    BBIndex bb_counter_;
-    std::unordered_map<BBIndex, BasicBlock*> bb_map_;
 };
 
 } // namespace papyrus
