@@ -32,9 +32,9 @@ void ASTConstructor::AddSymbol(const IdentifierNode* ident, const TypeDeclNode* 
     Symbol *s = new Symbol(ident->GetIdentifierName(),
                            type_decl->GetDimensions(),
                            type_decl->IsArray(),
-                           current_scope_ == "main");
+                           current_scope_ == "global");
 
-    if (current_scope_ == "main") {
+    if (current_scope_ == "global") {
         global_symbol_table_[ident->GetIdentifierName()] = s;
     } else {
         local_symbol_table_[ident->GetIdentifierName()] = s;
@@ -42,6 +42,7 @@ void ASTConstructor::AddSymbol(const IdentifierNode* ident, const TypeDeclNode* 
 }
 
 void ASTConstructor::AddSymbol(const IdentifierNode* ident) {
+    // TODO: Formal parameters
     local_symbol_table_[ident->GetIdentifierName()] = nullptr;
 }
 
@@ -453,13 +454,13 @@ FunctionDeclNode* ASTConstructor::ParseFunctionDecl() {
 }
 
 ASTConstructor::ASTConstructor(Lexer& lexer) :
-    lexer_instance_(lexer) {}
+    lexer_instance_(lexer),
+    is_peek_(false) {}
 
 ////////////////////////////////
 // Rule: computation = “main” { varDecl } { funcDecl } “{” statSequence “}” “.” .
 ////////////////////////////////
 void ASTConstructor::ConstructAST() {
-
     FetchToken();
     MUSTPARSE(Lexer::TOK_MAIN);
 

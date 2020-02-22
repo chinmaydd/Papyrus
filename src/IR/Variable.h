@@ -24,13 +24,13 @@ private:
 
 class Variable {
 public:
-    Variable(const Symbol*, int);
+    Variable(Symbol*, int);
     bool IsArray() const { return sym_->IsArray(); }
     bool IsGlobal() const { return sym_->IsGlobal(); }
     int GetOffset() const { return offset_in_words_; }
 
 private:
-    const Symbol* sym_;
+    Symbol* sym_;
     int offset_in_words_;
 };
 

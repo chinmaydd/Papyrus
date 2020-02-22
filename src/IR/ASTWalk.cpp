@@ -2,6 +2,8 @@
 
 using namespace papyrus;
 
+#define NOTFOUND -1
+
 ValueIndex ConstantNode::GenerateIR(IRC* irc) const {
     ConstantValue* cval = new ConstantValue(value_);
 
@@ -47,7 +49,10 @@ ValueIndex ExpressionNode::GenerateIR(IRC* irc) const {
 }
     
 ValueIndex DesignatorNode::GenerateIR(IRC* irc) const {
+    std::string identifier_name = GetIdentifierName();
     ValueIndex result;
+    int offset;
+
     switch(desig_type_) {
         case DESIG_VAR: {
         }
@@ -55,8 +60,14 @@ ValueIndex DesignatorNode::GenerateIR(IRC* irc) const {
             ValueIndex base_idx = irc->GetCurrentFunction()
                                      ->GetLocalBase();
            
-            // int offset = irc->GetOffsetForVariable(
-            int offset;
+            // XXX: We could check here if NOTFOUND is returned.
+            if (irc->CheckIfGlobal(identifier_name)) {
+                offset = irc->GetOffsetForGlobalVariable(identifier_name);
+            } else {
+                offset = irc->GetCurrentFunction()
+                            ->GetOffsetForVariable(identifier_name);
+            }
+
             ValueIndex offset_idx = irc->CreateConstant(offset);
             irc->AddInstruction(InstTy::INS_ADDA, base_idx, offset_idx);
             break;
@@ -82,6 +93,7 @@ void FunctionCallNode::GenerateIR(IRC* irc) const {
 }
 
 void StatementNode::GenerateIR(IRC* irc) const {
+    LOG(INFO) << "[IR] Parsing statement";
     switch(statement_type_) {
         case StatementType::STAT_ASSIGN: {
             const AssignmentNode* assgn = static_cast<const AssignmentNode*>(this);
@@ -127,6 +139,11 @@ void FunctionDeclNode::GenerateIR(IRC* irc) const {
     auto local_sym_table = irc->GetASTConst()
                                .GetLocalSymTable(func_name);
     for (auto table_entry: local_sym_table) {
+        // TODO: Formal parameters
+        if (table_entry.second == nullptr) {
+            continue;
+        }
+
         sym = table_entry.second;
         if (sym->IsArray()) {
             for (auto dim: sym->GetDimensions()) {

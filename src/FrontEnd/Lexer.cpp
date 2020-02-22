@@ -217,14 +217,13 @@ Lexer::Token Lexer::GetNextToken() {
                 current_token_ = TOK_EOF;
                 break;
             default:
-                // By default, let us assume it is any token we dont know
-                // about. Just to be safe.
+                // By default, let us assume it is any token we dont know about.
                 current_token_ = TOK_ANY;
                 break;
         }
     }
 
-    LOG(INFO) << "[LEXER] " << token_translations_.at(current_token_);
+    LOG(ERROR) << "[LEXER] " << token_translations_.at(current_token_);
 
     return current_token_;
 }

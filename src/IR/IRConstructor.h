@@ -29,6 +29,7 @@ public:
 
     void AddGlobalVariable(const std::string&, Variable*);
     int GetOffsetForGlobalVariable(const std::string&) const;
+    bool CheckIfGlobal(const std::string&) const;
 
     ValueIndex AddValue(Value*);
     ValueIndex CreateConstant(int);

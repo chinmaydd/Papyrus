@@ -16,7 +16,7 @@ var i, d;
 	return d
 };
 
-procedure bar( x, z );
+procedure bar( );
 var i, j, e;
 {
 	let i <- 0;
@@ -36,7 +36,7 @@ var i, j, e;
 	let y <- 0;
 	let z <- 0;
 	
-	call bar( x, z );
+	call bar( );
 	let c <- call foo;
 	
 	call OutputNum(c)

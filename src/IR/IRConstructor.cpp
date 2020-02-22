@@ -35,11 +35,15 @@ void IRC::AddGlobalVariable(const std::string& var_name, Variable* var) {
 }
 
 int IRC::GetOffsetForGlobalVariable(const std::string& var_name) const {
-    if (global_variable_map_.find(var_name) != global_variable_map_.end()) {
+    if (CheckIfGlobal(var_name)) {
         return global_variable_map_.at(var_name)->GetOffset();
     }
 
     return -1;
+}
+
+bool IRC::CheckIfGlobal(const std::string& var_name) const {
+    return global_variable_map_.find(var_name) != global_variable_map_.end();
 }
 
 ValueIndex IRC::AddValue(Value* val) {
@@ -62,6 +66,8 @@ ValueIndex IRC::CreateConstant(int val) {
 BBIndex IRC::CreateBB(std::string func_name) {
     bb_counter_++;
     BasicBlock *bb = new BasicBlock(bb_counter_);
+
+    basic_block_map_[bb_counter_] = bb;
 
     return bb_counter_;
 }
