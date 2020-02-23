@@ -117,9 +117,10 @@ public:
     const std::string& GetIdentifierName() const { return identifier_->GetIdentifierName(); }
     DesignatorType GetDesignatorType() const { return desig_type_; }
 
-    ValueIndex GenerateIR(IRC*) const;
+    virtual ValueIndex GenerateIR(IRC*) const = 0;
 
 protected:
+
     IdentifierNode* identifier_;
     DesignatorNode(IdentifierNode*);
     DesignatorType desig_type_;
@@ -130,6 +131,8 @@ protected:
 class VarIdentifierNode : public DesignatorNode {
 public:
     VarIdentifierNode(IdentifierNode*);
+
+    ValueIndex GenerateIR(IRC*) const override { return -1; }
 };
 ////////////////////////////////
 
@@ -138,6 +141,8 @@ class ArrIdentifierNode : public DesignatorNode {
 public:
     ArrIdentifierNode(IdentifierNode*);
     void AddIndirectionToArray(ExpressionNode*);
+
+    ValueIndex GenerateIR(IRC*) const override;
 
 private:
     std::vector<ExpressionNode*> indirections_;

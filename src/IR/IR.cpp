@@ -2,10 +2,8 @@
 
 using namespace papyrus;
 
-ConstantValue::ConstantValue(int val) :
-    val_(val) {
-    vty = ValueType::VAL_CONST;
-}
+Value::Value(ValueType vty) :
+    vty_(vty) {}
 
 Function::Function(const std::string& func_name):
     func_name_(func_name) {}
@@ -27,11 +25,11 @@ void Function::SetExit(BBIndex exit_idx) {
 }
 
 int Function::GetOffsetForVariable(const std::string& var_name) const {
-    if (variable_map_.find(var_name) != variable_map_.end()) {
-        return variable_map_.at(var_name)->GetOffset();
-    } else {
-        return -1;
-    }
+    return variable_map_.at(var_name)->GetOffset();
+}
+
+bool Function::IsVariableLocal(const std::string& var_name) const {
+    return variable_map_.find(var_name) != variable_map_.end();
 }
 
 Instruction::Instruction(InstructionType insty, BBIndex containing_bb, InstructionIndex ins_idx) :

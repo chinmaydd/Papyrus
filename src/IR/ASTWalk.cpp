@@ -5,15 +5,12 @@ using namespace papyrus;
 #define NOTFOUND -1
 
 ValueIndex ConstantNode::GenerateIR(IRC* irc) const {
-    ConstantValue* cval = new ConstantValue(value_);
-
-    ValueIndex retval = irc->AddValue(cval);
-
-    return retval;
+    return irc->CreateConstant(value_);
 }
 
 ValueIndex FactorNode::GenerateIR(IRC* irc) const {
     ValueIndex result = NOTFOUND;
+
     switch(factor_type_) {
         case FACT_DESIGNATOR: {
             break;
@@ -37,57 +34,85 @@ ValueIndex FactorNode::GenerateIR(IRC* irc) const {
 ValueIndex TermNode::GenerateIR(IRC* irc) const {
     ValueIndex primary_idx = primary_factor_->GenerateIR(irc);
 
-    // TODO: Change
+    // TODO: Not implemented
     return primary_idx;
 }
 
 ValueIndex ExpressionNode::GenerateIR(IRC* irc) const {
     ValueIndex primary_term = primary_term_->GenerateIR(irc);
 
-    // TODO: Change
+    // TODO: Not implemented
     return primary_term;
 }
-    
-ValueIndex DesignatorNode::GenerateIR(IRC* irc) const {
-    std::string identifier_name = GetIdentifierName();
-    ValueIndex result;
-    int offset;
 
-    switch(desig_type_) {
-        case DESIG_VAR: {
-        }
-        case DESIG_ARR: {
-            ValueIndex base_idx = irc->GetCurrentFunction()
-                                     ->GetLocalBase();
-           
-            // XXX: We could check here if NOTFOUND is returned.
-            if (irc->CheckIfGlobal(identifier_name)) {
-                offset = irc->GetOffsetForGlobalVariable(identifier_name);
-            } else {
-                offset = irc->GetCurrentFunction()
-                            ->GetOffsetForVariable(identifier_name);
-            }
+ValueIndex ArrIdentifierNode::GenerateIR(IRC* irc) const {
+    std::string var_name = GetIdentifierName();
+    ValueIndex base, offset, temp;
 
-            result = irc->CreateConstant(offset);
-            irc->AddInstruction(InstTy::INS_ADDA, base_idx, result);
-            break;
-        }
+    const Variable* var;
+    if (irc->IsVariableLocal(var_name)) {
+        var = irc->GetCurrentFunction()
+                 ->GetVariable(var_name);
+        base = irc->GetLocalBase();
+        offset = var->GetOffset();
+    } else {
+        var = irc->GetGlobalVariable(var_name);
+        base = irc->GetGlobalBase();
+        offset = irc->GetOffsetForGlobalVariable(var_name);
     }
 
-    return result;
+    ValueIndex arr_base = irc->MakeInstruction(T::INS_ADDA, 
+                                               offset,
+                                               base);
+
+    auto it = indirections_.rbegin();
+    ExpressionNode* expr = *it;
+    ValueIndex offset_idx = expr->GenerateIR(irc);
+    it++;
+
+    ValueIndex dim_idx;
+    int dim_offset = 1;
+    auto dim_it = var->GetDimensions().rbegin();
+
+    while (it != indirections_.rend()) {
+        dim_offset *= *dim_it;
+        dim_idx = irc->CreateConstant(dim_offset);
+
+        expr = *it;
+        temp = irc->MakeInstruction(T::INS_MUL, 
+                                    dim_idx, 
+                                    expr->GenerateIR(irc));
+
+        offset_idx = irc->MakeInstruction(T::INS_ADDA, 
+                                          offset_idx,
+                                          temp);
+        it++;
+        dim_it++;
+    }
+
+    return irc->MakeInstruction(T::INS_ADDA,
+                                arr_base,
+                                offset_idx);
 }
 
 void AssignmentNode::GenerateIR(IRC* irc) const {
     LOG(INFO) << "[IR] Parsing assignment";
 
     ValueIndex expr_idx = value_->GenerateIR(irc);
-    DesignatorType desig_type = designator_->GetDesignatorType();
+    std::string var_name = designator_->GetIdentifierName();
 
-    if (desig_type == DesignatorType::DESIG_VAR) {
-        irc->WriteVariable(designator_->GetIdentifierName(), expr_idx);
-    } else {
-        ValueIndex mem_location = designator_->GenerateIR(irc);
-        irc->AddInstruction(Instruction::INS_STORE, expr_idx, mem_location);
+    switch(designator_->GetDesignatorType()) {
+        case DESIG_VAR: {
+            irc->WriteVariable(var_name, expr_idx);
+            break;
+        }
+        case DESIG_ARR: {
+            const ArrIdentifierNode* arr_id = static_cast<const ArrIdentifierNode*>(designator_);
+            ValueIndex mem_location = arr_id->GenerateIR(irc);
+            irc->MakeInstruction(T::INS_STORE,
+                                 expr_idx,
+                                 mem_location);
+        }
     }
 }
 
@@ -96,6 +121,7 @@ void FunctionCallNode::GenerateIR(IRC* irc) const {
 
 void StatementNode::GenerateIR(IRC* irc) const {
     LOG(INFO) << "[IR] Parsing statement";
+
     switch(statement_type_) {
         case StatementType::STAT_ASSIGN: {
             const AssignmentNode* assgn = static_cast<const AssignmentNode*>(this);
@@ -128,6 +154,7 @@ void FunctionDeclNode::GenerateIR(IRC* irc) const {
 
     std::string func_name = identifier_->GetIdentifierName();
     Function* func = new Function(func_name);
+    func->SetLocalBase(irc->CreateValue(V::VAL_BASE));
 
     irc->AddFunction(func_name, func);
     irc->SetCurrentFunction(func);
@@ -141,7 +168,7 @@ void FunctionDeclNode::GenerateIR(IRC* irc) const {
     auto local_sym_table = irc->GetASTConst()
                                .GetLocalSymTable(func_name);
     for (auto table_entry: local_sym_table) {
-        // TODO: Formal parameters
+        // TODO: Implement formal parameter handling
         if (table_entry.second == nullptr) {
             continue;
         }
@@ -156,7 +183,8 @@ void FunctionDeclNode::GenerateIR(IRC* irc) const {
             offset += 1;
         }
 
-        var = new Variable(sym, offset);
+        ValueIndex offset_idx = irc->CreateConstant(offset);
+        var = new Variable(sym, offset_idx);
         var_name = table_entry.first;
         irc->GetCurrentFunction()
            ->AddVariable(var_name, var);
@@ -183,6 +211,7 @@ void ComputationNode::GenerateIR(IRC* irc) const {
     int total_size;
 
     LOG(INFO) << "[IR] Declaring globals";
+    irc->DeclareGlobalBase();
     auto global_sym_table = irc->GetASTConst()
                                 .GetGlobalSymTable();
     for (auto table_entry: global_sym_table) {
@@ -197,7 +226,8 @@ void ComputationNode::GenerateIR(IRC* irc) const {
             offset += 1;
         }
 
-        var = new Variable(sym, offset);
+        ValueIndex offset_idx = irc->CreateConstant(offset);
+        var = new Variable(sym, offset_idx);
         var_name = table_entry.first;
         irc->AddGlobalVariable(var_name, var);
     }
@@ -206,11 +236,11 @@ void ComputationNode::GenerateIR(IRC* irc) const {
         funcn->GenerateIR(irc);
     }
     
-   
     LOG(INFO) << "[IR] Parsing main";
 
     std::string func_name = "main";
     Function* func = new Function(func_name);
+    func->SetLocalBase(irc->CreateValue(V::VAL_BASE));
 
     irc->AddFunction(func_name, func);
     irc->SetCurrentFunction(func);
@@ -228,6 +258,4 @@ void ComputationNode::GenerateIR(IRC* irc) const {
 
     BBIndex exit_idx = irc->CreateBB(func_name, irc->GetCurrentBBIdx());
     func->SetExit(exit_idx);
-
-    // TODO: Add IR End?
 }

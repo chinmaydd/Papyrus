@@ -22,29 +22,20 @@ public:
     enum ValueType {
         VAL_NONE,
         VAL_CONST,
-        VAL_GLOBAL,
-        VAL_LOCAL,
+        VAL_BASE,
         VAL_ANY,
     };
-    const ValueType GetValueType() const { return vty; }
+
+    Value(ValueType);
+
+    const ValueType GetValueType() const { return vty_; }
     void AddUsage(InstructionIndex ins_idx) { uses_.push_back(ins_idx); }
-
-protected:
-    ValueType vty;
-    std::vector<InstructionIndex> uses_;
-};
-
-class ConstantValue : public Value {
-public:
-    ConstantValue(int);
+    void SetConstant(int val) { val_ = val; }
 
 private:
+    ValueType vty_;
     int val_;
-};
-
-class NamedValue : public Value {
-private:
-    std::string name_;
+    std::vector<InstructionIndex> uses_;
 };
 
 class Instruction {
@@ -53,10 +44,12 @@ public:
         INS_STORE,
         INS_CALL,
         INS_ADDA,
+        INS_MUL,
     };
 
     Instruction(InstructionType, BBIndex, InstructionIndex);
     void AddArgument(ValueIndex val_idx) { arguments_.push_back(val_idx); }
+    void SetResult(ValueIndex res) { result_ = res; }
 
 private:
     InstructionType ins_type_;
@@ -90,11 +83,14 @@ public:
     const std::string& GetFunctionName() const { return func_name_; }
 
     ValueIndex GetLocalBase() const { return local_base_; }
+    void SetLocalBase(ValueIndex val) { local_base_ = val; }
 
     void AddVariable(const std::string&, Variable*);
-    int GetOffsetForVariable(const std::string&) const;
-
     void WriteVariable(const std::string&, BBIndex, ValueIndex);
+    const Variable* GetVariable(const std::string& var_name) const { return variable_map_.at(var_name); }
+
+    bool IsVariableLocal(const std::string&) const;
+    int GetOffsetForVariable(const std::string&) const;
 
     ValueIndex CreateConstant(int);
 

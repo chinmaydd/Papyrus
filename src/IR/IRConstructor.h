@@ -12,7 +12,8 @@ namespace papyrus {
 
 class ASTConstructor;
 
-using InstTy     = Instruction::InstructionType;
+using T          = Instruction::InstructionType;
+using V          = Value::ValueType;
 using ValueIndex = int;
 
 class IRConstructor {
@@ -27,17 +28,20 @@ public:
     void SetCurrentFunction(Function* f) { current_function_ = f; }
     void ClearCurrentFunction() { current_function_ = nullptr; }
 
+    const Variable* GetGlobalVariable(const std::string&) const;
     void AddGlobalVariable(const std::string&, Variable*);
     int GetOffsetForGlobalVariable(const std::string&) const;
-    bool CheckIfGlobal(const std::string&) const;
 
-    ValueIndex AddValue(Value*);
+    bool IsVariableGlobal(const std::string&) const;
+    bool IsVariableLocal(const std::string&) const;
+
+    ValueIndex CreateValue(V);
     ValueIndex CreateConstant(int);
     void AddUsage(ValueIndex, InstructionIndex);
     
-    void AddInstruction(InstTy);
-    void AddInstruction(InstTy, ValueIndex);
-    void AddInstruction(InstTy, ValueIndex, ValueIndex);
+    ValueIndex MakeInstruction(T);
+    ValueIndex MakeInstruction(T, ValueIndex);
+    ValueIndex MakeInstruction(T, ValueIndex, ValueIndex);
 
     void WriteVariable(const std::string&, ValueIndex);
     void WriteVariable(const std::string&, BBIndex, ValueIndex);
@@ -45,11 +49,16 @@ public:
     BBIndex CreateBB(std::string);
     BBIndex CreateBB(std::string, BBIndex);
     void AddBBPredecessor(BBIndex, BBIndex); // current, predecessor
-    void AddBBSuccessor(BBIndex, BBIndex); // current, successor
+    void AddBBSuccessor(BBIndex, BBIndex);   // current, successor
     BBIndex GetCurrentBBIdx() const { return bb_counter_; }
+
+    void DeclareGlobalBase();
+    ValueIndex GetGlobalBase() const { return global_base_idx_; }
+    ValueIndex GetLocalBase() const { return current_function_->GetLocalBase(); }
 
 private:
     Value* global_base_;
+    ValueIndex global_base_idx_;
 
     ValueIndex value_counter_;
     InstructionIndex instruction_counter_;

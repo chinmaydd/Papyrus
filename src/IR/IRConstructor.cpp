@@ -2,6 +2,8 @@
 
 using namespace papyrus;
 
+#define NOTFOUND -1
+
 using IRC  = IRConstructor;
 using ASTC = ASTConstructor;
 
@@ -11,28 +13,42 @@ IRConstructor::IRConstructor(ASTC& astconst) :
     instruction_counter_(0),
     bb_counter_(0) {}
 
-void IRC::AddInstruction(InstTy insty) {}
-void IRC::AddInstruction(InstTy insty, ValueIndex arg_1) {}
+ValueIndex IRC::MakeInstruction(T insty) {
+    return -1;
+}
 
-void IRC::AddInstruction(InstTy insty, ValueIndex arg_1, ValueIndex arg_2) {
+ValueIndex IRC::MakeInstruction(T insty, ValueIndex arg_1) {
+    return -1;
+}
+
+ValueIndex IRC::MakeInstruction(T insty, ValueIndex arg_1, ValueIndex arg_2) {
+    ValueIndex result = NOTFOUND;
+
+    instruction_counter_++;
+    Instruction* inst = new Instruction(insty,
+                                        bb_counter_,
+                                        instruction_counter_);
+
+    inst->AddArgument(arg_1);
+    AddUsage(arg_1, instruction_counter_);
+
+    inst->AddArgument(arg_2);
+    AddUsage(arg_2, instruction_counter_);
+
+    instruction_map_[instruction_counter_] = inst;
+
     switch(insty) {
-        case InstTy::INS_STORE: {
-            // store y x : store y to memory address x
-            instruction_counter_++;
-            Instruction* inst = new Instruction(InstTy::INS_STORE, 
-                                                bb_counter_,
-                                                instruction_counter_);
-            inst->AddArgument(arg_1);
-            AddUsage(arg_1, instruction_counter_);
-
-            inst->AddArgument(arg_2);
-            AddUsage(arg_2, instruction_counter_);
-
-            instruction_map_[instruction_counter_] = inst;
-        }
-        case InstTy::INS_ADDA: {
+        case T::INS_MUL: 
+        // mul x y : multiplication
+        case T::INS_ADDA: {
+        // adda x y : add two addresses x and y (used only with arrays)
+            result = CreateValue(V::VAL_ANY);
+            inst->SetResult(result);
+            break;
         }
     }
+
+    return result;
 }
 
 void IRC::AddFunction(const std::string& func_name, Function *func) {
@@ -40,10 +56,10 @@ void IRC::AddFunction(const std::string& func_name, Function *func) {
 }
 
 void IRC::WriteVariable(const std::string& var_name, BBIndex bb_idx, ValueIndex val_idx) {
-    if (CheckIfGlobal(var_name)) {
-        global_defs_[var_name][bb_idx] = val_idx;
-    } else {
+    if (current_function_->IsVariableLocal(var_name)) {
         current_function_->WriteVariable(var_name, bb_idx, val_idx);
+    } else {
+        global_defs_[var_name][bb_idx] = val_idx;
     }
 }
 
@@ -51,35 +67,41 @@ void IRC::WriteVariable(const std::string& var_name, ValueIndex val_idx) {
     WriteVariable(var_name, bb_counter_, val_idx);
 }
 
+const Variable* IRC::GetGlobalVariable(const std::string& var_name) const {
+    return global_variable_map_.at(var_name);
+}
+
 void IRC::AddGlobalVariable(const std::string& var_name, Variable* var) {
     global_variable_map_[var_name] = var;
 }
 
 int IRC::GetOffsetForGlobalVariable(const std::string& var_name) const {
-    if (CheckIfGlobal(var_name)) {
-        return global_variable_map_.at(var_name)->GetOffset();
-    }
-
-    return -1;
+    return global_variable_map_.at(var_name)->GetOffset();
 }
 
-bool IRC::CheckIfGlobal(const std::string& var_name) const {
+bool IRC::IsVariableGlobal(const std::string& var_name) const {
     return global_variable_map_.find(var_name) != global_variable_map_.end();
 }
 
-ValueIndex IRC::AddValue(Value* val) {
-    value_counter_++;
+bool IRC::IsVariableLocal(const std::string& var_name) const {
+    return current_function_->IsVariableLocal(var_name);
+}
 
+ValueIndex IRC::CreateValue(V vty) {
+    Value* val = new Value(vty);
+
+    value_counter_++;
     value_map_[value_counter_] = val;
 
     return value_counter_;
 }
 
 ValueIndex IRC::CreateConstant(int val) {
-    ConstantValue* c = new ConstantValue(val);
+    Value* v = new Value(V::VAL_CONST);
+    v->SetConstant(val);
 
     value_counter_++;
-    value_map_[value_counter_] = c;
+    value_map_[value_counter_] = v;
 
     return value_counter_;
 }
@@ -106,6 +128,10 @@ BBIndex IRC::CreateBB(std::string func_name, BBIndex pred_idx) {
 
 void IRC::AddBBPredecessor(BBIndex current_idx, BBIndex pred_idx) {
     basic_block_map_[current_idx]->AddPredecessor(pred_idx);
+}
+
+void IRC::DeclareGlobalBase() {
+    global_base_idx_ = CreateValue(V::VAL_BASE);
 }
 
 void IRC::construct() {

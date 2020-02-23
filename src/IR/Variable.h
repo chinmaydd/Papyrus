@@ -6,6 +6,9 @@
 #include <vector>
 
 namespace papyrus {
+
+using ValueIndex = int;
+
 class Symbol {
 public:
     Symbol(const std::string&, const std::vector<int>&, bool, bool);
@@ -24,14 +27,16 @@ private:
 
 class Variable {
 public:
-    Variable(Symbol*, int);
+    Variable(Symbol*, ValueIndex);
+
+    const std::vector<int> GetDimensions() const { return sym_->GetDimensions(); }
     bool IsArray() const { return sym_->IsArray(); }
     bool IsGlobal() const { return sym_->IsGlobal(); }
-    int GetOffset() const { return offset_in_words_; }
+    ValueIndex GetOffset() const { return offset_idx_; }
 
 private:
     Symbol* sym_;
-    int offset_in_words_;
+    ValueIndex offset_idx_;
 };
 
 } // namespace papyrus
