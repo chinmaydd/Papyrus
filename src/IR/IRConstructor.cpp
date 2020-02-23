@@ -13,9 +13,22 @@ IRConstructor::IRConstructor(ASTC& astconst) :
 
 void IRC::AddInstruction(InstTy insty) {}
 void IRC::AddInstruction(InstTy insty, ValueIndex arg_1) {}
+
 void IRC::AddInstruction(InstTy insty, ValueIndex arg_1, ValueIndex arg_2) {
     switch(insty) {
         case InstTy::INS_STORE: {
+            // store y x : store y to memory address x
+            instruction_counter_++;
+            Instruction* inst = new Instruction(InstTy::INS_STORE, 
+                                                bb_counter_,
+                                                instruction_counter_);
+            inst->AddArgument(arg_1);
+            AddUsage(arg_1, instruction_counter_);
+
+            inst->AddArgument(arg_2);
+            AddUsage(arg_2, instruction_counter_);
+
+            instruction_map_[instruction_counter_] = inst;
         }
         case InstTy::INS_ADDA: {
         }
@@ -26,8 +39,16 @@ void IRC::AddFunction(const std::string& func_name, Function *func) {
     functions_[func_name] = func;
 }
 
-void IRC::WriteVariable(const std::string& var_name, ValueIndex value) {
-    Function *func = GetCurrentFunction();
+void IRC::WriteVariable(const std::string& var_name, BBIndex bb_idx, ValueIndex val_idx) {
+    if (CheckIfGlobal(var_name)) {
+        global_defs_[var_name][bb_idx] = val_idx;
+    } else {
+        current_function_->WriteVariable(var_name, bb_idx, val_idx);
+    }
+}
+
+void IRC::WriteVariable(const std::string& var_name, ValueIndex val_idx) {
+    WriteVariable(var_name, bb_counter_, val_idx);
 }
 
 void IRC::AddGlobalVariable(const std::string& var_name, Variable* var) {
@@ -61,6 +82,10 @@ ValueIndex IRC::CreateConstant(int val) {
     value_map_[value_counter_] = c;
 
     return value_counter_;
+}
+
+void IRC::AddUsage(ValueIndex val_idx, InstructionIndex ins_idx) {
+    value_map_[val_idx]->AddUsage(ins_idx);
 }
 
 BBIndex IRC::CreateBB(std::string func_name) {

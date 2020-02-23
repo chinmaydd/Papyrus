@@ -33,12 +33,14 @@ public:
 
     ValueIndex AddValue(Value*);
     ValueIndex CreateConstant(int);
+    void AddUsage(ValueIndex, InstructionIndex);
     
     void AddInstruction(InstTy);
     void AddInstruction(InstTy, ValueIndex);
     void AddInstruction(InstTy, ValueIndex, ValueIndex);
 
     void WriteVariable(const std::string&, ValueIndex);
+    void WriteVariable(const std::string&, BBIndex, ValueIndex);
 
     BBIndex CreateBB(std::string);
     BBIndex CreateBB(std::string, BBIndex);
@@ -56,14 +58,14 @@ private:
     std::unordered_map<ValueIndex, Value*> value_map_;
 
     std::map<std::string, Variable*> global_variable_map_;
-    std::unordered_map<std::string, ValueIndex> global_defs_;
+    std::unordered_map<std::string, std::unordered_map<BBIndex, ValueIndex> > global_defs_;
 
     Function* current_function_;
     std::unordered_map<std::string, Function*> functions_;
 
     std::unordered_map<BBIndex, BasicBlock*> basic_block_map_;
 
-    std::unordered_map<InstructionIndex, BBIndex> instruction_map_;
+    std::unordered_map<InstructionIndex, Instruction*> instruction_map_;
 
     ASTConstructor& astconst_;
 };

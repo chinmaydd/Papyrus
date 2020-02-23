@@ -13,7 +13,7 @@ ValueIndex ConstantNode::GenerateIR(IRC* irc) const {
 }
 
 ValueIndex FactorNode::GenerateIR(IRC* irc) const {
-    ValueIndex result = -1;
+    ValueIndex result = NOTFOUND;
     switch(factor_type_) {
         case FACT_DESIGNATOR: {
             break;
@@ -68,8 +68,8 @@ ValueIndex DesignatorNode::GenerateIR(IRC* irc) const {
                             ->GetOffsetForVariable(identifier_name);
             }
 
-            ValueIndex offset_idx = irc->CreateConstant(offset);
-            irc->AddInstruction(InstTy::INS_ADDA, base_idx, offset_idx);
+            result = irc->CreateConstant(offset);
+            irc->AddInstruction(InstTy::INS_ADDA, base_idx, result);
             break;
         }
     }
@@ -78,6 +78,8 @@ ValueIndex DesignatorNode::GenerateIR(IRC* irc) const {
 }
 
 void AssignmentNode::GenerateIR(IRC* irc) const {
+    LOG(INFO) << "[IR] Parsing assignment";
+
     ValueIndex expr_idx = value_->GenerateIR(irc);
     DesignatorType desig_type = designator_->GetDesignatorType();
 
@@ -203,6 +205,29 @@ void ComputationNode::GenerateIR(IRC* irc) const {
     for (auto funcn: function_declarations_) {
         funcn->GenerateIR(irc);
     }
+    
+   
+    LOG(INFO) << "[IR] Parsing main";
 
-    // TODO: Parse main body here.
+    std::string func_name = "main";
+    Function* func = new Function(func_name);
+
+    irc->AddFunction(func_name, func);
+    irc->SetCurrentFunction(func);
+
+    BBIndex entry_idx = irc->CreateBB(func_name);
+    func->SetEntry(entry_idx);
+
+    StatementNode* statement;
+    auto stat_begin = computation_body_->GetStatementBegin();
+    auto stat_end = computation_body_->GetStatementEnd();
+    for (auto it  = stat_begin; it != stat_end; it++) {
+        statement = *it;
+        statement->GenerateIR(irc);
+    }
+
+    BBIndex exit_idx = irc->CreateBB(func_name, irc->GetCurrentBBIdx());
+    func->SetExit(exit_idx);
+
+    // TODO: Add IR End?
 }

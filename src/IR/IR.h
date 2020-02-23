@@ -27,6 +27,7 @@ public:
         VAL_ANY,
     };
     const ValueType GetValueType() const { return vty; }
+    void AddUsage(InstructionIndex ins_idx) { uses_.push_back(ins_idx); }
 
 protected:
     ValueType vty;
@@ -54,14 +55,18 @@ public:
         INS_ADDA,
     };
 
+    Instruction(InstructionType, BBIndex, InstructionIndex);
+    void AddArgument(ValueIndex val_idx) { arguments_.push_back(val_idx); }
+
 private:
     InstructionType ins_type_;
 
     std::vector<ValueIndex> arguments_;
     ValueIndex result_;
 
+    InstructionIndex ins_idx_;
+
     BBIndex containing_bb_;
-    std::string containing_function_;
 };
 
 class BasicBlock {
@@ -86,8 +91,10 @@ public:
 
     ValueIndex GetLocalBase() const { return local_base_; }
 
-    void AddVariable(std::string, Variable*);
+    void AddVariable(const std::string&, Variable*);
     int GetOffsetForVariable(const std::string&) const;
+
+    void WriteVariable(const std::string&, BBIndex, ValueIndex);
 
     ValueIndex CreateConstant(int);
 

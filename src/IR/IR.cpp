@@ -10,8 +10,12 @@ ConstantValue::ConstantValue(int val) :
 Function::Function(const std::string& func_name):
     func_name_(func_name) {}
 
-void Function::AddVariable(std::string var_name, Variable* var) {
+void Function::AddVariable(const std::string& var_name, Variable* var) {
     variable_map_[var_name] = var;
+}
+
+void Function::WriteVariable(const std::string& var_name, BBIndex bb_idx, ValueIndex val_idx) {
+    local_defs_[var_name][bb_idx] = val_idx;
 }
 
 void Function::SetEntry(BBIndex entry_idx) {
@@ -29,6 +33,11 @@ int Function::GetOffsetForVariable(const std::string& var_name) const {
         return -1;
     }
 }
+
+Instruction::Instruction(InstructionType insty, BBIndex containing_bb, InstructionIndex ins_idx) :
+    ins_type_(insty),
+    containing_bb_(containing_bb),
+    ins_idx_(ins_idx) {}
 
 BasicBlock::BasicBlock(BBIndex idx) :
     idx_(idx) {}

@@ -1,3 +1,7 @@
 main 
+var x;
+array [4][4] a;
 {
+    let x <- 0;
+    let a[1][2] <- 2
 }.
