@@ -13,40 +13,82 @@ IRConstructor::IRConstructor(ASTC& astconst) :
     instruction_counter_(0),
     bb_counter_(0) {}
 
+T IRC::ConvertInstruction(ArithmeticOperator op) {
+    switch(op) {
+        case BINOP_MUL:
+            return T::INS_MUL;
+        case BINOP_DIV:
+            return T::INS_DIV;
+        case BINOP_ADD:
+            return T::INS_ADD;
+        case BINOP_SUB:
+            return T::INS_SUB;
+        default:
+            return T::INS_ANY;
+    }
+}
+
+std::string IRC::GetInstructionString(T insty) {
+    switch(insty) {
+        case T::INS_ADDA:
+            return "adda";
+        case T::INS_STORE:
+            return "store";
+        case T::INS_MUL:
+            return "mul";
+        case T::INS_ADD:
+            return "add";
+        case T::INS_SUB:
+            return "sub";
+        default:
+            return "NF";
+    }
+}
+
+// store x y : store y to memory address x
+// case T::INS_STORE
+// mul x y : multiplication
+// case T::INS_ADD
+// add x y : addition
+// case T::INS_SUB
+// sub x y : substitution
+// case T::INS_DIV
+// div x y : division
+// case T::INS_MUL 
+// adda x y : add two addresses x and y (used only with arrays)
+// case T::INS_ADDA
+
 ValueIndex IRC::MakeInstruction(T insty) {
-    return -1;
-}
-
-ValueIndex IRC::MakeInstruction(T insty, ValueIndex arg_1) {
-    return -1;
-}
-
-ValueIndex IRC::MakeInstruction(T insty, ValueIndex arg_1, ValueIndex arg_2) {
-    ValueIndex result = NOTFOUND;
-
     instruction_counter_++;
     Instruction* inst = new Instruction(insty,
                                         bb_counter_,
                                         instruction_counter_);
 
-    inst->AddArgument(arg_1);
-    AddUsage(arg_1, instruction_counter_);
-
-    inst->AddArgument(arg_2);
-    AddUsage(arg_2, instruction_counter_);
-
     instruction_map_[instruction_counter_] = inst;
 
-    switch(insty) {
-        case T::INS_MUL: 
-        // mul x y : multiplication
-        case T::INS_ADDA: {
-        // adda x y : add two addresses x and y (used only with arrays)
-            result = CreateValue(V::VAL_ANY);
-            inst->SetResult(result);
-            break;
-        }
-    }
+    ValueIndex result = CreateValue(V::VAL_ANY);
+    inst->SetResult(result);
+
+    return result;
+}
+
+ValueIndex IRC::MakeInstruction(T insty, ValueIndex arg_1) {
+    ValueIndex result = MakeInstruction(insty);
+
+    GetCurrentInstruction()->AddArgument(arg_1);
+    AddUsage(arg_1, instruction_counter_);
+
+    return result;
+}
+
+ValueIndex IRC::MakeInstruction(T insty, ValueIndex arg_1, ValueIndex arg_2) {
+    ValueIndex result = MakeInstruction(insty);
+
+    GetCurrentInstruction()->AddArgument(arg_1);
+    AddUsage(arg_1, instruction_counter_);
+
+    GetCurrentInstruction()->AddArgument(arg_2);
+    AddUsage(arg_2, instruction_counter_);
 
     return result;
 }
@@ -134,7 +176,9 @@ void IRC::DeclareGlobalBase() {
     global_base_idx_ = CreateValue(V::VAL_BASE);
 }
 
-void IRC::construct() {
+void IRC::BuildIR() {
     const ComputationNode* root = astconst_.GetRoot();
     root->GenerateIR(this);
 }
+
+

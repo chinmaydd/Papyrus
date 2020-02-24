@@ -176,7 +176,7 @@ class StatementNode : public ASTNode {
 public:
     const StatementType GetStatementType() const { return statement_type_; }
 
-    void GenerateIR(IRC*) const;
+    ValueIndex GenerateIR(IRC*) const;
 
 protected:
     StatementType statement_type_;
@@ -189,7 +189,7 @@ public:
     FunctionCallNode(IdentifierNode*);
     void AddArgument(ExpressionNode*);
 
-    void GenerateIR(IRC*) const;
+    ValueIndex GenerateIR(IRC*) const;
 
 private:
     IdentifierNode* identifier_;
@@ -205,7 +205,7 @@ public:
     const ExpressionNode* GetAssignedExpression() const { return value_; }
     const DesignatorNode* GetDesignator() const { return designator_; }
 
-    void GenerateIR(IRC*) const;
+    ValueIndex GenerateIR(IRC*) const;
 
 private:
     DesignatorNode* designator_;

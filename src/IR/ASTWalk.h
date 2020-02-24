@@ -3,4 +3,4 @@
 
 #include "IRConstructor.h"
 
-#endif
+#endif /* PAPYRUS_ASTWALK_H */

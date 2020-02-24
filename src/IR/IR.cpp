@@ -2,6 +2,8 @@
 
 using namespace papyrus;
 
+using T = Instruction::InstructionType;
+
 Value::Value(ValueType vty) :
     vty_(vty) {}
 
@@ -32,7 +34,7 @@ bool Function::IsVariableLocal(const std::string& var_name) const {
     return variable_map_.find(var_name) != variable_map_.end();
 }
 
-Instruction::Instruction(InstructionType insty, BBIndex containing_bb, InstructionIndex ins_idx) :
+Instruction::Instruction(T insty, BBIndex containing_bb, InstructionIndex ins_idx) :
     ins_type_(insty),
     containing_bb_(containing_bb),
     ins_idx_(ins_idx) {}

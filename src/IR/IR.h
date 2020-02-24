@@ -2,6 +2,7 @@
 #define PAPYRUS_IR_H
 
 #include "Papyrus/Logger/Logger.h"
+#include "FrontEnd/Operation.h"
 #include "Variable.h"
 
 #include <vector>
@@ -41,10 +42,21 @@ private:
 class Instruction {
 public:
     enum InstructionType {
+        INS_NONE,
+
         INS_STORE,
         INS_CALL,
+
         INS_ADDA,
+
+        INS_ADD,
+        INS_SUB,
         INS_MUL,
+        INS_DIV,
+
+        INS_END,
+
+        INS_ANY,
     };
 
     Instruction(InstructionType, BBIndex, InstructionIndex);

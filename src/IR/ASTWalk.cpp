@@ -5,14 +5,18 @@ using namespace papyrus;
 #define NOTFOUND -1
 
 ValueIndex ConstantNode::GenerateIR(IRC* irc) const {
+    LOG(INFO) << "Parsing constant";
+
     return irc->CreateConstant(value_);
 }
 
 ValueIndex FactorNode::GenerateIR(IRC* irc) const {
-    ValueIndex result = NOTFOUND;
+    LOG(INFO) << "Parsing factor";
 
+    ValueIndex result = NOTFOUND;
     switch(factor_type_) {
         case FACT_DESIGNATOR: {
+            // TODO: ReadVariable()
             break;
         }
         case FACT_NUMBER: {
@@ -21,9 +25,13 @@ ValueIndex FactorNode::GenerateIR(IRC* irc) const {
             break;
         }
         case FACT_EXPR: {
+            const ExpressionNode* exprn = static_cast<const ExpressionNode*>(factor_node_);
+            result = exprn->GenerateIR(irc);
             break;
         }
         case FACT_FUNCCALL: {
+            const FunctionCallNode* fncn = static_cast<const FunctionCallNode*>(factor_node_);
+            result = fncn->GenerateIR(irc);
             break;
         }
     }
@@ -32,20 +40,50 @@ ValueIndex FactorNode::GenerateIR(IRC* irc) const {
 }
 
 ValueIndex TermNode::GenerateIR(IRC* irc) const {
-    ValueIndex primary_idx = primary_factor_->GenerateIR(irc);
+    LOG(INFO) << "Parsing term";
 
-    // TODO: Not implemented
-    return primary_idx;
+    ValueIndex idx_1, idx_2;
+    idx_1 = primary_factor_->GenerateIR(irc);
+
+    ArithmeticOperator op;
+    const FactorNode* fact;
+    for (auto next_pair: secondary_factors_) {
+        op = next_pair.first;
+        fact = next_pair.second;
+
+        idx_2 = fact->GenerateIR(irc);
+        idx_1 = irc->MakeInstruction(irc->ConvertInstruction(op),
+                                     idx_1,
+                                     idx_2);
+    }
+
+    return idx_1;
 }
 
 ValueIndex ExpressionNode::GenerateIR(IRC* irc) const {
-    ValueIndex primary_term = primary_term_->GenerateIR(irc);
+    LOG(INFO) << "Parsing expression";
 
-    // TODO: Not implemented
-    return primary_term;
+    ValueIndex idx_1, idx_2;
+    idx_1 = primary_term_->GenerateIR(irc);
+
+    ArithmeticOperator op;
+    const TermNode* term;
+    for (auto next_pair: secondary_terms_) {
+        op = next_pair.first;
+        term = next_pair.second;
+
+        idx_2 = term->GenerateIR(irc);
+        idx_1 = irc->MakeInstruction(irc->ConvertInstruction(op),
+                                     idx_1,
+                                     idx_2);
+    }
+
+    return idx_1;
 }
 
 ValueIndex ArrIdentifierNode::GenerateIR(IRC* irc) const {
+    LOG(INFO) << "Parsing ArrIdentifier";
+
     std::string var_name = GetIdentifierName();
     ValueIndex base, offset, temp;
 
@@ -95,47 +133,57 @@ ValueIndex ArrIdentifierNode::GenerateIR(IRC* irc) const {
                                 offset_idx);
 }
 
-void AssignmentNode::GenerateIR(IRC* irc) const {
+ValueIndex AssignmentNode::GenerateIR(IRC* irc) const {
     LOG(INFO) << "[IR] Parsing assignment";
-
+    
+    ValueIndex result = NOTFOUND;
     ValueIndex expr_idx = value_->GenerateIR(irc);
     std::string var_name = designator_->GetIdentifierName();
 
     switch(designator_->GetDesignatorType()) {
         case DESIG_VAR: {
+            // TODO: Will 
             irc->WriteVariable(var_name, expr_idx);
             break;
         }
         case DESIG_ARR: {
             const ArrIdentifierNode* arr_id = static_cast<const ArrIdentifierNode*>(designator_);
             ValueIndex mem_location = arr_id->GenerateIR(irc);
-            irc->MakeInstruction(T::INS_STORE,
+            result = irc->MakeInstruction(T::INS_STORE,
                                  expr_idx,
                                  mem_location);
         }
     }
+
+    return result;
 }
 
-void FunctionCallNode::GenerateIR(IRC* irc) const {
+// TODO: To implement!
+ValueIndex FunctionCallNode::GenerateIR(IRC* irc) const {
+    LOG(INFO) << "[IR] Parsing function call";
+    ValueIndex result = NOTFOUND;
+
+    return result;
 }
 
-void StatementNode::GenerateIR(IRC* irc) const {
+ValueIndex StatementNode::GenerateIR(IRC* irc) const {
     LOG(INFO) << "[IR] Parsing statement";
 
+    ValueIndex result = NOTFOUND;
     switch(statement_type_) {
         case StatementType::STAT_ASSIGN: {
             const AssignmentNode* assgn = static_cast<const AssignmentNode*>(this);
-            assgn->GenerateIR(irc);
+            result = assgn->GenerateIR(irc);
             break;
         }
         case StatementType::STAT_FUNCCALL: {
             const FunctionCallNode* funcn = static_cast<const FunctionCallNode*>(this);
-            funcn->GenerateIR(irc);
+            result = funcn->GenerateIR(irc);
             break;
         }
-        default: {
-        }
     }
+
+    return result;
 }
 
 void FunctionBodyNode::GenerateIR(IRC* irc) const {
@@ -255,6 +303,8 @@ void ComputationNode::GenerateIR(IRC* irc) const {
         statement = *it;
         statement->GenerateIR(irc);
     }
+
+    irc->MakeInstruction(T::INS_END);
 
     BBIndex exit_idx = irc->CreateBB(func_name, irc->GetCurrentBBIdx());
     func->SetExit(exit_idx);

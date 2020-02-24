@@ -3,17 +3,19 @@
 
 #include "FrontEnd/Lexer.h"
 #include "FrontEnd/ASTConstructor.h"
+
 #include "IR/IR.h"
 #include "IR/IRConstructor.h"
+
+#include "Visualizer/Visualizer.h"
 
 using namespace papyrus;
 
 structlog LOGCFG = {};
 
 int main(int argc, char *argv[]) {
-    // Logger configuration (optional)
     LOGCFG.headers = true;
-    LOGCFG.level = DEBUG;
+    LOGCFG.level = WARN;
 
     if (argc < 2) {
         LOG(ERROR) << "Please input a file to compile!";
@@ -33,7 +35,10 @@ int main(int argc, char *argv[]) {
 
     IRConstructor irconst = IRConstructor(astconst);
 
-    irconst.construct();
+    irconst.BuildIR();
+
+    Visualizer viz = Visualizer(irconst);
+    viz.WriteVCG();
 
     return 0;
 }

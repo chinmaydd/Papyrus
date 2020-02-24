@@ -19,7 +19,7 @@ using ValueIndex = int;
 class IRConstructor {
 public:
     IRConstructor(ASTConstructor&);
-    void construct();
+    void BuildIR();
 
     ASTConstructor& GetASTConst() { return astconst_; }
 
@@ -39,6 +39,7 @@ public:
     ValueIndex CreateConstant(int);
     void AddUsage(ValueIndex, InstructionIndex);
     
+    Instruction* GetCurrentInstruction() { return instruction_map_[instruction_counter_]; }
     ValueIndex MakeInstruction(T);
     ValueIndex MakeInstruction(T, ValueIndex);
     ValueIndex MakeInstruction(T, ValueIndex, ValueIndex);
@@ -55,6 +56,9 @@ public:
     void DeclareGlobalBase();
     ValueIndex GetGlobalBase() const { return global_base_idx_; }
     ValueIndex GetLocalBase() const { return current_function_->GetLocalBase(); }
+
+    std::string GetInstructionString(T);
+    T ConvertInstruction(ArithmeticOperator);
 
 private:
     Value* global_base_;
