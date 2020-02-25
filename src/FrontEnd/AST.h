@@ -42,7 +42,7 @@ public:
     ConstantNode(int);
     const int GetConstantValue() const { return value_; }
 
-    ValueIndex GenerateIR(IRC* irc) const;
+    ValueIndex GenerateIR(IRC& irc) const;
 
 protected:
     int value_;
@@ -70,7 +70,7 @@ public:
     FactorNode(ExpressionNode*);
     FactorNode(FunctionCallNode*);
 
-    ValueIndex GenerateIR(IRC*) const;
+    ValueIndex GenerateIR(IRC&) const;
 
 private:
     ValueNode* factor_node_;
@@ -84,7 +84,7 @@ public:
     TermNode(FactorNode*);
     void AddSecondaryFactor(ArithmeticOperator, FactorNode*);
 
-    ValueIndex GenerateIR(IRC*) const;
+    ValueIndex GenerateIR(IRC&) const;
 
 private:
     FactorNode* primary_factor_;
@@ -98,7 +98,7 @@ public:
     ExpressionNode(TermNode*);
     void AddSecondaryTerm(ArithmeticOperator, TermNode*);
 
-    ValueIndex GenerateIR(IRC*) const;
+    ValueIndex GenerateIR(IRC&) const;
 
 private:
     TermNode* primary_term_;
@@ -119,7 +119,7 @@ public:
     const std::string& GetIdentifierName() const { return identifier_->GetIdentifierName(); }
     DesignatorType GetDesignatorType() const { return desig_type_; }
 
-    virtual ValueIndex GenerateIR(IRC*) const = 0;
+    virtual ValueIndex GenerateIR(IRC&) const = 0;
 
 protected:
 
@@ -134,7 +134,7 @@ class VarIdentifierNode : public DesignatorNode {
 public:
     VarIdentifierNode(IdentifierNode*);
 
-    ValueIndex GenerateIR(IRC*) const override { return NOTFOUND; }
+    ValueIndex GenerateIR(IRC&) const override { return NOTFOUND; }
 };
 ////////////////////////////////
 
@@ -144,7 +144,7 @@ public:
     ArrIdentifierNode(IdentifierNode*);
     void AddIndirectionToArray(ExpressionNode*);
 
-    ValueIndex GenerateIR(IRC*) const override;
+    ValueIndex GenerateIR(IRC&) const override;
 
 private:
     std::vector<ExpressionNode*> indirections_;
@@ -180,7 +180,7 @@ class StatementNode : public ASTNode {
 public:
     const StatementType GetStatementType() const { return statement_type_; }
 
-    ValueIndex GenerateIR(IRC*) const;
+    ValueIndex GenerateIR(IRC&) const;
 
 protected:
     StatementType statement_type_;
@@ -193,7 +193,7 @@ public:
     FunctionCallNode(IdentifierNode*);
     void AddArgument(ExpressionNode*);
 
-    ValueIndex GenerateIR(IRC*) const;
+    ValueIndex GenerateIR(IRC&) const;
 
 private:
     IdentifierNode* identifier_;
@@ -209,7 +209,7 @@ public:
     const ExpressionNode* GetAssignedExpression() const { return value_; }
     const DesignatorNode* GetDesignator() const { return designator_; }
 
-    ValueIndex GenerateIR(IRC*) const;
+    ValueIndex GenerateIR(IRC&) const;
 
 private:
     DesignatorNode* designator_;
@@ -224,7 +224,7 @@ public:
     std::vector<StatementNode*>::const_iterator GetStatementBegin() const { return statements_.cbegin(); }
     std::vector<StatementNode*>::const_iterator GetStatementEnd() const { return statements_.cend(); }
 
-    void GenerateIR(IRC*) const;
+    void GenerateIR(IRC&) const;
 
 private:
     std::vector<StatementNode*> statements_;
@@ -237,7 +237,7 @@ public:
     ITENode(RelationNode*, StatSequenceNode*);
     void AddElseClause(StatSequenceNode*);
 
-    ValueIndex GenerateIR(IRC*) const;
+    ValueIndex GenerateIR(IRC&) const;
 
 private:
     RelationNode* relation_;
@@ -294,7 +294,7 @@ class FunctionBodyNode : public ASTNode {
 public:
     void SetFunctionBodyStatSequence(StatSequenceNode*);
 
-    void GenerateIR(IRC*) const;
+    void GenerateIR(IRC&) const;
 
 private:
     StatSequenceNode* func_statement_sequence_;
@@ -308,7 +308,7 @@ public:
 
     const std::string& GetFunctionName() const { return identifier_->GetIdentifierName(); }
 
-    void GenerateIR(IRC*) const;
+    void GenerateIR(IRC&) const;
 
 private:
     IdentifierNode* identifier_;
@@ -322,7 +322,7 @@ public:
     void AddFunctionDecl(FunctionDeclNode*);
     void SetComputationBody(StatSequenceNode*);
 
-    void GenerateIR(IRC*) const;
+    void GenerateIR(IRC&) const;
     
 private:
     std::vector<FunctionDeclNode*> function_declarations_;

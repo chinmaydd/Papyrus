@@ -57,6 +57,13 @@ public:
         INS_MUL,
         INS_DIV,
 
+        INS_EQ,
+        INS_NEQ,
+        INS_LT,
+        INS_LTE,
+        INS_GT,
+        INS_GTE,
+
         INS_END,
 
         INS_ANY,
@@ -105,12 +112,28 @@ public:
     const Variable* GetVariable(const std::string& var_name) const { return variable_map_.at(var_name); }
 
     bool IsVariableLocal(const std::string&) const;
-    int GetOffsetForVariable(const std::string&) const;
+    int GetOffset(const std::string&) const;
 
     ValueIndex CreateConstant(int);
+    ValueIndex CreateValue(Value::ValueType);
+    void AddUsage(ValueIndex, InstructionIndex);
+    
+    void WriteVariable(const std::string&, ValueIndex);
+    void WriteVariable(const std::string&, BBIndex, ValueIndex);
+
+    BBIndex CreateBB(std::string);
+    void AddBBPredecessor(BBIndex, BBIndex); // current, predecessor
+    void AddBBSuccessor(BBIndex, BBIndex);   // current, successor
+
+    BBIndex CurrentBBIdx() const { return current_bb_; }
+    void SetCurrentBB(BBIndex idx) { current_bb_ = idx; }
 
     void SetEntry(BBIndex);
     void SetExit(BBIndex);
+
+    ValueIndex MakeInstruction(T);
+    ValueIndex MakeInstruction(T, ValueIndex);
+    ValueIndex MakeInstruction(T, ValueIndex, ValueIndex);
 
 private:
     std::string func_name_;
@@ -119,6 +142,10 @@ private:
 
     BBIndex entry_idx_;
     BBIndex exit_idx_;
+
+    std::unordered_map<BBIndex, BasicBlock*> basic_block_map_;
+    std::unordered_map<InstructionIndex, Instruction*> instruction_map_;
+    std::unordered_map<ValueIndex, Value*> value_map_;
 
     std::map<std::string, Variable*> variable_map_;
     std::unordered_map<std::string, std::unordered_map<BBIndex, ValueIndex> > local_defs_;

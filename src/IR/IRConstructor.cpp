@@ -13,7 +13,7 @@ IRConstructor::IRConstructor(ASTC& astconst) :
     instruction_counter_(0),
     bb_counter_(0) {}
 
-T IRC::ConvertInstruction(ArithmeticOperator op) {
+T IRC::ConvertOperation(ArithmeticOperator op) {
     switch(op) {
         case BINOP_MUL:
             return T::INS_MUL;
@@ -23,6 +23,25 @@ T IRC::ConvertInstruction(ArithmeticOperator op) {
             return T::INS_ADD;
         case BINOP_SUB:
             return T::INS_SUB;
+        default:
+            return T::INS_ANY;
+    }
+}
+
+T IRC::ConvertOperation(RelationalOperator op) {
+    switch(op) {
+        case RELOP_EQ:
+            return T::INS_EQ;
+        case RELOP_NEQ:
+            return T::INS_NEQ;
+        case RELOP_LT:
+            return T::INS_LT;
+        case RELOP_LTE:
+            return T::INS_LTE;
+        case RELOP_GT:
+            return T::INS_GT;
+        case RELOP_GTE:
+            return T::INS_GTE;
         default:
             return T::INS_ANY;
     }
@@ -174,7 +193,7 @@ void IRC::DeclareGlobalBase() {
 
 void IRC::BuildIR() {
     const ComputationNode* root = astconst_.GetRoot();
-    root->GenerateIR(&this);
+    root->GenerateIR(*this);
 }
 
 
