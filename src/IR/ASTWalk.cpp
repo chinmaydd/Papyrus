@@ -92,11 +92,11 @@ ValueIndex ArrIdentifierNode::GenerateIR(IRC& irc) const {
     if (CF->IsVariableLocal(var_name)) {
         var    = CF->GetVariable(var_name);
         base   = CF->LocalBase();
-        offset = var->Offset();
+        offset = CF->CreateConstant(var->Offset());
     } else {
         var    = irc.GetGlobal(var_name);
         base   = irc.GlobalBase();
-        offset = irc.GlobalOffset(var_name);
+        offset = CF->CreateConstant(irc.GlobalOffset(var_name));
     }
 
     ValueIndex arr_base = CF->MakeInstruction(T::INS_ADDA, 
@@ -145,7 +145,8 @@ ValueIndex AssignmentNode::GenerateIR(IRC& irc) const {
         if (CF->IsVariableLocal(var_name)) {
             CF->WriteVariable(var_name, expr_idx);
         } else {
-            ValueIndex offset_idx   = irc.GlobalOffset(var_name);
+            int offset = irc.GlobalOffset(var_name);
+            ValueIndex offset_idx   = CF->CreateConstant(offset);
             ValueIndex mem_location = CF->MakeInstruction(T::INS_ADDA,
                                                           irc.GlobalBase(),
                                                           offset_idx);
@@ -231,7 +232,7 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
 
     std::string func_name = identifier_->GetIdentifierName();
 
-    Function* func = new Function(func_name, irc.ValueCounter());
+    Function* func = new Function(func_name, irc.ValueCounter(), irc.ValMap());
 
     irc.AddFunction(func_name, func);
     irc.SetCurrentFunction(func);
@@ -261,8 +262,7 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
             offset += 1;
         }
 
-        ValueIndex offset_idx = CF->CreateConstant(offset);
-        var = new Variable(sym, offset_idx);
+        var = new Variable(sym, offset);
         var_name = table_entry.first;
         CF->AddVariable(var_name, var);
     }
@@ -272,6 +272,8 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
     func_body_->GenerateIR(irc);
 
     CF->CreateExit();
+
+    irc.SetCounter(CF->GetCounter());
 
     irc.ClearCurrentFunction();
 }
@@ -300,9 +302,7 @@ void ComputationNode::GenerateIR(IRC& irc) const {
             offset += 1;
         }
 
-        // ValueIndex offset_idx = irc.CreateConstant(offset);
-        ValueIndex offset_idx = -1;
-        var = new Variable(sym, offset_idx);
+        var = new Variable(sym, offset);
         var_name = table_entry.first;
         irc.AddGlobal(var_name, var);
     }
@@ -314,7 +314,7 @@ void ComputationNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing main";
 
     std::string func_name = "main";
-    Function* func = new Function(func_name, irc.ValueCounter());
+    Function* func = new Function(func_name, irc.ValueCounter(), irc.ValMap());
 
     irc.AddFunction(func_name, func);
     irc.SetCurrentFunction(func);

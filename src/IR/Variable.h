@@ -32,11 +32,11 @@ public:
     const std::vector<int> GetDimensions() const { return sym_->GetDimensions(); }
     bool IsArray() const { return sym_->IsArray(); }
     bool IsGlobal() const { return sym_->IsGlobal(); }
-    ValueIndex Offset() const { return offset_idx_; }
+    int Offset() const { return offset_; }
 
 private:
     Symbol* sym_;
-    ValueIndex offset_idx_;
+    int offset_;
 };
 
 } // namespace papyrus

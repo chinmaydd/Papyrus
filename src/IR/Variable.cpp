@@ -8,6 +8,6 @@ Symbol::Symbol(const std::string& identifier, const std::vector<int>& dimensions
     if_array_(if_array),
     is_global_(is_global) {}
 
-Variable::Variable(Symbol* sym, ValueIndex offset_idx) :
+Variable::Variable(Symbol* sym, int offset) :
     sym_(sym),
-    offset_idx_(offset_idx) {}
+    offset_(offset) {}

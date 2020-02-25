@@ -105,7 +105,7 @@ private:
 
 class Function {
 public:
-    Function(const std::string&, ValueIndex);
+    Function(const std::string&, ValueIndex, std::unordered_map<ValueIndex, Value*>*);
 
     const std::string& FunctionName() const { return func_name_; }
 
@@ -121,6 +121,7 @@ public:
     ValueIndex CreateConstant(int);
     ValueIndex CreateValue(Value::ValueType);
     void AddUsage(ValueIndex, InstructionIndex);
+    ValueIndex GetCounter() const { return value_counter_; }
     
     void WriteVariable(const std::string&, ValueIndex);
     void WriteVariable(const std::string&, BBIndex, ValueIndex);
@@ -146,7 +147,7 @@ private:
     ValueIndex local_base_;
 
     ValueIndex value_counter_;
-    std::unordered_map<ValueIndex, Value*> value_map_;
+    std::unordered_map<ValueIndex, Value*>* value_map_;
     std::unordered_map<std::string, std::unordered_map<BBIndex, ValueIndex> > local_defs_;
 
     InstructionIndex instruction_counter_;

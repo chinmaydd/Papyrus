@@ -34,6 +34,9 @@ public:
     int GlobalOffset(const std::string&) const;
 
     ValueIndex ValueCounter() const { return value_counter_; }
+    void SetCounter(ValueIndex idx) { value_counter_ = idx; }
+    ValueIndex CreateConstant(int);
+    std::unordered_map<ValueIndex, Value*>* ValMap() const { return value_map_; }
 
     void DeclareGlobalBase();
     ValueIndex GlobalBase() const { return global_base_idx_; }
@@ -52,6 +55,8 @@ private:
 
     Function* current_function_;
     std::unordered_map<std::string, Function*> functions_;
+
+    std::unordered_map<ValueIndex, Value*>* value_map_;
 
     ASTConstructor& astconst_;
     

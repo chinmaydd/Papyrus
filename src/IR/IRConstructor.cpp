@@ -9,7 +9,8 @@ using ASTC = ASTConstructor;
 
 IRConstructor::IRConstructor(ASTC& astconst) :
     astconst_(astconst),
-    value_counter_(0) {}
+    value_counter_(0),
+    value_map_(new std::unordered_map<ValueIndex, Value*>()) {}
 
 T IRC::ConvertOperation(ArithmeticOperator op) {
     switch(op) {
@@ -87,6 +88,8 @@ void IRC::DeclareGlobalBase() {
 
     global_base_ = new Value(V::VAL_GLOBALBASE);
     global_base_idx_ = value_counter_;
+
+    value_map_->emplace(value_counter_, global_base_);
 }
 
 void IRC::BuildIR() {

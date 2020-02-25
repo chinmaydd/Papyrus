@@ -5,10 +5,11 @@ using namespace papyrus;
 Value::Value(ValueType vty) :
     vty_(vty) {}
 
-Function::Function(const std::string& func_name, ValueIndex value_counter):
+Function::Function(const std::string& func_name, ValueIndex value_counter, std::unordered_map<ValueIndex, Value*>* value_map):
     func_name_(func_name),
     value_counter_(value_counter),
-    bb_counter_(0) {}
+    bb_counter_(0),
+    value_map_(value_map) {}
 
 void Function::AddVariable(const std::string& var_name, Variable* var) {
     variable_map_[var_name] = var;
@@ -25,8 +26,9 @@ int Function::GetOffset(const std::string& var_name) const {
 ValueIndex Function::CreateConstant(int val) {
     Value* v = new Value(V::VAL_CONST);
     v->SetConstant(val); 
+
     value_counter_++;
-    value_map_[value_counter_] = v;
+    value_map_->emplace(value_counter_, v);
 
     return value_counter_;
 }
@@ -35,13 +37,13 @@ ValueIndex Function::CreateValue(V vty) {
     Value* val = new Value(vty);
 
     value_counter_++;
-    value_map_[value_counter_] = val;
+    value_map_->emplace(value_counter_, val);
 
     return value_counter_;
 }
 
 void Function::AddUsage(ValueIndex val_idx, InstructionIndex ins_idx) {
-    value_map_[val_idx]->AddUsage(ins_idx);
+    value_map_->at(val_idx)->AddUsage(ins_idx);
 }
 
 void Function::CreateExit() {
