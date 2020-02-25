@@ -109,9 +109,9 @@ AssignmentNode::AssignmentNode(DesignatorNode* designator, ExpressionNode* value
 ////////////////////////////////////
 // ITENode
 ////////////////////////////////////
-ITENode::ITENode(RelationNode* relation, StatSequenceNode* if_sequence) :
+ITENode::ITENode(RelationNode* relation, StatSequenceNode* then_sequence) :
     relation_(relation),
-    if_sequence_(if_sequence),
+    then_sequence_(then_sequence),
     StatementNode() {
         statement_type_ = STAT_ITE;
 }

@@ -8,6 +8,8 @@
 #include <memory>
 #include <vector>
 
+#define NOTFOUND -1
+
 using ValueIndex = int;
 
 namespace papyrus {
@@ -132,7 +134,7 @@ class VarIdentifierNode : public DesignatorNode {
 public:
     VarIdentifierNode(IdentifierNode*);
 
-    ValueIndex GenerateIR(IRC*) const override { return -1; }
+    ValueIndex GenerateIR(IRC*) const override { return NOTFOUND; }
 };
 ////////////////////////////////
 
@@ -164,11 +166,13 @@ private:
 ////////////////////////////////
 enum StatementType {
     STAT_NONE,
+
     STAT_FUNCCALL,
     STAT_ASSIGN,
     STAT_ITE,
     STAT_RETURN,
     STAT_WHILE,
+
     STAT_ANY,
 };
 
@@ -220,6 +224,8 @@ public:
     std::vector<StatementNode*>::const_iterator GetStatementBegin() const { return statements_.cbegin(); }
     std::vector<StatementNode*>::const_iterator GetStatementEnd() const { return statements_.cend(); }
 
+    void GenerateIR(IRC*) const;
+
 private:
     std::vector<StatementNode*> statements_;
 };
@@ -231,9 +237,11 @@ public:
     ITENode(RelationNode*, StatSequenceNode*);
     void AddElseClause(StatSequenceNode*);
 
+    ValueIndex GenerateIR(IRC*) const;
+
 private:
     RelationNode* relation_;
-    StatSequenceNode* if_sequence_;
+    StatSequenceNode* then_sequence_;
     StatSequenceNode* else_sequence_;
 };
 ////////////////////////////////
@@ -285,9 +293,6 @@ private:
 class FunctionBodyNode : public ASTNode {
 public:
     void SetFunctionBodyStatSequence(StatSequenceNode*);
-
-    const std::vector<StatementNode*>::const_iterator GetStatementBegin() const { return func_statement_sequence_->GetStatementBegin(); }
-    const std::vector<StatementNode*>::const_iterator GetStatementEnd() const { return func_statement_sequence_->GetStatementEnd(); }
 
     void GenerateIR(IRC*) const;
 

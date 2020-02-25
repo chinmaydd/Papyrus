@@ -27,7 +27,7 @@ void Function::SetExit(BBIndex exit_idx) {
 }
 
 int Function::GetOffsetForVariable(const std::string& var_name) const {
-    return variable_map_.at(var_name)->GetOffset();
+    return variable_map_.at(var_name)->Offset();
 }
 
 bool Function::IsVariableLocal(const std::string& var_name) const {

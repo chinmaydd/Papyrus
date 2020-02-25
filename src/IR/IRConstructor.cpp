@@ -75,7 +75,7 @@ ValueIndex IRC::MakeInstruction(T insty) {
 ValueIndex IRC::MakeInstruction(T insty, ValueIndex arg_1) {
     ValueIndex result = MakeInstruction(insty);
 
-    GetCurrentInstruction()->AddArgument(arg_1);
+    CurrentInstruction()->AddArgument(arg_1);
     AddUsage(arg_1, instruction_counter_);
 
     return result;
@@ -84,10 +84,10 @@ ValueIndex IRC::MakeInstruction(T insty, ValueIndex arg_1) {
 ValueIndex IRC::MakeInstruction(T insty, ValueIndex arg_1, ValueIndex arg_2) {
     ValueIndex result = MakeInstruction(insty);
 
-    GetCurrentInstruction()->AddArgument(arg_1);
+    CurrentInstruction()->AddArgument(arg_1);
     AddUsage(arg_1, instruction_counter_);
 
-    GetCurrentInstruction()->AddArgument(arg_2);
+    CurrentInstruction()->AddArgument(arg_2);
     AddUsage(arg_2, instruction_counter_);
 
     return result;
@@ -98,11 +98,7 @@ void IRC::AddFunction(const std::string& func_name, Function *func) {
 }
 
 void IRC::WriteVariable(const std::string& var_name, BBIndex bb_idx, ValueIndex val_idx) {
-    if (current_function_->IsVariableLocal(var_name)) {
-        current_function_->WriteVariable(var_name, bb_idx, val_idx);
-    } else {
-        global_defs_[var_name][bb_idx] = val_idx;
-    }
+    CurrentFunction()->WriteVariable(var_name, bb_idx, val_idx);
 }
 
 void IRC::WriteVariable(const std::string& var_name, ValueIndex val_idx) {
@@ -117,8 +113,8 @@ void IRC::AddGlobalVariable(const std::string& var_name, Variable* var) {
     global_variable_map_[var_name] = var;
 }
 
-int IRC::GetOffsetForGlobalVariable(const std::string& var_name) const {
-    return global_variable_map_.at(var_name)->GetOffset();
+int IRC::GlobalOffset(const std::string& var_name) const {
+    return global_variable_map_.at(var_name)->Offset();
 }
 
 bool IRC::IsVariableGlobal(const std::string& var_name) const {
@@ -126,7 +122,7 @@ bool IRC::IsVariableGlobal(const std::string& var_name) const {
 }
 
 bool IRC::IsVariableLocal(const std::string& var_name) const {
-    return current_function_->IsVariableLocal(var_name);
+    return CurrentFunction()->IsVariableLocal(var_name);
 }
 
 ValueIndex IRC::CreateValue(V vty) {
@@ -173,12 +169,12 @@ void IRC::AddBBPredecessor(BBIndex current_idx, BBIndex pred_idx) {
 }
 
 void IRC::DeclareGlobalBase() {
-    global_base_idx_ = CreateValue(V::VAL_BASE);
+    global_base_idx_ = CreateValue(V::VAL_GLOBALBASE);
 }
 
 void IRC::BuildIR() {
     const ComputationNode* root = astconst_.GetRoot();
-    root->GenerateIR(this);
+    root->GenerateIR(&this);
 }
 
 

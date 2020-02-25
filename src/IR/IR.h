@@ -22,14 +22,17 @@ class Value {
 public:
     enum ValueType {
         VAL_NONE,
+
         VAL_CONST,
-        VAL_BASE,
+        VAL_LOCALBASE,
+        VAL_GLOBALBASE,
+
         VAL_ANY,
     };
 
     Value(ValueType);
 
-    const ValueType GetValueType() const { return vty_; }
+    const ValueType GetType() const { return vty_; }
     void AddUsage(InstructionIndex ins_idx) { uses_.push_back(ins_idx); }
     void SetConstant(int val) { val_ = val; }
 
@@ -92,9 +95,9 @@ class Function {
 public:
     Function(const std::string&);
 
-    const std::string& GetFunctionName() const { return func_name_; }
+    const std::string& FunctionName() const { return func_name_; }
 
-    ValueIndex GetLocalBase() const { return local_base_; }
+    ValueIndex LocalBase() const { return local_base_; }
     void SetLocalBase(ValueIndex val) { local_base_ = val; }
 
     void AddVariable(const std::string&, Variable*);

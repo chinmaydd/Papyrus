@@ -32,7 +32,7 @@ public:
     const std::vector<int> GetDimensions() const { return sym_->GetDimensions(); }
     bool IsArray() const { return sym_->IsArray(); }
     bool IsGlobal() const { return sym_->IsGlobal(); }
-    ValueIndex GetOffset() const { return offset_idx_; }
+    ValueIndex Offset() const { return offset_idx_; }
 
 private:
     Symbol* sym_;

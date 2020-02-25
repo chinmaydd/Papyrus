@@ -21,16 +21,16 @@ public:
     IRConstructor(ASTConstructor&);
     void BuildIR();
 
-    ASTConstructor& GetASTConst() { return astconst_; }
+    ASTConstructor& ASTConst() { return astconst_; }
 
     void AddFunction(const std::string&, Function*);
-    Function* GetCurrentFunction() { return current_function_; }
+    Function* CurrentFunction() const { return current_function_; }
     void SetCurrentFunction(Function* f) { current_function_ = f; }
     void ClearCurrentFunction() { current_function_ = nullptr; }
 
     const Variable* GetGlobalVariable(const std::string&) const;
     void AddGlobalVariable(const std::string&, Variable*);
-    int GetOffsetForGlobalVariable(const std::string&) const;
+    int GlobalOffset(const std::string&) const;
 
     bool IsVariableGlobal(const std::string&) const;
     bool IsVariableLocal(const std::string&) const;
@@ -39,7 +39,7 @@ public:
     ValueIndex CreateConstant(int);
     void AddUsage(ValueIndex, InstructionIndex);
     
-    Instruction* GetCurrentInstruction() { return instruction_map_[instruction_counter_]; }
+    Instruction* CurrentInstruction() { return instruction_map_[instruction_counter_]; }
     ValueIndex MakeInstruction(T);
     ValueIndex MakeInstruction(T, ValueIndex);
     ValueIndex MakeInstruction(T, ValueIndex, ValueIndex);
@@ -51,11 +51,11 @@ public:
     BBIndex CreateBB(std::string, BBIndex);
     void AddBBPredecessor(BBIndex, BBIndex); // current, predecessor
     void AddBBSuccessor(BBIndex, BBIndex);   // current, successor
-    BBIndex GetCurrentBBIdx() const { return bb_counter_; }
+    BBIndex CurrentBBIdx() const { return bb_counter_; }
 
     void DeclareGlobalBase();
-    ValueIndex GetGlobalBase() const { return global_base_idx_; }
-    ValueIndex GetLocalBase() const { return current_function_->GetLocalBase(); }
+    ValueIndex GlobalBase() const { return global_base_idx_; }
+    ValueIndex LocalBase() const { return current_function_->LocalBase(); }
 
     std::string GetInstructionString(T);
     T ConvertInstruction(ArithmeticOperator);
@@ -71,7 +71,6 @@ private:
     std::unordered_map<ValueIndex, Value*> value_map_;
 
     std::map<std::string, Variable*> global_variable_map_;
-    std::unordered_map<std::string, std::unordered_map<BBIndex, ValueIndex> > global_defs_;
 
     Function* current_function_;
     std::unordered_map<std::string, Function*> functions_;
