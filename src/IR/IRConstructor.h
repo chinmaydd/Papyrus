@@ -33,6 +33,8 @@ public:
     void AddGlobal(const std::string&, Variable*);
     int GlobalOffset(const std::string&) const;
 
+    ValueIndex ValueCounter() const { return value_counter_; }
+
     void DeclareGlobalBase();
     ValueIndex GlobalBase() const { return global_base_idx_; }
 
@@ -52,6 +54,8 @@ private:
     std::unordered_map<std::string, Function*> functions_;
 
     ASTConstructor& astconst_;
+    
+    ValueIndex value_counter_;
 };
 
 } // namespace papyrus

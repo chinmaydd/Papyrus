@@ -9,9 +9,7 @@ using ASTC = ASTConstructor;
 
 IRConstructor::IRConstructor(ASTC& astconst) :
     astconst_(astconst),
-    value_counter_(0),
-    instruction_counter_(0),
-    bb_counter_(0) {}
+    value_counter_(0) {}
 
 T IRC::ConvertOperation(ArithmeticOperator op) {
     switch(op) {
@@ -64,71 +62,15 @@ std::string IRC::GetInstructionString(T insty) {
     }
 }
 
-// store x y : store y to memory address x
-// case T::INS_STORE
-// mul x y : multiplication
-// case T::INS_ADD
-// add x y : addition
-// case T::INS_SUB
-// sub x y : substitution
-// case T::INS_DIV
-// div x y : division
-// case T::INS_MUL 
-// adda x y : add two addresses x and y (used only with arrays)
-// case T::INS_ADDA
-
-ValueIndex IRC::MakeInstruction(T insty) {
-    instruction_counter_++;
-    Instruction* inst = new Instruction(insty,
-                                        bb_counter_,
-                                        instruction_counter_);
-
-    instruction_map_[instruction_counter_] = inst;
-
-    ValueIndex result = CreateValue(V::VAL_ANY);
-    inst->SetResult(result);
-
-    return result;
-}
-
-ValueIndex IRC::MakeInstruction(T insty, ValueIndex arg_1) {
-    ValueIndex result = MakeInstruction(insty);
-
-    CurrentInstruction()->AddArgument(arg_1);
-    AddUsage(arg_1, instruction_counter_);
-
-    return result;
-}
-
-ValueIndex IRC::MakeInstruction(T insty, ValueIndex arg_1, ValueIndex arg_2) {
-    ValueIndex result = MakeInstruction(insty);
-
-    CurrentInstruction()->AddArgument(arg_1);
-    AddUsage(arg_1, instruction_counter_);
-
-    CurrentInstruction()->AddArgument(arg_2);
-    AddUsage(arg_2, instruction_counter_);
-
-    return result;
-}
-
 void IRC::AddFunction(const std::string& func_name, Function *func) {
     functions_[func_name] = func;
 }
 
-void IRC::WriteVariable(const std::string& var_name, BBIndex bb_idx, ValueIndex val_idx) {
-    CurrentFunction()->WriteVariable(var_name, bb_idx, val_idx);
-}
-
-void IRC::WriteVariable(const std::string& var_name, ValueIndex val_idx) {
-    WriteVariable(var_name, bb_counter_, val_idx);
-}
-
-const Variable* IRC::GetGlobalVariable(const std::string& var_name) const {
+const Variable* IRC::GetGlobal(const std::string& var_name) const {
     return global_variable_map_.at(var_name);
 }
 
-void IRC::AddGlobalVariable(const std::string& var_name, Variable* var) {
+void IRC::AddGlobal(const std::string& var_name, Variable* var) {
     global_variable_map_[var_name] = var;
 }
 
@@ -140,60 +82,15 @@ bool IRC::IsVariableGlobal(const std::string& var_name) const {
     return global_variable_map_.find(var_name) != global_variable_map_.end();
 }
 
-bool IRC::IsVariableLocal(const std::string& var_name) const {
-    return CurrentFunction()->IsVariableLocal(var_name);
-}
-
-ValueIndex IRC::CreateValue(V vty) {
-    Value* val = new Value(vty);
-
-    value_counter_++;
-    value_map_[value_counter_] = val;
-
-    return value_counter_;
-}
-
-ValueIndex IRC::CreateConstant(int val) {
-    Value* v = new Value(V::VAL_CONST);
-    v->SetConstant(val);
-
-    value_counter_++;
-    value_map_[value_counter_] = v;
-
-    return value_counter_;
-}
-
-void IRC::AddUsage(ValueIndex val_idx, InstructionIndex ins_idx) {
-    value_map_[val_idx]->AddUsage(ins_idx);
-}
-
-BBIndex IRC::CreateBB(std::string func_name) {
-    bb_counter_++;
-    BasicBlock *bb = new BasicBlock(bb_counter_);
-
-    basic_block_map_[bb_counter_] = bb;
-
-    return bb_counter_;
-}
-
-BBIndex IRC::CreateBB(std::string func_name, BBIndex pred_idx) {
-    BBIndex bb_idx = CreateBB(func_name);
-    AddBBPredecessor(bb_idx, pred_idx);
-
-    return bb_idx;
-}
-
-void IRC::AddBBPredecessor(BBIndex current_idx, BBIndex pred_idx) {
-    basic_block_map_[current_idx]->AddPredecessor(pred_idx);
-}
-
 void IRC::DeclareGlobalBase() {
-    global_base_idx_ = CreateValue(V::VAL_GLOBALBASE);
+    value_counter_++;
+
+    global_base_ = new Value(V::VAL_GLOBALBASE);
+    global_base_idx_ = value_counter_;
 }
 
 void IRC::BuildIR() {
     const ComputationNode* root = astconst_.GetRoot();
     root->GenerateIR(*this);
 }
-
 
