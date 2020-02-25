@@ -156,6 +156,10 @@ class RelationNode : public ASTNode {
 public:
     RelationNode(ExpressionNode*, RelationalOperator, ExpressionNode*);
 
+    RelationalOperator GetOp() const { return op_; }
+
+    ValueIndex GenerateIR(IRC&) const;
+
 private:
     ExpressionNode* left_expr_;
     RelationalOperator op_;

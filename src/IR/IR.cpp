@@ -9,7 +9,10 @@ Function::Function(const std::string& func_name, ValueIndex value_counter, std::
     func_name_(func_name),
     value_counter_(value_counter),
     bb_counter_(0),
-    value_map_(value_map) {}
+    value_map_(value_map) {
+        SetLocalBase(CreateValue(V::VAL_LOCALBASE));
+        SetCurrentBB(CreateBB());
+}
 
 void Function::AddVariable(const std::string& var_name, Variable* var) {
     variable_map_[var_name] = var;
@@ -46,14 +49,6 @@ void Function::AddUsage(ValueIndex val_idx, InstructionIndex ins_idx) {
     value_map_->at(val_idx)->AddUsage(ins_idx);
 }
 
-void Function::CreateExit() {
-    bb_counter_++;
-
-    BasicBlock* bb = new BasicBlock(bb_counter_);
-
-    exit_idx_ = bb_counter_;
-}
-
 void Function::WriteVariable(const std::string& var_name, BBIndex bb_idx, ValueIndex val_idx) {
     local_defs_[var_name][bb_idx] = val_idx;
 }
@@ -62,14 +57,26 @@ void Function::WriteVariable(const std::string& var_name, ValueIndex val_idx) {
     WriteVariable(var_name, CurrentBBIdx(), val_idx);
 }
 
-void Function::CreateBB() {
+BBIndex Function::CreateBB() {
     bb_counter_++;
 
     BasicBlock* bb = new BasicBlock(bb_counter_);
     basic_block_map_[bb_counter_] = bb;
 
-    current_bb_ = bb_counter_;
-    entry_idx_  = bb_counter_;
+    return bb_counter_;
+}
+
+void Function::AddBBEdge(BBIndex pred, BBIndex succ) {
+    AddBBPredecessor(succ, pred);
+    AddBBSuccessor(pred, succ);
+}
+
+void Function::AddBBPredecessor(BBIndex source, BBIndex pred) {
+    basic_block_map_[source]->AddPredecessor(pred);
+}
+
+void Function::AddBBSuccessor(BBIndex source, BBIndex pred) {
+    basic_block_map_[source]->AddSuccessor(pred);
 }
 
 // store x y : store y to memory address x

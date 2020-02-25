@@ -30,17 +30,17 @@ T IRC::ConvertOperation(ArithmeticOperator op) {
 T IRC::ConvertOperation(RelationalOperator op) {
     switch(op) {
         case RELOP_EQ:
-            return T::INS_EQ;
-        case RELOP_NEQ:
             return T::INS_NEQ;
+        case RELOP_NEQ:
+            return T::INS_EQ;
         case RELOP_LT:
-            return T::INS_LT;
-        case RELOP_LTE:
-            return T::INS_LTE;
-        case RELOP_GT:
-            return T::INS_GT;
-        case RELOP_GTE:
             return T::INS_GTE;
+        case RELOP_LTE:
+            return T::INS_GT;
+        case RELOP_GT:
+            return T::INS_LTE;
+        case RELOP_GTE:
+            return T::INS_LT;
         default:
             return T::INS_ANY;
     }

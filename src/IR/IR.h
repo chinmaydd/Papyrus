@@ -57,6 +57,7 @@ public:
         INS_MUL,
         INS_DIV,
 
+        INS_CMP,
         INS_EQ,
         INS_NEQ,
         INS_LT,
@@ -126,10 +127,10 @@ public:
     void WriteVariable(const std::string&, ValueIndex);
     void WriteVariable(const std::string&, BBIndex, ValueIndex);
 
-    void CreateBB();
+    BBIndex CreateBB();
+    void AddBBEdge(BBIndex, BBIndex);        // pred, succ
     void AddBBPredecessor(BBIndex, BBIndex); // current, predecessor
     void AddBBSuccessor(BBIndex, BBIndex);   // current, successor
-    void CreateExit();
 
     BBIndex CurrentBBIdx() const { return current_bb_; }
     BasicBlock* CurrentBB() const { return basic_block_map_.at(CurrentBBIdx()); }

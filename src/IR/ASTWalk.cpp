@@ -176,13 +176,58 @@ ValueIndex FunctionCallNode::GenerateIR(IRC& irc) const {
     return result;
 }
 
+ValueIndex RelationNode::GenerateIR(IRC& irc) const {
+    LOG(INFO) << "[IR] Parsing relation";
+
+    ValueIndex expr_1 = left_expr_->GenerateIR(irc);
+    ValueIndex expr_2 = right_expr_->GenerateIR(irc);
+
+    return CF->MakeInstruction(T::INS_CMP, expr_1, expr_2);
+}
+
 ValueIndex ITENode::GenerateIR(IRC& irc) const {
+    LOG(INFO) << "[IR] Parsing ITE";
+
     ValueIndex result = NOTFOUND;
 
-    // relationnode
-    // then clause
-    // else clause
+    ValueIndex reln       = relation_->GenerateIR(irc);
+    RelationalOperator op = relation_->GetOp();
 
+    BBIndex previous    = CF->CurrentBBIdx();
+    BBIndex then_start  = CF->CreateBB();
+
+    CF->AddBBEdge(previous, then_start);
+
+    CF->SetCurrentBB(then_start);
+    then_sequence_->GenerateIR(irc);
+
+    BBIndex then_end = CF->CurrentBBIdx();
+
+    if (else_sequence_ == nullptr) {
+        BBIndex f_through = CF->CreateBB();
+
+        CF->AddBBEdge(previous, f_through);
+        CF->AddBBEdge(then_end, f_through);
+
+        CF->SetCurrentBB(f_through);
+
+        return result;
+    }
+        
+    BBIndex else_start = CF->CreateBB();
+
+    CF->AddBBEdge(previous, else_start);
+
+    CF->SetCurrentBB(else_start);
+    else_sequence_->GenerateIR(irc);
+
+    BBIndex else_end = CF->CurrentBBIdx();
+    BBIndex f_through = CF->CreateBB();
+
+    CF->AddBBEdge(else_end, f_through);
+    CF->AddBBEdge(then_end, f_through);
+
+    CF->SetCurrentBB(f_through);
     return result;
 }
 
@@ -237,8 +282,6 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
     irc.AddFunction(func_name, func);
     irc.SetCurrentFunction(func);
 
-    CF->SetLocalBase(CF->CreateValue(V::VAL_LOCALBASE));
-
     int offset = 0;
     Variable *var;
     std::string var_name;
@@ -267,14 +310,9 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
         CF->AddVariable(var_name, var);
     }
 
-    CF->CreateBB();
-
     func_body_->GenerateIR(irc);
 
-    CF->CreateExit();
-
     irc.SetCounter(CF->GetCounter());
-
     irc.ClearCurrentFunction();
 }
 
@@ -319,12 +357,6 @@ void ComputationNode::GenerateIR(IRC& irc) const {
     irc.AddFunction(func_name, func);
     irc.SetCurrentFunction(func);
 
-    CF->SetLocalBase(CF->CreateValue(V::VAL_LOCALBASE));
-
-    CF->CreateBB();
-
     computation_body_->GenerateIR(irc);
     CF->MakeInstruction(T::INS_END);
-
-    CF->CreateExit();
 }
