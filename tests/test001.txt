@@ -1,7 +1,13 @@
 main 
-var x;
+var x,y;
 array [4][4] a;
 {
     let x <- 0;
-    let a[1][2] <- 2
+    let a[1][2] <- 2;
+    if 1 < 2 then
+        let y <- 3
+    else
+        let x <- 4
+    fi;
+    let x <- 2
 }.

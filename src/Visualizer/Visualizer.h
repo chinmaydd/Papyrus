@@ -4,6 +4,7 @@
 #include "IR/IRConstructor.h"
 
 #include <fstream>
+#include <sstream>
 
 namespace papyrus {
 
@@ -16,6 +17,14 @@ public:
     void WriteVCG();
 
     void UpdateVCG();
+
+    void DrawFunc(const Function*);
+
+    std::string GetBaseNodeString(BBIndex, const std::string&) const;
+
+    std::string CloseNode() const;
+
+    std::string GetEdgeString(BBIndex, BBIndex) const;
 
 private:
     IRC& irc_;

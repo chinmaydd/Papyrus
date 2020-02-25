@@ -194,40 +194,98 @@ ValueIndex ITENode::GenerateIR(IRC& irc) const {
     RelationalOperator op = relation_->GetOp();
 
     BBIndex previous    = CF->CurrentBBIdx();
-    BBIndex then_start  = CF->CreateBB();
 
+    BBIndex then_start  = CF->CreateBB();
     CF->AddBBEdge(previous, then_start);
 
     CF->SetCurrentBB(then_start);
     then_sequence_->GenerateIR(irc);
-
     BBIndex then_end = CF->CurrentBBIdx();
 
     if (else_sequence_ == nullptr) {
+        ////////////////////////////////////
+        /*
+         *           //////////////////
+         *           //  conditional //
+         *           //////////////////
+         *                |  |
+         *                |  ---------|
+         *                |           v
+         *                |       //////////////////
+         *                |       // then_branch //
+         *                |       /////////////////
+         *                |           |
+         *                | -----------
+         *                | |
+         *                v v
+         *          ////////////////
+         *          //  f_through //
+         *          ////////////////
+         *
+         */
+        ////////////////////////////////////
         BBIndex f_through = CF->CreateBB();
+
+        CF->MakeInstruction(irc.ConvertOperation(op),
+                            f_through,
+                            reln);
 
         CF->AddBBEdge(previous, f_through);
         CF->AddBBEdge(then_end, f_through);
 
         CF->SetCurrentBB(f_through);
+    } else {
+        ////////////////////////////////////
+        /*
+         *           //////////////////
+         *           //  conditional //
+         *           //////////////////
+         *                |  |
+         *         |-------  ---------|
+         *         v                  v
+         *    /////////////////   /////////////////
+         *    // else_branch //   // then_branch //
+         *    /////////////////   /////////////////   
+         *         |                   |
+         *         |                   |
+         *         |                   |
+         *         |                   |
+         *         ---------|  |--------
+         *                  |  |
+         *                  v  v
+         *            ////////////////
+         *            //  f_through //
+         *            ////////////////
+         */
+         /////////////////////////////////////
+        BBIndex else_start = CF->CreateBB();
 
-        return result;
-    }
+        CF->MakeInstruction(irc.ConvertOperation(op),
+                            else_start,
+                            reln);
         
-    BBIndex else_start = CF->CreateBB();
+        CF->AddBBEdge(previous, else_start);
 
-    CF->AddBBEdge(previous, else_start);
+        CF->SetCurrentBB(else_start);
+        else_sequence_->GenerateIR(irc);
+        BBIndex else_end = CF->CurrentBBIdx();
 
-    CF->SetCurrentBB(else_start);
-    else_sequence_->GenerateIR(irc);
+        BBIndex f_through = CF->CreateBB();
 
-    BBIndex else_end = CF->CurrentBBIdx();
-    BBIndex f_through = CF->CreateBB();
+        CF->SetCurrentBB(else_end);
+        CF->MakeInstruction(T::INS_BRA,
+                            f_through);
 
-    CF->AddBBEdge(else_end, f_through);
-    CF->AddBBEdge(then_end, f_through);
+        CF->SetCurrentBB(then_end);
+        CF->MakeInstruction(T::INS_BRA,
+                            f_through);
+                            
+        CF->AddBBEdge(else_end, f_through);
+        CF->AddBBEdge(then_end, f_through);
 
-    CF->SetCurrentBB(f_through);
+        CF->SetCurrentBB(f_through);
+    }
+
     return result;
 }
 

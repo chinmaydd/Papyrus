@@ -27,6 +27,9 @@ public:
     Function* CurrentFunction() const { return current_function_; }
     void SetCurrentFunction(Function* f) { current_function_ = f; }
     void ClearCurrentFunction() { current_function_ = nullptr; }
+    const std::unordered_map<std::string, Function*> Functions() const {
+        return functions_;
+    }
 
     bool IsVariableGlobal(const std::string&) const;
     const Variable* GetGlobal(const std::string&) const;

@@ -58,12 +58,13 @@ public:
         INS_DIV,
 
         INS_CMP,
-        INS_EQ,
-        INS_NEQ,
-        INS_LT,
-        INS_LTE,
-        INS_GT,
-        INS_GTE,
+        INS_BEQ,
+        INS_BNE,
+        INS_BLT,
+        INS_BLE,
+        INS_BGT,
+        INS_BGE,
+        INS_BRA,
 
         INS_END,
 
@@ -95,6 +96,13 @@ public:
     void AddSuccessor(BBIndex);
 
     void AddInstruction(InstructionIndex, Instruction*);
+
+    const std::vector<BBIndex> Predecessors() const {
+        return predecessors_;
+    }
+    const std::vector<BBIndex> Successors() const {
+        return successors_;
+    }
 
 private:
     BBIndex idx_;
@@ -131,6 +139,9 @@ public:
     void AddBBEdge(BBIndex, BBIndex);        // pred, succ
     void AddBBPredecessor(BBIndex, BBIndex); // current, predecessor
     void AddBBSuccessor(BBIndex, BBIndex);   // current, successor
+    const std::map<BBIndex, BasicBlock*> BasicBlocks() const {
+        return basic_block_map_;
+    }
 
     BBIndex CurrentBBIdx() const { return current_bb_; }
     BasicBlock* CurrentBB() const { return basic_block_map_.at(CurrentBBIdx()); }
@@ -158,7 +169,7 @@ private:
     BBIndex exit_idx_;
     BBIndex current_bb_;
     BBIndex bb_counter_;
-    std::unordered_map<BBIndex, BasicBlock*> basic_block_map_;
+    std::map<BBIndex, BasicBlock*> basic_block_map_;
 
     std::map<std::string, Variable*> variable_map_;
 };
