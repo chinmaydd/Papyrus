@@ -84,14 +84,19 @@ public:
     };
 
     Instruction(InstructionType, BBIndex, InstructionIndex);
+
     void AddOperand(ValueIndex val_idx) { operands_.push_back(val_idx); }
+
     void SetResult(ValueIndex res) { result_ = res; }
     ValueIndex Result() const { return result_; }
+
     BBIndex ContainingBB() const { return containing_bb_; }
 
     bool IsPhi() const { return ins_type_ == INS_PHI; }
 
     const std::vector<ValueIndex>& Operands() const { return operands_; }
+
+    std::string ConvertToString() const;
 
 private:
     InstructionType ins_type_;
@@ -102,6 +107,29 @@ private:
     InstructionIndex ins_idx_;
 
     BBIndex containing_bb_;
+
+    std::unordered_map<InstructionType, std::string> ins_to_str_ = {
+        {InstructionType::INS_NONE,   "NONE"},
+        {InstructionType::INS_ADDA,   "ADDA"},
+        {InstructionType::INS_LOAD,   "LOAD"},
+        {InstructionType::INS_STORE,  "STORE"},
+        {InstructionType::INS_CALL,   "CALL"},
+        {InstructionType::INS_PHI,    "PHI"},
+        {InstructionType::INS_ADD,    "ADD"},
+        {InstructionType::INS_SUB,    "SUB"},
+        {InstructionType::INS_MUL,    "MUL"},
+        {InstructionType::INS_DIV,    "DIV"},
+        {InstructionType::INS_CMP,    "CMP"},
+        {InstructionType::INS_BEQ,    "BEQ"},
+        {InstructionType::INS_BNE,    "BNE"},
+        {InstructionType::INS_BLT,    "BLT"},
+        {InstructionType::INS_BLE,    "BLE"},
+        {InstructionType::INS_BGT,    "BGT"},
+        {InstructionType::INS_BGE,    "BGE"},
+        {InstructionType::INS_BRA,    "BRA"},
+        {InstructionType::INS_END,    "END"},
+        {InstructionType::INS_ANY,    "ANY"},
+    };
 };
 
 using T = Instruction::InstructionType;
@@ -121,9 +149,12 @@ public:
     bool IsSealed() const { return is_sealed_; }
     void Seal() { is_sealed_ = true; }
 
+    const std::deque<InstructionIndex>& Instructions() const { return instruction_order_; }
+
 private:
     BBIndex idx_;
     std::map<InstructionIndex, Instruction*> instructions_;
+    std::deque<InstructionIndex> instruction_order_;
 
     std::vector<BBIndex> predecessors_;
     std::vector<BBIndex> successors_;
@@ -162,7 +193,8 @@ public:
 
     BBIndex CreateBB();
     void AddBBEdge(BBIndex, BBIndex);        // pred, succ
-    const std::map<BBIndex, BasicBlock*> BasicBlocks() const;
+    const std::unordered_map<BBIndex, BasicBlock*> BasicBlocks() const;
+    void SealBB(BBIndex) const;
 
     BBIndex CurrentBBIdx() const { return current_bb_; }
     BasicBlock* CurrentBB() const;
@@ -192,9 +224,9 @@ private:
 
     BBIndex current_bb_;
     BBIndex bb_counter_;
-    std::map<BBIndex, BasicBlock*> basic_block_map_;
+    std::unordered_map<BBIndex, BasicBlock*> basic_block_map_;
 
-    std::map<std::string, Variable*> variable_map_;
+    std::unordered_map<std::string, Variable*> variable_map_;
 
     ValueIndex ReadVariableRecursive(const std::string&, BBIndex);
     ValueIndex AddPhiOperands(const std::string&, ValueIndex);

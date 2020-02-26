@@ -224,6 +224,8 @@ ValueIndex ITENode::GenerateIR(IRC& irc) const {
     BBIndex then_start  = CF->CreateBB();
     CF->AddBBEdge(previous, then_start);
 
+    CF->SealBB(previous);
+
     CF->SetCurrentBB(then_start);
     then_sequence_->GenerateIR(irc);
     BBIndex then_end = CF->CurrentBBIdx();
@@ -258,6 +260,8 @@ ValueIndex ITENode::GenerateIR(IRC& irc) const {
 
         CF->AddBBEdge(previous, f_through);
         CF->AddBBEdge(then_end, f_through);
+
+        CF->SealBB(then_end);
 
         CF->SetCurrentBB(f_through);
     } else {
@@ -308,6 +312,9 @@ ValueIndex ITENode::GenerateIR(IRC& irc) const {
                             
         CF->AddBBEdge(else_end, f_through);
         CF->AddBBEdge(then_end, f_through);
+
+        CF->SealBB(else_end);
+        CF->SealBB(then_end);
 
         CF->SetCurrentBB(f_through);
     }

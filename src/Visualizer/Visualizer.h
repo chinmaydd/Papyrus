@@ -9,6 +9,8 @@
 namespace papyrus {
 
 using IRC = IRConstructor;
+using T   = Instruction::InstructionType;
+
 
 class Visualizer {
 public:

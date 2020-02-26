@@ -164,8 +164,12 @@ void Function::AddBBEdge(BBIndex pred, BBIndex succ) {
     AddBBSuccessor(pred, succ);
 }
 
-const std::map<BBIndex, BasicBlock*> Function::BasicBlocks() const {
+const std::unordered_map<BBIndex, BasicBlock*> Function::BasicBlocks() const {
     return basic_block_map_;
+}
+
+void Function::SealBB(BBIndex bb_idx) const  {
+    basic_block_map_.at(bb_idx)->Seal();
 }
 
 BasicBlock* Function::GetBB(BBIndex bb_idx) const {
@@ -272,6 +276,12 @@ void BasicBlock::AddSuccessor(BBIndex succ_idx) {
 
 void BasicBlock::AddInstruction(InstructionIndex idx, Instruction* inst) {
     instructions_[idx] = inst;
+    
+    if (inst->IsPhi()) {
+        instruction_order_.push_front(idx);
+    } else {
+        instruction_order_.push_back(idx);
+    }
 }
 
 const std::vector<BBIndex> BasicBlock::Predecessors() const {

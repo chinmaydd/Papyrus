@@ -5,12 +5,35 @@ title: "program"
 node: {
 title: "BB_1"
 label: "[main] BB_1
+(17) END 
 "
-}node: {
+}
+node: {
+title: "BB_4"
+label: "[foo] BB_4
+(15) PHI 
+"
+}
+node: {
+title: "BB_3"
+label: "[foo] BB_3
+(10) PHI 
+(12) ANY (5) (11) 
+(13) BRA (4) 
+"
+}
+edge: {
+sourcename: "BB_3"
+targetname: "BB_4"
+color: black
+}
+node: {
 title: "BB_1"
 label: "[foo] BB_1
+(5) CMP (3) (4) 
 "
-}edge: {
+}
+edge: {
 sourcename: "BB_1"
 targetname: "BB_2"
 color: black
@@ -23,23 +46,15 @@ color: black
 node: {
 title: "BB_2"
 label: "[foo] BB_2
+(6) PHI 
+(8) ANY (2) (7) 
+(9) BLE (3) (5) 
+(14) BRA (4) 
 "
-}edge: {
+}
+edge: {
 sourcename: "BB_2"
 targetname: "BB_4"
 color: black
 }
-node: {
-title: "BB_3"
-label: "[foo] BB_3
-"
-}edge: {
-sourcename: "BB_3"
-targetname: "BB_4"
-color: black
 }
-node: {
-title: "BB_4"
-label: "[foo] BB_4
-"
-}}

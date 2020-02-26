@@ -6,6 +6,18 @@ std::string GetBBString(BBIndex idx) {
     return "BB_" + std::to_string(idx);
 }
 
+std::string Instruction::ConvertToString() const {
+    std::string res = "";
+
+    res += "(" + std::to_string(Result()) + ") ";
+    res += ins_to_str_.at(ins_type_) + " ";
+    for (auto operand: operands_) {
+        res += "(" + std::to_string(operand) + ") ";
+    }
+
+    return res;
+}
+
 Visualizer::Visualizer(IRC& irc) :
     irc_(irc) {}
 
@@ -20,7 +32,7 @@ std::string Visualizer::GetBaseNodeString(BBIndex bb_idx, const std::string& fun
 }
 
 std::string Visualizer::CloseNode() const {
-    return "\"\n}";
+    return "\"\n}\n";
 }
 
 std::string Visualizer::GetEdgeString(BBIndex source, BBIndex target) const {
@@ -38,24 +50,27 @@ std::string Visualizer::GetEdgeString(BBIndex source, BBIndex target) const {
 void Visualizer::DrawFunc(const Function* func) {
     std::string func_name = func->FunctionName();
 
-    std::string bb_graph;
-    std::string edge_graph;
+    std::string bb_graph = "";
     for (auto bb_pair: func->BasicBlocks()) {
-        bb_graph = "";
-
         BBIndex bb_idx = bb_pair.first;
         auto bb        = bb_pair.second;
 
         bb_graph += GetBaseNodeString(bb_idx, func_name);
 
+        for (auto ins_idx: bb->Instructions()) {
+            bb_graph += func->GetInstruction(ins_idx)->ConvertToString();
+            bb_graph += "\n";
+        }
+
         bb_graph += CloseNode();
 
-        graph_ << bb_graph;
 
         for (auto succ: bb->Successors()) {
-            graph_ << GetEdgeString(bb_idx, succ);
+            bb_graph += GetEdgeString(bb_idx, succ);
         }
     }
+
+    graph_ << bb_graph;
 }
 
 void Visualizer::UpdateVCG() {
