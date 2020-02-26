@@ -1,13 +1,29 @@
 main 
 var x,y;
-array [4][4] a;
+array [4][4] pqr;
+procedure foo( );
+var a, b, c;
 {
-    let x <- 0;
-    let a[1][2] <- 2;
-    if 1 < 2 then
-        let y <- 3
-    else
-        let x <- 4
-    fi;
-    let x <- 2
+    let a <- 5;
+    let b <- 2;
+    let c <- a;
+	if a > b then
+		let a <- a + 1
+	else
+		let a <- a + 3
+	fi
+
+	// if a < b then
+	// 	let a <- a - 1
+	// fi
+};
+{
+    // let x <- 0;
+    // let pqr[1][2] <- 2;
+    // if 1 < 2 then
+    //     let y <- x
+    // else
+    //     let x <- 4
+    // fi;
+    // let x <- 2
 }.

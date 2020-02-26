@@ -29,7 +29,7 @@ class ValueNode : public ASTNode {};
 class IdentifierNode : public ASTNode {
 public:
     IdentifierNode(const std::string&);
-    const std::string& GetIdentifierName() const { return identifier_name_; }
+    const std::string& IdentifierName() const { return identifier_name_; }
 
 protected:
     std::string identifier_name_;
@@ -116,10 +116,10 @@ enum DesignatorType {
 
 class DesignatorNode : public ValueNode {
 public:
-    const std::string& GetIdentifierName() const { return identifier_->GetIdentifierName(); }
+    const std::string& IdentifierName() const { return identifier_->IdentifierName(); }
     DesignatorType GetDesignatorType() const { return desig_type_; }
 
-    virtual ValueIndex GenerateIR(IRC&) const = 0;
+    ValueIndex GenerateIR(IRC&) const;
 
 protected:
 
@@ -134,7 +134,7 @@ class VarIdentifierNode : public DesignatorNode {
 public:
     VarIdentifierNode(IdentifierNode*);
 
-    ValueIndex GenerateIR(IRC&) const override { return NOTFOUND; }
+    ValueIndex GenerateIR(IRC&) const;
 };
 ////////////////////////////////
 
@@ -144,7 +144,7 @@ public:
     ArrIdentifierNode(IdentifierNode*);
     void AddIndirectionToArray(ExpressionNode*);
 
-    ValueIndex GenerateIR(IRC&) const override;
+    ValueIndex GenerateIR(IRC&) const;
 
 private:
     std::vector<ExpressionNode*> indirections_;
@@ -310,7 +310,7 @@ class FunctionDeclNode : public ASTNode {
 public:
     FunctionDeclNode(IdentifierNode*, FunctionBodyNode*);
 
-    const std::string& GetFunctionName() const { return identifier_->GetIdentifierName(); }
+    const std::string& GetFunctionName() const { return identifier_->IdentifierName(); }
 
     void GenerateIR(IRC&) const;
 

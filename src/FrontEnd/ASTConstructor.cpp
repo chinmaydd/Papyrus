@@ -29,21 +29,21 @@ bool ASTConstructor::MustParseToken(const Lexer::Token& expected_tok, const std:
 ////////////////////////////////
 
 void ASTConstructor::AddSymbol(const IdentifierNode* ident, const TypeDeclNode* type_decl) {
-    Symbol *s = new Symbol(ident->GetIdentifierName(),
+    Symbol *s = new Symbol(ident->IdentifierName(),
                            type_decl->GetDimensions(),
                            type_decl->IsArray(),
                            current_scope_ == "global");
 
     if (current_scope_ == "global") {
-        global_symbol_table_[ident->GetIdentifierName()] = s;
+        global_symbol_table_[ident->IdentifierName()] = s;
     } else {
-        local_symbol_table_[ident->GetIdentifierName()] = s;
+        local_symbol_table_[ident->IdentifierName()] = s;
     }
 }
 
 void ASTConstructor::AddSymbol(const IdentifierNode* ident) {
     // TODO: Formal parameters
-    local_symbol_table_[ident->GetIdentifierName()] = nullptr;
+    local_symbol_table_[ident->IdentifierName()] = nullptr;
 }
 
 ////////////////////////////////
@@ -432,7 +432,7 @@ FunctionDeclNode* ASTConstructor::ParseFunctionDecl() {
     IdentifierNode* ident = ParseIdentifier();
 
     ////////////////////////////////////////////
-    current_scope_ = ident->GetIdentifierName();
+    current_scope_ = ident->IdentifierName();
     symbol_table_[current_scope_] = {};
     ////////////////////////////////////////////
 

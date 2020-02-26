@@ -17,7 +17,8 @@ ValueIndex FactorNode::GenerateIR(IRC& irc) const {
     ValueIndex result = NOTFOUND;
     switch(factor_type_) {
         case FACT_DESIGNATOR: {
-            // TODO: ReadVariable()
+            auto design = static_cast<const DesignatorNode*>(factor_node_);
+            result = design->GenerateIR(irc);
             break;
         }
         case FACT_NUMBER: {
@@ -85,7 +86,7 @@ ValueIndex ExpressionNode::GenerateIR(IRC& irc) const {
 ValueIndex ArrIdentifierNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "Parsing ArrIdentifier";
 
-    std::string var_name = GetIdentifierName();
+    std::string var_name = IdentifierName();
     ValueIndex base, offset, temp;
 
     const Variable* var;
@@ -133,13 +134,39 @@ ValueIndex ArrIdentifierNode::GenerateIR(IRC& irc) const {
                                offset_idx);
 }
 
+ValueIndex DesignatorNode::GenerateIR(IRC& irc) const {
+    LOG(INFO) << "[IR] Parsing designator";
+
+    ValueIndex result = NOTFOUND;
+    std::string var_name = identifier_->IdentifierName();
+    
+    if (desig_type_ == DESIG_VAR) {
+        if (CF->IsVariableLocal(var_name)) {
+            result = CF->ReadVariable(var_name, CF->CurrentBBIdx());
+        } else {
+            int offset = irc.GlobalOffset(var_name);
+            ValueIndex offset_idx   = CF->CreateConstant(offset);
+            ValueIndex mem_location = CF->MakeInstruction(T::INS_ADDA,
+                                                          irc.GlobalBase(),
+                                                          offset_idx);
+            result = CF->MakeInstruction(T::INS_LOAD,
+                                         mem_location);
+        }
+    } else {
+       auto arr_id = static_cast<const ArrIdentifierNode*>(this);
+       result      = arr_id->GenerateIR(irc);
+    }
+
+    return result;
+}
+
 ValueIndex AssignmentNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing assignment";
     
     ValueIndex result = NOTFOUND;
 
     ValueIndex expr_idx  = value_->GenerateIR(irc);
-    std::string var_name = designator_->GetIdentifierName();
+    std::string var_name = designator_->IdentifierName();
 
     if (designator_->GetDesignatorType() == DESIG_VAR) {
         if (CF->IsVariableLocal(var_name)) {
@@ -150,8 +177,7 @@ ValueIndex AssignmentNode::GenerateIR(IRC& irc) const {
             ValueIndex mem_location = CF->MakeInstruction(T::INS_ADDA,
                                                           irc.GlobalBase(),
                                                           offset_idx);
-            // TODO: Think about this.
-            // Do we need to use STORE or MOVE?
+            // XXX: Do we need to use STORE or MOVE?
             result = CF->MakeInstruction(T::INS_STORE,
                                          expr_idx,
                                          mem_location);
@@ -223,7 +249,7 @@ ValueIndex ITENode::GenerateIR(IRC& irc) const {
          *          ////////////////
          *
          */
-        ////////////////////////////////////
+         ///////////////////////////////////
         BBIndex f_through = CF->CreateBB();
 
         CF->MakeInstruction(irc.ConvertOperation(op),
@@ -331,9 +357,9 @@ void FunctionBodyNode::GenerateIR(IRC& irc) const {
 }
 
 void FunctionDeclNode::GenerateIR(IRC& irc) const {
-    LOG(INFO) << "[IR] Parsing function: " << identifier_->GetIdentifierName();
+    LOG(INFO) << "[IR] Parsing function: " << identifier_->IdentifierName();
 
-    std::string func_name = identifier_->GetIdentifierName();
+    std::string func_name = identifier_->IdentifierName();
 
     Function* func = new Function(func_name, irc.ValueCounter(), irc.ValMap());
 
@@ -415,6 +441,8 @@ void ComputationNode::GenerateIR(IRC& irc) const {
     irc.AddFunction(func_name, func);
     irc.SetCurrentFunction(func);
 
-    computation_body_->GenerateIR(irc);
+    if (computation_body_ != nullptr)
+        computation_body_->GenerateIR(irc);
+
     CF->MakeInstruction(T::INS_END);
 }

@@ -6,32 +6,8 @@ node: {
 title: "BB_1"
 label: "[main] BB_1
 "
-}edge: {
-sourcename: "BB_1"
-targetname: "BB_2"
-color: black
-}edge: {
-sourcename: "BB_1"
-targetname: "BB_3"
-color: black
 }node: {
-title: "BB_2"
-label: "[main] BB_2
-"
-}edge: {
-sourcename: "BB_2"
-targetname: "BB_4"
-color: black
-}node: {
-title: "BB_3"
-label: "[main] BB_3
-"
-}edge: {
-sourcename: "BB_3"
-targetname: "BB_4"
-color: black
-}node: {
-title: "BB_4"
-label: "[main] BB_4
+title: "BB_1"
+label: "[foo] BB_1
 "
 }}

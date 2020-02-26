@@ -13,7 +13,7 @@ class Symbol {
 public:
     Symbol(const std::string&, const std::vector<int>&, bool, bool);
 
-    const std::string& GetIdentifierName() const { return identifier_; }
+    const std::string& IdentifierName() const { return identifier_; }
     const std::vector<int>& GetDimensions() const { return dimensions_; }
     bool IsArray() const { return if_array_; }
     bool IsGlobal() const { return is_global_; }

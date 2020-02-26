@@ -9,6 +9,7 @@
 #include <map>
 #include <unordered_map>
 #include <string>
+#include <deque>
 
 using ValueIndex       = int;
 using BBIndex          = int;
@@ -26,6 +27,8 @@ public:
         VAL_CONST,
         VAL_LOCALBASE,
         VAL_GLOBALBASE,
+
+        VAL_PHI,
 
         VAL_ANY,
     };
@@ -47,10 +50,13 @@ public:
     enum InstructionType {
         INS_NONE,
 
+        INS_ADDA,
+
+        INS_LOAD,
         INS_STORE,
         INS_CALL,
 
-        INS_ADDA,
+        INS_PHI,
 
         INS_ADD,
         INS_SUB,
@@ -97,12 +103,11 @@ public:
 
     void AddInstruction(InstructionIndex, Instruction*);
 
-    const std::vector<BBIndex> Predecessors() const {
-        return predecessors_;
-    }
-    const std::vector<BBIndex> Successors() const {
-        return successors_;
-    }
+    const std::vector<BBIndex> Predecessors() const;
+    const std::vector<BBIndex> Successors() const;
+
+    bool IsSealed() const { return is_sealed_; }
+    void Seal() { is_sealed_ = true; }
 
 private:
     BBIndex idx_;
@@ -110,6 +115,8 @@ private:
 
     std::vector<BBIndex> predecessors_;
     std::vector<BBIndex> successors_;
+
+    bool is_sealed_;
 };
 
 class Function {
@@ -121,30 +128,30 @@ public:
     ValueIndex LocalBase() const { return local_base_; }
     void SetLocalBase(ValueIndex val) { local_base_ = val; }
 
-    const Variable* GetVariable(const std::string& var_name) const { return variable_map_.at(var_name); }
+    const Variable* GetVariable(const std::string& var_name) const;
     void AddVariable(const std::string&, Variable*);
 
     bool IsVariableLocal(const std::string&) const;
     int GetOffset(const std::string&) const;
 
     ValueIndex CreateConstant(int);
-    ValueIndex CreateValue(Value::ValueType);
+    ValueIndex CreateValue(V);
     void AddUsage(ValueIndex, InstructionIndex);
+    void SetValueType(ValueIndex, V);
+
     ValueIndex GetCounter() const { return value_counter_; }
     
+    ValueIndex ReadVariable(const std::string&, BBIndex);
     void WriteVariable(const std::string&, ValueIndex);
     void WriteVariable(const std::string&, BBIndex, ValueIndex);
 
     BBIndex CreateBB();
     void AddBBEdge(BBIndex, BBIndex);        // pred, succ
-    void AddBBPredecessor(BBIndex, BBIndex); // current, predecessor
-    void AddBBSuccessor(BBIndex, BBIndex);   // current, successor
-    const std::map<BBIndex, BasicBlock*> BasicBlocks() const {
-        return basic_block_map_;
-    }
+    const std::map<BBIndex, BasicBlock*> BasicBlocks() const;
 
     BBIndex CurrentBBIdx() const { return current_bb_; }
-    BasicBlock* CurrentBB() const { return basic_block_map_.at(CurrentBBIdx()); }
+    BasicBlock* CurrentBB() const;
+    BasicBlock* GetBB(BBIndex) const;
     void SetCurrentBB(BBIndex idx) { current_bb_ = idx; }
 
     ValueIndex MakeInstruction(T);
@@ -161,9 +168,11 @@ private:
     ValueIndex value_counter_;
     std::unordered_map<ValueIndex, Value*>* value_map_;
     std::unordered_map<std::string, std::unordered_map<BBIndex, ValueIndex> > local_defs_;
+    std::unordered_map<std::string, std::unordered_map<BBIndex, ValueIndex> > incomplete_phis_;
 
     InstructionIndex instruction_counter_;
     std::unordered_map<InstructionIndex, Instruction*> instruction_map_;
+    std::deque<InstructionIndex> instruction_order_;
 
     BBIndex entry_idx_;
     BBIndex exit_idx_;
@@ -172,6 +181,13 @@ private:
     std::map<BBIndex, BasicBlock*> basic_block_map_;
 
     std::map<std::string, Variable*> variable_map_;
+
+    ValueIndex ReadVariableRecursive(const std::string&, BBIndex);
+    ValueIndex AddPhiOperands(const std::string&, ValueIndex);
+    ValueIndex MakePhi();
+
+    void AddBBPredecessor(BBIndex, BBIndex); // current, predecessor
+    void AddBBSuccessor(BBIndex, BBIndex);   // current, successor
 };
 
 } // namespace papyrus
