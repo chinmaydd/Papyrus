@@ -7,6 +7,10 @@ using namespace papyrus;
 Value::Value(ValueType vty) :
     vty_(vty) {}
 
+void Value::RemoveUse(InstructionIndex ins_idx) {
+    uses_.erase(std::remove(uses_.begin(), uses_.end(), ins_idx), uses_.end());
+}
+
 Function::Function(const std::string& func_name, ValueIndex value_counter, std::unordered_map<ValueIndex, Value*>* value_map):
     func_name_(func_name),
     value_counter_(value_counter),
@@ -56,8 +60,57 @@ void Function::AddUsage(ValueIndex val_idx, InstructionIndex ins_idx) {
     value_map_->at(val_idx)->AddUsage(ins_idx);
 }
 
-ValueIndex Function::AddPhiOperands(const std::string& var_name, ValueIndex phi_val) {
-    return -1;
+Value* Function::GetValue(ValueIndex val_idx) const {
+    return value_map_->at(val_idx);
+}
+
+void Function::SetValueType(ValueIndex val_idx, V val_type) {
+    Value* val = GetValue(val_idx);
+    val->SetType(val_type);
+}
+
+ValueIndex Function::TryRemoveTrivialPhi(InstructionIndex phi_ins) {
+    ValueIndex same = NOTFOUND;
+    Instruction* ins = GetInstruction(phi_ins);
+    ValueIndex result = ins->Result();
+
+    for (auto op: ins->Operands()) {
+        if (op == same || op == result) {
+            continue;
+        }
+        if (same != NOTFOUND) {
+            return phi_ins;
+        }
+        same = op;
+    }
+
+    if (same == NOTFOUND) {
+        same = CreateValue(V::VAL_ANY);
+    }
+
+    Value* phi_val = GetValue(result);
+    phi_val->RemoveUse(phi_ins);
+
+    for (auto use_idx: phi_val->GetUsers()) {
+        TryRemoveTrivialPhi(use_idx);
+    }
+
+    return same;
+}
+
+bool Function::IsPhi(InstructionIndex ins_idx) const {
+    return instruction_map_.at(ins_idx)->IsPhi();
+}
+
+ValueIndex Function::AddPhiOperands(const std::string& var_name, InstructionIndex phi_ins) {
+    BasicBlock* bb = GetBB(GetBBForInstruction(phi_ins));
+    Instruction* ins = GetInstruction(phi_ins);
+
+    for (auto pred: bb->Predecessors()) {
+        ins->AddOperand(ReadVariable(var_name, pred));
+    }
+
+    return TryRemoveTrivialPhi(phi_ins);
 }
 
 ValueIndex Function::ReadVariableRecursive(const std::string& var_name, BBIndex bb_idx) {
@@ -72,9 +125,9 @@ ValueIndex Function::ReadVariableRecursive(const std::string& var_name, BBIndex 
         result = ReadVariable(var_name, bb->Predecessors()[0]);
     } else {
         SetCurrentBB(bb_idx);
-        result = MakePhi();
-        WriteVariable(var_name, bb_idx, result);
-        result = AddPhiOperands(var_name, result);
+        InstructionIndex phi_ins = MakePhi();
+        WriteVariable(var_name, bb_idx, phi_ins);
+        result = AddPhiOperands(var_name, phi_ins);
     }
 
     WriteVariable(var_name, bb_idx, result);
@@ -131,7 +184,7 @@ void Function::AddBBSuccessor(BBIndex source, BBIndex pred) {
     basic_block_map_[source]->AddSuccessor(pred);
 }
 
-ValueIndex Function::MakePhi() {
+InstructionIndex Function::MakePhi() {
     instruction_counter_++;
 
     Instruction* inst = new Instruction(T::INS_PHI,
@@ -141,12 +194,17 @@ ValueIndex Function::MakePhi() {
     instruction_map_[instruction_counter_] = inst;
     instruction_order_.push_front(instruction_counter_);
 
-    ValueIndex result = CreateValue(V::VAL_PHI);
+    // XXX: Do we really need VAL_ANY here?
+    ValueIndex result = CreateValue(V::VAL_ANY);
     inst->SetResult(result);
 
     CurrentBB()->AddInstruction(instruction_counter_, inst);
 
-    return result;
+    return instruction_counter_;
+}
+
+BBIndex Function::GetBBForInstruction(InstructionIndex ins_idx) {
+    return instruction_map_[ins_idx]->ContainingBB();
 }
 
 ValueIndex Function::MakeInstruction(T insty) {
@@ -169,7 +227,7 @@ ValueIndex Function::MakeInstruction(T insty) {
 ValueIndex Function::MakeInstruction(T insty, ValueIndex arg_1) {
     ValueIndex result = MakeInstruction(insty);
 
-    CurrentInstruction()->AddArgument(arg_1);
+    CurrentInstruction()->AddOperand(arg_1);
     AddUsage(arg_1, instruction_counter_);
 
     return result;
@@ -178,17 +236,21 @@ ValueIndex Function::MakeInstruction(T insty, ValueIndex arg_1) {
 ValueIndex Function::MakeInstruction(T insty, ValueIndex arg_1, ValueIndex arg_2) {
     ValueIndex result = MakeInstruction(insty);
 
-    CurrentInstruction()->AddArgument(arg_1);
+    CurrentInstruction()->AddOperand(arg_1);
     AddUsage(arg_1, instruction_counter_);
 
-    CurrentInstruction()->AddArgument(arg_2);
+    CurrentInstruction()->AddOperand(arg_2);
     AddUsage(arg_2, instruction_counter_);
 
     return result;
 }
 
+Instruction* Function::GetInstruction(InstructionIndex ins_idx) const {
+    return instruction_map_.at(ins_idx);
+}
+
 Instruction* Function::CurrentInstruction() const {
-    return instruction_map_.at(instruction_counter_);
+    return GetInstruction(instruction_counter_);
 }
 
 Instruction::Instruction(T insty, BBIndex containing_bb, InstructionIndex ins_idx) :

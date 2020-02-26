@@ -8,8 +8,9 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
-#include <string>
 #include <deque>
+#include <algorithm>
+#include <string>
 
 using ValueIndex       = int;
 using BBIndex          = int;
@@ -36,8 +37,13 @@ public:
     Value(ValueType);
 
     const ValueType GetType() const { return vty_; }
+    void SetType(ValueType vty) { vty_ = vty; }
     void AddUsage(InstructionIndex ins_idx) { uses_.push_back(ins_idx); }
     void SetConstant(int val) { val_ = val; }
+
+    void RemoveUse(InstructionIndex);
+
+    const std::vector<InstructionIndex>& GetUsers() const { return uses_; }
 
 private:
     ValueType vty_;
@@ -78,13 +84,19 @@ public:
     };
 
     Instruction(InstructionType, BBIndex, InstructionIndex);
-    void AddArgument(ValueIndex val_idx) { arguments_.push_back(val_idx); }
+    void AddOperand(ValueIndex val_idx) { operands_.push_back(val_idx); }
     void SetResult(ValueIndex res) { result_ = res; }
+    ValueIndex Result() const { return result_; }
+    BBIndex ContainingBB() const { return containing_bb_; }
+
+    bool IsPhi() const { return ins_type_ == INS_PHI; }
+
+    const std::vector<ValueIndex>& Operands() const { return operands_; }
 
 private:
     InstructionType ins_type_;
 
-    std::vector<ValueIndex> arguments_;
+    std::vector<ValueIndex> operands_;
     ValueIndex result_;
 
     InstructionIndex ins_idx_;
@@ -137,6 +149,9 @@ public:
     ValueIndex CreateConstant(int);
     ValueIndex CreateValue(V);
     void AddUsage(ValueIndex, InstructionIndex);
+
+
+    Value* GetValue(ValueIndex) const;
     void SetValueType(ValueIndex, V);
 
     ValueIndex GetCounter() const { return value_counter_; }
@@ -159,6 +174,7 @@ public:
     ValueIndex MakeInstruction(T, ValueIndex, ValueIndex);
 
     Instruction* CurrentInstruction() const;
+    Instruction* GetInstruction(InstructionIndex) const;
 
 private:
     std::string func_name_;
@@ -174,8 +190,6 @@ private:
     std::unordered_map<InstructionIndex, Instruction*> instruction_map_;
     std::deque<InstructionIndex> instruction_order_;
 
-    BBIndex entry_idx_;
-    BBIndex exit_idx_;
     BBIndex current_bb_;
     BBIndex bb_counter_;
     std::map<BBIndex, BasicBlock*> basic_block_map_;
@@ -184,10 +198,15 @@ private:
 
     ValueIndex ReadVariableRecursive(const std::string&, BBIndex);
     ValueIndex AddPhiOperands(const std::string&, ValueIndex);
-    ValueIndex MakePhi();
+    InstructionIndex MakePhi();
+    ValueIndex TryRemoveTrivialPhi(InstructionIndex);
 
     void AddBBPredecessor(BBIndex, BBIndex); // current, predecessor
     void AddBBSuccessor(BBIndex, BBIndex);   // current, successor
+
+    BBIndex GetBBForInstruction(InstructionIndex);
+
+    bool IsPhi(InstructionIndex) const;
 };
 
 } // namespace papyrus
