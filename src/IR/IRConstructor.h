@@ -12,9 +12,9 @@ namespace papyrus {
 
 class ASTConstructor;
 
-using T          = Instruction::InstructionType;
-using V          = Value::ValueType;
-using ValueIndex = int;
+using T  = Instruction::InstructionType;
+using V  = Value::ValueType;
+using VI = int;
 
 class IRConstructor {
 public:
@@ -36,13 +36,13 @@ public:
     void AddGlobal(const std::string&, Variable*);
     int GlobalOffset(const std::string&) const;
 
-    ValueIndex ValueCounter() const { return value_counter_; }
-    void SetCounter(ValueIndex idx) { value_counter_ = idx; }
-    ValueIndex CreateConstant(int);
-    std::unordered_map<ValueIndex, Value*>* ValMap() const { return value_map_; }
+    VI ValueCounter() const { return value_counter_; }
+    void SetCounter(VI idx) { value_counter_ = idx; }
+    VI CreateConstant(int);
+    std::unordered_map<VI, Value*>* ValMap() const { return value_map_; }
 
     void DeclareGlobalBase();
-    ValueIndex GlobalBase() const { return global_base_idx_; }
+    VI GlobalBase() const { return global_base_idx_; }
 
     std::string GetInstructionString(T);
     T ConvertOperation(ArithmeticOperator);
@@ -50,20 +50,20 @@ public:
 
 private:
     Value* global_base_;
-    ValueIndex global_base_idx_;
+    VI global_base_idx_;
 
-    BBIndex current_bb_;
+    BI current_bb_;
 
     std::map<std::string, Variable*> global_variable_map_;
 
     Function* current_function_;
     std::unordered_map<std::string, Function*> functions_;
 
-    std::unordered_map<ValueIndex, Value*>* value_map_;
+    std::unordered_map<VI, Value*>* value_map_;
 
     ASTConstructor& astconst_;
     
-    ValueIndex value_counter_;
+    VI value_counter_;
 };
 
 } // namespace papyrus

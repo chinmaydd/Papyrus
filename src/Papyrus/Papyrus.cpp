@@ -15,7 +15,7 @@ structlog LOGCFG = {};
 
 int main(int argc, char *argv[]) {
     LOGCFG.headers = true;
-    LOGCFG.level = WARN;
+    LOGCFG.level = ERROR;
 
     if (argc < 2) {
         LOG(ERROR) << "Please input a file to compile!";

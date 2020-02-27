@@ -19,7 +19,7 @@ void ASTConstructor::RaiseParseError(const std::string& error_msg) const {
 }
 
 bool ASTConstructor::MustParseToken(const Lexer::Token& expected_tok, const std::string& func, int line) const {
-    if (expected_tok != GetCurrentToken()) {
+    if (expected_tok != CurrentToken()) {
         // XXX: Maybe there is a better way to handle this.
         LOG(ERROR) << "[DEBUG] " << func << ", Line: " << std::to_string(line);
         RaiseParseError(expected_tok);
@@ -85,9 +85,9 @@ TypeDeclNode* ASTConstructor::ParseTypeDecl() {
 
     TypeDeclNode* type_decl = new TypeDeclNode();
 
-    if (Lexer::TOK_VAR == GetCurrentToken()) {
+    if (Lexer::TOK_VAR == CurrentToken()) {
         type_decl->SetIfArray(false);
-    } else if (Lexer::TOK_ARRAY == GetCurrentToken()) {
+    } else if (Lexer::TOK_ARRAY == CurrentToken()) {
         type_decl->SetIfArray(true);
 
         FetchToken();
@@ -203,7 +203,8 @@ TermNode* ASTConstructor::ParseTerm() {
            Lexer::TOK_BINOP_DIV == PeekNextToken()) {
         FetchToken();
 
-        term->AddSecondaryFactor(GetBinOperatorForToken(GetCurrentToken()), ParseFactor());
+        auto op = GetBinOperatorForToken(CurrentToken());
+        term->AddSecondaryFactor(op, ParseFactor());
     }
 
     return term;
@@ -219,7 +220,8 @@ ExpressionNode* ASTConstructor::ParseExpression() {
            Lexer::TOK_BINOP_SUB == PeekNextToken()) {
         FetchToken();
 
-        expr->AddSecondaryTerm(GetBinOperatorForToken(GetCurrentToken()), ParseTerm());
+        auto op = GetBinOperatorForToken(CurrentToken());
+        expr->AddSecondaryTerm(op, ParseTerm());
     }
 
     return expr;
@@ -300,7 +302,7 @@ RelationNode* ASTConstructor::ParseRelation() {
     }
 
     FetchToken();
-    RelationalOperator rel_op = GetRelOperatorForToken(GetCurrentToken());
+    RelationalOperator rel_op = GetRelOperatorForToken(CurrentToken());
 
     ExpressionNode* right_expr = ParseExpression();
 
@@ -368,15 +370,15 @@ StatementNode* ASTConstructor::ParseStatement() {
     StatementNode* statement;
 
     FetchToken();
-    if (Lexer::TOK_LET == GetCurrentToken()) {
+    if (Lexer::TOK_LET == CurrentToken()) {
         statement = static_cast<StatementNode*>(ParseAssignment());
-    } else if (Lexer::TOK_CALL == GetCurrentToken()) {
+    } else if (Lexer::TOK_CALL == CurrentToken()) {
         statement = static_cast<StatementNode*>(ParseFunctionCall());
-    } else if (Lexer::TOK_IF == GetCurrentToken()) {
+    } else if (Lexer::TOK_IF == CurrentToken()) {
         statement = static_cast<StatementNode*>(ParseITE());
-    } else if (Lexer::TOK_WHILE == GetCurrentToken()) {
+    } else if (Lexer::TOK_WHILE == CurrentToken()) {
         statement = static_cast<StatementNode*>(ParseWhile());
-    } else if (Lexer::TOK_RETURN == GetCurrentToken()) {
+    } else if (Lexer::TOK_RETURN == CurrentToken()) {
         statement = static_cast<StatementNode*>(ParseReturn());
     } else {
         RaiseParseError("Statement not valid");

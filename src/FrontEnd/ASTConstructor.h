@@ -27,7 +27,7 @@ public:
 
 private:
     ////////////////////////////////
-    Lexer::Token GetCurrentToken() const {
+    Lexer::Token CurrentToken() const {
         if (is_peek_) {
             return current_token_;
         } else {

@@ -4,15 +4,23 @@ array [4][4] pqr;
 procedure foo( );
 var a, b, c;
 {
-    let a <- 5;
-    let b <- 2;
+    let a <- 0;
+
+    //let b <- 2;
+    //let c <- 5;
+
+    while a < 5 do
+        let a <- a + 1
+    od;
+
+	//if a > b then
+	//	let a <- a + 1
+	//else
+	// 	let a <- a + 3
+    //fi;
+
     let c <- a;
-	if a > b then
-		let a <- a + 1
-	else
-		let a <- a + 3
-	fi;
-    let c <- a
+    let a <- 1
 };
 {
     // let x <- 0;
@@ -22,5 +30,5 @@ var a, b, c;
     // else
     //     let x <- 4
     // fi;
-    // let x <- 2
+    let x <- 2
 }.

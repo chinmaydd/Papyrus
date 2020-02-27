@@ -12,9 +12,9 @@
 #include <algorithm>
 #include <string>
 
-using ValueIndex       = int;
-using BBIndex          = int;
-using InstructionIndex = int;
+using VI = int; // ValueIndex
+using BI = int; // BasicBlockIndex
+using II = int; // InstructionIndex
 
 namespace papyrus {
 
@@ -38,17 +38,19 @@ public:
 
     const ValueType GetType() const { return vty_; }
     void SetType(ValueType vty) { vty_ = vty; }
-    void AddUsage(InstructionIndex ins_idx) { uses_.push_back(ins_idx); }
+    void AddUsage(II ins_idx) { uses_.push_back(ins_idx); }
     void SetConstant(int val) { val_ = val; }
 
-    void RemoveUse(InstructionIndex);
+    std::string ConvertToString() const;
 
-    const std::vector<InstructionIndex>& GetUsers() const { return uses_; }
+    void RemoveUse(II);
+
+    const std::vector<II>& GetUsers() const { return uses_; }
 
 private:
     ValueType vty_;
     int val_;
-    std::vector<InstructionIndex> uses_;
+    std::vector<II> uses_;
 };
 
 class Instruction {
@@ -83,93 +85,101 @@ public:
         INS_ANY,
     };
 
-    Instruction(InstructionType, BBIndex, InstructionIndex);
+    Instruction(InstructionType, BI, II);
 
-    void AddOperand(ValueIndex val_idx) { operands_.push_back(val_idx); }
+    void AddOperand(VI val_idx) { operands_.push_back(val_idx); }
 
-    void SetResult(ValueIndex res) { result_ = res; }
-    ValueIndex Result() const { return result_; }
+    void SetResult(VI res) { result_ = res; }
+    VI Result() const { return result_; }
 
-    BBIndex ContainingBB() const { return containing_bb_; }
+    BI ContainingBB() const { return containing_bb_; }
 
     bool IsPhi() const { return ins_type_ == INS_PHI; }
 
-    const std::vector<ValueIndex>& Operands() const { return operands_; }
+    const std::vector<VI>& Operands() const { return operands_; }
+
+    void ReplaceUse(VI, VI);
 
     std::string ConvertToString() const;
+
+    bool IsActive() const { return is_active_; }
+    void MakeInactive() { is_active_ = false; }
 
 private:
     InstructionType ins_type_;
 
-    std::vector<ValueIndex> operands_;
-    ValueIndex result_;
+    std::vector<VI> operands_;
+    VI result_;
 
-    InstructionIndex ins_idx_;
+    II ins_idx_;
 
-    BBIndex containing_bb_;
+    BI containing_bb_;
 
-    std::unordered_map<InstructionType, std::string> ins_to_str_ = {
-        {InstructionType::INS_NONE,   "NONE"},
-        {InstructionType::INS_ADDA,   "ADDA"},
-        {InstructionType::INS_LOAD,   "LOAD"},
-        {InstructionType::INS_STORE,  "STORE"},
-        {InstructionType::INS_CALL,   "CALL"},
-        {InstructionType::INS_PHI,    "PHI"},
-        {InstructionType::INS_ADD,    "ADD"},
-        {InstructionType::INS_SUB,    "SUB"},
-        {InstructionType::INS_MUL,    "MUL"},
-        {InstructionType::INS_DIV,    "DIV"},
-        {InstructionType::INS_CMP,    "CMP"},
-        {InstructionType::INS_BEQ,    "BEQ"},
-        {InstructionType::INS_BNE,    "BNE"},
-        {InstructionType::INS_BLT,    "BLT"},
-        {InstructionType::INS_BLE,    "BLE"},
-        {InstructionType::INS_BGT,    "BGT"},
-        {InstructionType::INS_BGE,    "BGE"},
-        {InstructionType::INS_BRA,    "BRA"},
-        {InstructionType::INS_END,    "END"},
-        {InstructionType::INS_ANY,    "ANY"},
-    };
+    bool is_active_;
+
 };
 
 using T = Instruction::InstructionType;
 using V = Value::ValueType;
 
+static const std::unordered_map<T, std::string> ins_to_str_ = {
+    {T::INS_NONE,   "NONE"},
+    {T::INS_ADDA,   "ADDA"},
+    {T::INS_LOAD,   "LOAD"},
+    {T::INS_STORE,  "STORE"},
+    {T::INS_CALL,   "CALL"},
+    {T::INS_PHI,    "PHI"},
+    {T::INS_ADD,    "ADD"},
+    {T::INS_SUB,    "SUB"},
+    {T::INS_MUL,    "MUL"},
+    {T::INS_DIV,    "DIV"},
+    {T::INS_CMP,    "CMP"},
+    {T::INS_BEQ,    "BEQ"},
+    {T::INS_BNE,    "BNE"},
+    {T::INS_BLT,    "BLT"},
+    {T::INS_BLE,    "BLE"},
+    {T::INS_BGT,    "BGT"},
+    {T::INS_BGE,    "BGE"},
+    {T::INS_BRA,    "BRA"},
+    {T::INS_END,    "END"},
+    {T::INS_ANY,    "ANY"},
+};
+
 class BasicBlock {
 public:
-    BasicBlock(BBIndex);
-    void AddPredecessor(BBIndex);
-    void AddSuccessor(BBIndex);
+    BasicBlock(BI);
+    void AddPredecessor(BI);
+    void AddSuccessor(BI);
 
-    void AddInstruction(InstructionIndex, Instruction*);
+    void AddInstruction(II, Instruction*);
 
-    const std::vector<BBIndex> Predecessors() const;
-    const std::vector<BBIndex> Successors() const;
+    const std::vector<BI> Predecessors() const;
+    const std::vector<BI> Successors() const;
 
     bool IsSealed() const { return is_sealed_; }
     void Seal() { is_sealed_ = true; }
 
-    const std::deque<InstructionIndex>& Instructions() const { return instruction_order_; }
+    const std::deque<II>& Instructions() const { return instruction_order_; }
 
 private:
-    BBIndex idx_;
-    std::map<InstructionIndex, Instruction*> instructions_;
-    std::deque<InstructionIndex> instruction_order_;
+    BI idx_;
+    std::map<II, Instruction*> instructions_;
+    std::deque<II> instruction_order_;
 
-    std::vector<BBIndex> predecessors_;
-    std::vector<BBIndex> successors_;
+    std::vector<BI> predecessors_;
+    std::vector<BI> successors_;
 
     bool is_sealed_;
 };
 
 class Function {
 public:
-    Function(const std::string&, ValueIndex, std::unordered_map<ValueIndex, Value*>*);
+    Function(const std::string&, VI, std::unordered_map<VI, Value*>*);
 
     const std::string& FunctionName() const { return func_name_; }
 
-    ValueIndex LocalBase() const { return local_base_; }
-    void SetLocalBase(ValueIndex val) { local_base_ = val; }
+    VI LocalBase() const { return local_base_; }
+    void SetLocalBase(VI val) { local_base_ = val; }
 
     const Variable* GetVariable(const std::string& var_name) const;
     void AddVariable(const std::string&, Variable*);
@@ -177,68 +187,69 @@ public:
     bool IsVariableLocal(const std::string&) const;
     int GetOffset(const std::string&) const;
 
-    ValueIndex CreateConstant(int);
-    ValueIndex CreateValue(V);
-    void AddUsage(ValueIndex, InstructionIndex);
+    VI CreateConstant(int);
+    VI CreateValue(V);
+    void AddUsage(VI, II);
 
 
-    Value* GetValue(ValueIndex) const;
-    void SetValueType(ValueIndex, V);
+    Value* GetValue(VI) const;
+    void SetValueType(VI, V);
 
-    ValueIndex GetCounter() const { return value_counter_; }
+    VI GetCounter() const { return value_counter_; }
     
-    ValueIndex ReadVariable(const std::string&, BBIndex);
-    void WriteVariable(const std::string&, ValueIndex);
-    void WriteVariable(const std::string&, BBIndex, ValueIndex);
+    VI ReadVariable(const std::string&, BI);
+    void WriteVariable(const std::string&, VI);
+    void WriteVariable(const std::string&, BI, VI);
 
-    BBIndex CreateBB();
-    void AddBBEdge(BBIndex, BBIndex);        // pred, succ
-    const std::unordered_map<BBIndex, BasicBlock*> BasicBlocks() const;
-    void SealBB(BBIndex) const;
+    BI CreateBB();
+    void AddBBEdge(BI, BI);        // pred, succ
+    const std::unordered_map<BI, BasicBlock*> BasicBlocks() const;
+    void SealBB(BI);
 
-    BBIndex CurrentBBIdx() const { return current_bb_; }
+    BI CurrentBBIdx() const { return current_bb_; }
     BasicBlock* CurrentBB() const;
-    BasicBlock* GetBB(BBIndex) const;
-    void SetCurrentBB(BBIndex idx) { current_bb_ = idx; }
+    BasicBlock* GetBB(BI) const;
+    void SetCurrentBB(BI idx) { current_bb_ = idx; }
 
-    ValueIndex MakeInstruction(T);
-    ValueIndex MakeInstruction(T, ValueIndex);
-    ValueIndex MakeInstruction(T, ValueIndex, ValueIndex);
+    VI MakeInstruction(T);
+    VI MakeInstruction(T, VI);
+    VI MakeInstruction(T, VI, VI);
 
     Instruction* CurrentInstruction() const;
-    Instruction* GetInstruction(InstructionIndex) const;
+    Instruction* GetInstruction(II) const;
+    bool IsActive(II) const;
 
 private:
     std::string func_name_;
 
-    ValueIndex local_base_;
+    VI local_base_;
 
-    ValueIndex value_counter_;
-    std::unordered_map<ValueIndex, Value*>* value_map_;
-    std::unordered_map<std::string, std::unordered_map<BBIndex, ValueIndex> > local_defs_;
-    std::unordered_map<std::string, std::unordered_map<BBIndex, ValueIndex> > incomplete_phis_;
+    VI value_counter_;
+    std::unordered_map<VI, Value*>* value_map_;
+    std::unordered_map<std::string, std::unordered_map<BI, VI> > local_defs_;
+    std::unordered_map<BI, std::unordered_map<std::string, II> > incomplete_phis_;
 
-    InstructionIndex instruction_counter_;
-    std::unordered_map<InstructionIndex, Instruction*> instruction_map_;
-    std::deque<InstructionIndex> instruction_order_;
+    II instruction_counter_;
+    std::unordered_map<II, Instruction*> instruction_map_;
+    std::deque<II> instruction_order_;
 
-    BBIndex current_bb_;
-    BBIndex bb_counter_;
-    std::unordered_map<BBIndex, BasicBlock*> basic_block_map_;
+    BI current_bb_;
+    BI bb_counter_;
+    std::unordered_map<BI, BasicBlock*> basic_block_map_;
 
     std::unordered_map<std::string, Variable*> variable_map_;
 
-    ValueIndex ReadVariableRecursive(const std::string&, BBIndex);
-    ValueIndex AddPhiOperands(const std::string&, ValueIndex);
-    InstructionIndex MakePhi();
-    ValueIndex TryRemoveTrivialPhi(InstructionIndex);
+    VI ReadVariableRecursive(const std::string&, BI);
+    VI AddPhiOperands(const std::string&, VI);
+    II MakePhi();
+    VI TryRemoveTrivialPhi(II);
 
-    void AddBBPredecessor(BBIndex, BBIndex); // current, predecessor
-    void AddBBSuccessor(BBIndex, BBIndex);   // current, successor
+    void AddBBPredecessor(BI, BI); // current, predecessor
+    void AddBBSuccessor(BI, BI);   // current, successor
 
-    BBIndex GetBBForInstruction(InstructionIndex);
+    BI GetBBForInstruction(II);
 
-    bool IsPhi(InstructionIndex) const;
+    bool IsPhi(II) const;
 };
 
 } // namespace papyrus

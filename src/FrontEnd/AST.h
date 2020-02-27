@@ -266,6 +266,8 @@ class WhileNode : public StatementNode {
 public:
     WhileNode(RelationNode*, StatSequenceNode*);
 
+    ValueIndex GenerateIR(IRC&) const;
+
 private:
     RelationNode* loop_condition_;
     StatSequenceNode* statement_sequence_;

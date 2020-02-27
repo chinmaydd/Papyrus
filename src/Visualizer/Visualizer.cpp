@@ -2,8 +2,12 @@
 
 using namespace papyrus;
 
-std::string GetBBString(BBIndex idx) {
+std::string GetBBString(BI idx) {
     return "BB_" + std::to_string(idx);
+}
+
+std::string Value::ConvertToString() const {
+    return "";
 }
 
 std::string Instruction::ConvertToString() const {
@@ -21,7 +25,7 @@ std::string Instruction::ConvertToString() const {
 Visualizer::Visualizer(IRC& irc) :
     irc_(irc) {}
 
-std::string Visualizer::GetBaseNodeString(BBIndex bb_idx, const std::string& func_name) const {
+std::string Visualizer::GetBaseNodeString(BI bb_idx, const std::string& func_name) const {
     std::string res = "";
 
     res += "node: {\n";
@@ -35,7 +39,7 @@ std::string Visualizer::CloseNode() const {
     return "\"\n}\n";
 }
 
-std::string Visualizer::GetEdgeString(BBIndex source, BBIndex target) const {
+std::string Visualizer::GetEdgeString(BI source, BI target) const {
     std::string res = "";
 
     res += "edge: {\n";
@@ -52,12 +56,16 @@ void Visualizer::DrawFunc(const Function* func) {
 
     std::string bb_graph = "";
     for (auto bb_pair: func->BasicBlocks()) {
-        BBIndex bb_idx = bb_pair.first;
+        BI bb_idx = bb_pair.first;
         auto bb        = bb_pair.second;
 
         bb_graph += GetBaseNodeString(bb_idx, func_name);
 
         for (auto ins_idx: bb->Instructions()) {
+            if (!func->IsActive(ins_idx)) {
+                continue;
+            }
+
             bb_graph += func->GetInstruction(ins_idx)->ConvertToString();
             bb_graph += "\n";
         }

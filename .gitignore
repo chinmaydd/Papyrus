@@ -5,3 +5,4 @@ cscope.out
 # Ignore bin/build folder
 build/*
 bin/*
+tests/*.vcg

@@ -11,7 +11,6 @@ namespace papyrus {
 using IRC = IRConstructor;
 using T   = Instruction::InstructionType;
 
-
 class Visualizer {
 public:
     Visualizer(IRC&);
@@ -22,11 +21,11 @@ public:
 
     void DrawFunc(const Function*);
 
-    std::string GetBaseNodeString(BBIndex, const std::string&) const;
+    std::string GetBaseNodeString(BI, const std::string&) const;
 
     std::string CloseNode() const;
 
-    std::string GetEdgeString(BBIndex, BBIndex) const;
+    std::string GetEdgeString(BI, BI) const;
 
 private:
     IRC& irc_;
