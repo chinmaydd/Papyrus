@@ -5,22 +5,27 @@ procedure foo( );
 var a, b, c;
 {
     let a <- 0;
-
-    //let b <- 2;
-    //let c <- 5;
+    let b <- 2;
 
     while a < 5 do
-        let a <- a + 1
+        while b < 7 do
+            let a <- a + 1;
+            let b <- a + 2
+        od
     od;
 
-	//if a > b then
-	//	let a <- a + 1
-	//else
-	// 	let a <- a + 3
-    //fi;
+	if a > b then
+        if 3 < 4 then
+		    let a <- a + 1
+        else
+            let b <- a +4
+        fi
+	else
+	 	let a <- a + 3
+    fi;
 
-    let c <- a;
-    let a <- 1
+    let c <- a
+    // let a <- 1
 };
 {
     // let x <- 0;

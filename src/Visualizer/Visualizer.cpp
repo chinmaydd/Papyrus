@@ -6,17 +6,28 @@ std::string GetBBString(BI idx) {
     return "BB_" + std::to_string(idx);
 }
 
-std::string Value::ConvertToString() const {
-    return "";
-}
-
-std::string Instruction::ConvertToString() const {
+std::string Function::ConvertValueToString(VI val_idx) const {
+    Value *val = GetValue(val_idx);
     std::string res = "";
 
-    res += "(" + std::to_string(Result()) + ") ";
-    res += ins_to_str_.at(ins_type_) + " ";
-    for (auto operand: operands_) {
-        res += "(" + std::to_string(operand) + ") ";
+    // if (val->GetType() == Value::ValueType::VAL_CONST) {
+    //     res += "#" + std::to_string(val->GetValue());
+    // } else {
+    //     res += "(" + std::to_string(val_idx) + ")";
+    // }
+    res += "(" + std::to_string(val_idx) + ")";
+    
+    return res;
+}
+
+std::string Function::ConvertInstructionToString(II ins_idx) const {
+    Instruction* ins = GetInstruction(ins_idx);
+    std::string res = "";
+
+    res += "(" + std::to_string(ins->Result()) + ")" + " ";
+    res += ins_to_str_.at(ins->Type()) + " ";
+    for (auto operand: ins->Operands()) {
+        res += ConvertValueToString(operand) + " ";
     }
 
     return res;
@@ -57,16 +68,16 @@ void Visualizer::DrawFunc(const Function* func) {
     std::string bb_graph = "";
     for (auto bb_pair: func->BasicBlocks()) {
         BI bb_idx = bb_pair.first;
-        auto bb        = bb_pair.second;
+        auto bb   = bb_pair.second;
 
         bb_graph += GetBaseNodeString(bb_idx, func_name);
 
-        for (auto ins_idx: bb->Instructions()) {
+        for (auto ins_idx: bb->InstructionOrder()) {
             if (!func->IsActive(ins_idx)) {
                 continue;
             }
 
-            bb_graph += func->GetInstruction(ins_idx)->ConvertToString();
+            bb_graph += func->ConvertInstructionToString(ins_idx);
             bb_graph += "\n";
         }
 

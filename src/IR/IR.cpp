@@ -7,10 +7,6 @@ using namespace papyrus;
 Value::Value(ValueType vty) :
     vty_(vty) {}
 
-void Value::RemoveUse(II ins_idx) {
-    uses_.erase(std::remove(uses_.begin(), uses_.end(), ins_idx), uses_.end());
-}
-
 Function::Function(const std::string& func_name, VI value_counter, std::unordered_map<VI, Value*>* value_map):
     func_name_(func_name),
     value_counter_(value_counter),
@@ -114,7 +110,6 @@ II Function::MakePhi() {
     instruction_map_[instruction_counter_] = inst;
     instruction_order_.push_front(instruction_counter_);
 
-    // XXX: Do we really need VAL_ANY here?
     VI result = CreateValue(V::VAL_ANY);
     inst->SetResult(result);
 
@@ -183,10 +178,6 @@ Instruction::Instruction(T insty, BI containing_bb, II ins_idx) :
     ins_idx_(ins_idx),
     is_active_(true) {}
 
-void Instruction::ReplaceUse(VI replacee_idx, VI replacer_idx) {
-    std::replace(operands_.begin(), operands_.end(), replacee_idx, replacer_idx);
-}
-
 BasicBlock::BasicBlock(BI idx) :
     idx_(idx),
     is_sealed_(false) {}
@@ -216,3 +207,20 @@ const std::vector<BI> BasicBlock::Predecessors() const {
 const std::vector<BI> BasicBlock::Successors() const {
     return successors_;
 }
+
+bool BasicBlock::HasActiveInstructions() const {
+    Instruction* ins;
+    for (auto ins_pair: instructions_) {
+        ins = ins_pair.second;
+        if (ins->IsActive()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+VI Function::ResultForInstruction(II ins_idx) const {
+    return instruction_map_.at(ins_idx)->Result();
+}
+

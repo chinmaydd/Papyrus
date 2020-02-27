@@ -41,7 +41,7 @@ public:
     void AddUsage(II ins_idx) { uses_.push_back(ins_idx); }
     void SetConstant(int val) { val_ = val; }
 
-    std::string ConvertToString() const;
+    int GetValue() const { return val_; }
 
     void RemoveUse(II);
 
@@ -94,6 +94,7 @@ public:
 
     BI ContainingBB() const { return containing_bb_; }
 
+    InstructionType Type() const { return ins_type_; }
     bool IsPhi() const { return ins_type_ == INS_PHI; }
 
     const std::vector<VI>& Operands() const { return operands_; }
@@ -159,7 +160,10 @@ public:
     bool IsSealed() const { return is_sealed_; }
     void Seal() { is_sealed_ = true; }
 
-    const std::deque<II>& Instructions() const { return instruction_order_; }
+    const std::deque<II>& InstructionOrder() const { return instruction_order_; }
+    const std::map<II, Instruction*> Instructions() const { return instructions_; }
+
+    bool HasActiveInstructions() const;
 
 private:
     BI idx_;
@@ -219,6 +223,9 @@ public:
     Instruction* GetInstruction(II) const;
     bool IsActive(II) const;
 
+    std::string ConvertInstructionToString(II) const;
+    std::string ConvertValueToString(VI) const;
+
 private:
     std::string func_name_;
 
@@ -250,6 +257,8 @@ private:
     BI GetBBForInstruction(II);
 
     bool IsPhi(II) const;
+
+    VI ResultForInstruction(II) const;
 };
 
 } // namespace papyrus

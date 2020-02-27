@@ -4,9 +4,18 @@ using namespace papyrus;
 
 #define NOTFOUND -1
 
+void Instruction::ReplaceUse(VI replacee_idx, VI replacer_idx) {
+    std::replace(operands_.begin(), operands_.end(), replacee_idx, replacer_idx);
+}
+
+void Value::RemoveUse(II ins_idx) {
+    uses_.erase(std::remove(uses_.begin(), uses_.end(), ins_idx), uses_.end());
+}
+
 VI Function::TryRemoveTrivialPhi(II phi_ins) {
     auto same = NOTFOUND;
     auto ins  = GetInstruction(phi_ins);
+
     if (!ins->IsActive()) {
         return NOTFOUND;
     }
@@ -63,22 +72,27 @@ VI Function::AddPhiOperands(const std::string& var_name, II phi_ins) {
 }
 
 VI Function::ReadVariableRecursive(const std::string& var_name, BI bb_idx) {
-    auto result = NOTFOUND;
-    auto bb     = GetBB(bb_idx);
+    BI cur_bb_idx = CurrentBBIdx();
+    VI result = NOTFOUND;
+    BI phi_ins = NOTFOUND;
+    auto bb    = GetBB(bb_idx);
 
     if (!bb->IsSealed()) {
         SetCurrentBB(bb_idx);
-        result = MakePhi();
-        incomplete_phis_[bb_idx][var_name] = result;
+        phi_ins = MakePhi();
+        result = ResultForInstruction(phi_ins);
+        incomplete_phis_[bb_idx][var_name] = phi_ins;
     } else if (bb->Predecessors().size() == 1) {
         result = ReadVariable(var_name, bb->Predecessors()[0]);
     } else {
         SetCurrentBB(bb_idx);
-        II phi_ins = MakePhi();
-        WriteVariable(var_name, bb_idx, phi_ins);
+        phi_ins = MakePhi();
+        result = ResultForInstruction(phi_ins);
+        WriteVariable(var_name, bb_idx, result);
         result = AddPhiOperands(var_name, phi_ins);
     }
 
+    SetCurrentBB(cur_bb_idx);
     WriteVariable(var_name, bb_idx, result);
     return result;
 }
@@ -100,12 +114,30 @@ void Function::WriteVariable(const std::string& var_name, VI val_idx) {
 }
 
 void Function::SealBB(BI bb_idx) {
+    SetCurrentBB(bb_idx);
+
+    Instruction *ins;
+    Value* val;
     if (incomplete_phis_.find(bb_idx) != incomplete_phis_.end()) {
         for (auto var_map: incomplete_phis_.at(bb_idx)) {
             auto var_name = var_map.first;
             auto ins_idx  = var_map.second;
 
             AddPhiOperands(var_name, ins_idx);
+
+            ins = GetInstruction(ins_idx);
+            if (!ins->IsActive()) {
+                continue;
+            }
+
+            auto result = ins->Result();
+            for (auto val_idx: ins->Operands()) {
+                // Get Value and find users
+                val = GetValue(val_idx);
+                for (auto user: val->GetUsers()) {
+                    GetInstruction(user)->ReplaceUse(val_idx, result);
+                }
+            }
         }
     }
 
