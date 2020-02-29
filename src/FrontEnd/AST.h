@@ -256,6 +256,8 @@ public:
     ReturnNode();
     void AddReturnExpression(ExpressionNode*);
 
+    ValueIndex GenerateIR(IRC&) const;
+
 private:
     ExpressionNode* return_expression_;
 };

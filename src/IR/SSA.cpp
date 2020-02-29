@@ -27,7 +27,8 @@ VI Function::TryRemoveTrivialPhi(II phi_ins) {
             continue;
         }
         if (same != NOTFOUND) {
-            return phi_ins;
+            // this was earlier phi_ins
+            return result;
         }
         same = op;
     }
@@ -73,7 +74,7 @@ VI Function::AddPhiOperands(const std::string& var_name, II phi_ins) {
 
 VI Function::ReadVariableRecursive(const std::string& var_name, BI bb_idx) {
     BI cur_bb_idx = CurrentBBIdx();
-    VI result = NOTFOUND;
+    VI result  = NOTFOUND;
     BI phi_ins = NOTFOUND;
     auto bb    = GetBB(bb_idx);
 
@@ -116,7 +117,7 @@ void Function::WriteVariable(const std::string& var_name, VI val_idx) {
 void Function::SealBB(BI bb_idx) {
     SetCurrentBB(bb_idx);
 
-    Instruction *ins;
+    Instruction *ins, *user_ins;
     Value* val;
     if (incomplete_phis_.find(bb_idx) != incomplete_phis_.end()) {
         for (auto var_map: incomplete_phis_.at(bb_idx)) {
@@ -135,7 +136,11 @@ void Function::SealBB(BI bb_idx) {
                 // Get Value and find users
                 val = GetValue(val_idx);
                 for (auto user: val->GetUsers()) {
-                    GetInstruction(user)->ReplaceUse(val_idx, result);
+                    user_ins = GetInstruction(user);
+                    if (user_ins->ContainingBB() == bb_idx) {
+                        GetInstruction(user)->ReplaceUse(val_idx, result);
+                        val->RemoveUse(user);
+                    }
                 }
             }
         }

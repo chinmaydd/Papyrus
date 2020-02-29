@@ -31,6 +31,10 @@ public:
 
         VAL_PHI,
 
+        VAL_FUNC,
+        
+        VAL_BRANCH,
+
         VAL_ANY,
     };
 
@@ -41,6 +45,9 @@ public:
     void AddUsage(II ins_idx) { uses_.push_back(ins_idx); }
     void SetConstant(int val) { val_ = val; }
 
+    std::string Identifier() const { return identifier_; }
+    void SetIdentifier(const std::string& ident) { identifier_ = ident; }
+
     int GetValue() const { return val_; }
 
     void RemoveUse(II);
@@ -50,6 +57,7 @@ public:
 private:
     ValueType vty_;
     int val_;
+    std::string identifier_;
     std::vector<II> uses_;
 };
 
@@ -63,6 +71,7 @@ public:
         INS_LOAD,
         INS_STORE,
         INS_CALL,
+        INS_RET,
 
         INS_PHI,
 
@@ -143,6 +152,8 @@ static const std::unordered_map<T, std::string> ins_to_str_ = {
     {T::INS_BGE,    "BGE"},
     {T::INS_BRA,    "BRA"},
     {T::INS_END,    "END"},
+    {T::INS_CALL,   "CALL"},
+    {T::INS_RET,    "RET"},
     {T::INS_ANY,    "ANY"},
 };
 
@@ -165,6 +176,12 @@ public:
 
     bool HasActiveInstructions() const;
 
+    void EndBB() { is_ended_ = true;}
+    bool HasEnded() const { return is_ended_; }
+    
+    VI GetSelfValue() const { return self_value_; }
+    void SetSelfValue(VI sv) { self_value_ = sv; }
+
 private:
     BI idx_;
     std::map<II, Instruction*> instructions_;
@@ -174,6 +191,9 @@ private:
     std::vector<BI> successors_;
 
     bool is_sealed_;
+    bool is_ended_;
+
+    VI self_value_;
 };
 
 class Function {
@@ -214,6 +234,7 @@ public:
     BasicBlock* CurrentBB() const;
     BasicBlock* GetBB(BI) const;
     void SetCurrentBB(BI idx) { current_bb_ = idx; }
+    bool HasEndedBB(BI idx) const;
 
     VI MakeInstruction(T);
     VI MakeInstruction(T, VI);
@@ -226,10 +247,15 @@ public:
     std::string ConvertInstructionToString(II) const;
     std::string ConvertValueToString(VI) const;
 
+    VI SelfIdx() const { return self_idx_; }
+
 private:
     std::string func_name_;
 
     VI local_base_;
+    
+    Value* self_;
+    VI self_idx_;
 
     VI value_counter_;
     std::unordered_map<VI, Value*>* value_map_;
@@ -259,6 +285,8 @@ private:
     bool IsPhi(II) const;
 
     VI ResultForInstruction(II) const;
+
+    bool IsRelational(T) const;
 };
 
 } // namespace papyrus

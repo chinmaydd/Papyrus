@@ -1,28 +1,39 @@
 main 
 var x,y;
 array [4][4] pqr;
+procedure bar ();
+var p, q, r;
+{
+    let p <- 1
+};
 procedure foo( );
 var a, b, c;
 {
     let a <- 0;
     let b <- 2;
 
+    call bar;
+
     while a < 5 do
-        while b < 7 do
+        let a <- a + 1
+    od;
+
+    while a < 5 do
+        while 3 < 7 do
             let a <- a + 1;
             let b <- a + 2
         od
     od;
 
-	if a > b then
-        if 3 < 4 then
-		    let a <- a + 1
-        else
-            let b <- a +4
-        fi
-	else
-	 	let a <- a + 3
-    fi;
+	// if a > b then
+    //     if 3 < 4 then
+	// 	    let a <- a + 1
+    //     else
+    //         let b <- a +4
+    //     fi
+	// else
+	//  	let a <- a + 3
+    // fi;
 
     let c <- a
     // let a <- 1

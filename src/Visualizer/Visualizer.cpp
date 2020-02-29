@@ -2,30 +2,46 @@
 
 using namespace papyrus;
 
+using V = Value::ValueType;
+
 std::string GetBBString(BI idx) {
     return "BB_" + std::to_string(idx);
 }
 
 std::string Function::ConvertValueToString(VI val_idx) const {
-    Value *val = GetValue(val_idx);
     std::string res = "";
+    Value *val = GetValue(val_idx);
 
-    // if (val->GetType() == Value::ValueType::VAL_CONST) {
-    //     res += "#" + std::to_string(val->GetValue());
-    // } else {
-    //     res += "(" + std::to_string(val_idx) + ")";
-    // }
-    res += "(" + std::to_string(val_idx) + ")";
+    switch(val->GetType()) {
+        case V::VAL_CONST: {
+            res += "#" + std::to_string(val->GetValue());
+            break;
+        }
+        case V::VAL_FUNC: {
+            res += "&" + val->Identifier();
+            break;
+        }
+        case V::VAL_BRANCH: {
+            res += "BB_" + std::to_string(val->GetValue());
+            break;
+        }
+        default: {
+            res += "(" + std::to_string(val_idx) + ")";
+            break;
+        }
+    }
     
     return res;
 }
 
 std::string Function::ConvertInstructionToString(II ins_idx) const {
     Instruction* ins = GetInstruction(ins_idx);
+    bool is_relational = IsRelational(ins->Type());
     std::string res = "";
 
     res += "(" + std::to_string(ins->Result()) + ")" + " ";
     res += ins_to_str_.at(ins->Type()) + " ";
+
     for (auto operand: ins->Operands()) {
         res += ConvertValueToString(operand) + " ";
     }

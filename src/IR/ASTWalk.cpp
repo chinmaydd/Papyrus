@@ -193,12 +193,18 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
     return result;
 }
 
-// TODO: Implement
 VI FunctionCallNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing function call";
 
-    VI result = NOTFOUND;
+    VI func_call = CF->CreateValue(V::VAL_FUNC);
+    CF->GetValue(func_call)->SetIdentifier(identifier_->IdentifierName());
+    VI result = CF->MakeInstruction(T::INS_CALL,
+                                    func_call);
 
+    if (arguments_.size() == 0) {
+        // AddArguments
+    }
+    
     return result;
 }
 
@@ -216,10 +222,10 @@ VI ITENode::GenerateIR(IRC& irc) const {
 
     VI result = NOTFOUND;
 
-    VI reln       = relation_->GenerateIR(irc);
+    VI reln = relation_->GenerateIR(irc);
     RelationalOperator op = relation_->GetOp();
 
-    BI previous    = CF->CurrentBBIdx();
+    BI previous = CF->CurrentBBIdx();
     CF->SealBB(previous);
 
     BI then_start  = CF->CreateBB();
@@ -256,13 +262,17 @@ VI ITENode::GenerateIR(IRC& irc) const {
         BI f_through = CF->CreateBB();
 
         CF->SetCurrentBB(previous);
+        VI bb_val = CF->GetBB(f_through)->GetSelfValue();
         CF->MakeInstruction(irc.ConvertOperation(op),
                             reln,
-                            f_through);
+                            bb_val);
                             
 
         CF->AddBBEdge(previous, f_through);
-        CF->AddBBEdge(then_end, f_through);
+
+        if (!CF->HasEndedBB(then_end)) {
+            CF->AddBBEdge(then_end, f_through);
+        }
 
         CF->SealBB(then_end);
         CF->SealBB(f_through);
@@ -295,27 +305,45 @@ VI ITENode::GenerateIR(IRC& irc) const {
         BI else_start = CF->CreateBB();
 
         CF->SetCurrentBB(previous);
+        VI bb_val = CF->GetBB(else_start)->GetSelfValue();
         CF->MakeInstruction(irc.ConvertOperation(op),
                             reln,
-                            else_start);
+                            bb_val);
         
-
         CF->AddBBEdge(previous, else_start);
         CF->SealBB(else_start);
         CF->SetCurrentBB(else_start);
 
         else_sequence_->GenerateIR(irc);
         BI else_end = CF->CurrentBBIdx();
+
+        CF->SealBB(then_end);
         CF->SealBB(else_end);
+
+        bool then_ended = CF->HasEndedBB(then_end);
+        bool else_ended = CF->HasEndedBB(else_end);
+        if (then_ended && else_ended) {
+            return result;
+        }
 
         BI f_through = CF->CreateBB();
 
-        CF->SetCurrentBB(else_end);
-        CF->MakeInstruction(T::INS_BRA,
-                            f_through);
+        if (!then_ended) {
+            CF->SetCurrentBB(then_end);
+            VI bb_val = CF->GetBB(f_through)->GetSelfValue();
+            CF->MakeInstruction(T::INS_BRA,
+                                bb_val);
+            CF->AddBBEdge(then_end, f_through);
+        }
 
-        CF->AddBBEdge(else_end, f_through);
-        CF->AddBBEdge(then_end, f_through);
+        if (!else_ended) {
+            CF->SetCurrentBB(else_end);
+            VI bb_val = CF->GetBB(f_through)->GetSelfValue();
+            CF->MakeInstruction(T::INS_BRA,
+                                bb_val);
+
+            CF->AddBBEdge(else_end, f_through);
+        }
 
         CF->SetCurrentBB(f_through);
         CF->SealBB(f_through);
@@ -332,6 +360,11 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     BI previous = CF->CurrentBBIdx();
 
     BI loop_header = CF->CreateBB();
+
+    VI bb_val = CF->GetBB(loop_header)->GetSelfValue();
+    CF->MakeInstruction(T::INS_BRA,
+                        bb_val);
+
     CF->AddBBEdge(previous, loop_header);
     CF->SealBB(previous);
 
@@ -349,22 +382,45 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     CF->SetCurrentBB(loop_body);
     statement_sequence_->GenerateIR(irc);
     BI loop_end = CF->CurrentBBIdx();
-    CF->AddBBEdge(loop_end, loop_header);
 
-    CF->SetCurrentBB(loop_header);
-    RelationalOperator op = loop_condition_->GetOp();
-    CF->MakeInstruction(irc.ConvertOperation(op),
-                        reln,
-                        next_bb);
-
+    if (!CF->HasEndedBB(loop_end)) {
+        CF->AddBBEdge(loop_end, loop_header);
+        CF->SetCurrentBB(loop_end);
+        VI bb_val = CF->GetBB(loop_header)->GetSelfValue();
+        CF->MakeInstruction(T::INS_BRA,
+                            bb_val);
+    }
 
     CF->SealBB(loop_end);
     CF->SealBB(loop_header);
-    CF->SealBB(next_bb);
 
+    CF->SetCurrentBB(loop_header);
+    RelationalOperator op = loop_condition_->GetOp();
+
+    bb_val = CF->GetBB(next_bb)->GetSelfValue();
+    CF->MakeInstruction(irc.ConvertOperation(op),
+                        reln,
+                        bb_val);
+
+    CF->SealBB(next_bb);
     CF->SetCurrentBB(next_bb);
 
     return result;
+}
+
+VI ReturnNode::GenerateIR(IRC& irc) const {
+    ValueIndex result = NOTFOUND;
+
+    if (return_expression_ != nullptr) {
+        result = return_expression_->GenerateIR(irc);
+    }
+
+    CF->MakeInstruction(T::INS_RET,
+                        result);
+
+    CF->GetBB(CF->CurrentBBIdx())->EndBB();
+
+    return NOTFOUND;
 }
 
 VI StatementNode::GenerateIR(IRC& irc) const {
@@ -391,6 +447,10 @@ VI StatementNode::GenerateIR(IRC& irc) const {
             auto whilen = static_cast<const WhileNode*>(this);
             result = whilen->GenerateIR(irc);
             break;
+        }
+        case StatementType::STAT_RETURN: {
+            auto retn = static_cast<const ReturnNode*>(this);
+            result = retn->GenerateIR(irc);
         }
     }
 
@@ -485,6 +545,10 @@ void ComputationNode::GenerateIR(IRC& irc) const {
         var = new Variable(sym, offset);
         var_name = table_entry.first;
         irc.AddGlobal(var_name, var);
+    }
+
+    for (auto funcn: function_declarations_) {
+        
     }
     
     for (auto funcn: function_declarations_) {

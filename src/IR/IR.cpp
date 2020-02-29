@@ -72,6 +72,10 @@ BI Function::CreateBB() {
     BasicBlock* bb = new BasicBlock(bb_counter_);
     basic_block_map_[bb_counter_] = bb;
 
+    VI sv = CreateValue(V::VAL_BRANCH);
+    GetValue(sv)->SetConstant(bb_counter_);
+    bb->SetSelfValue(sv);
+
     return bb_counter_;
 }
 
@@ -100,12 +104,16 @@ void Function::AddBBSuccessor(BI source, BI pred) {
     basic_block_map_[source]->AddSuccessor(pred);
 }
 
+bool Function::HasEndedBB(BI bb_idx) const {
+    return GetBB(bb_idx)->HasEnded();
+}
+
 II Function::MakePhi() {
     instruction_counter_++;
 
     Instruction* inst = new Instruction(T::INS_PHI,
-                                       CurrentBBIdx(),
-                                       instruction_counter_);
+                                        CurrentBBIdx(),
+                                        instruction_counter_);
 
     instruction_map_[instruction_counter_] = inst;
     instruction_order_.push_front(instruction_counter_);
@@ -131,7 +139,9 @@ VI Function::MakeInstruction(T insty) {
     instruction_map_[instruction_counter_] = inst;
     instruction_order_.push_back(instruction_counter_);
 
-    VI result = CreateValue(V::VAL_ANY);
+    V vty;
+    
+    VI result = CreateValue(vty);
     inst->SetResult(result);
 
     CurrentBB()->AddInstruction(instruction_counter_, inst);
@@ -143,7 +153,10 @@ VI Function::MakeInstruction(T insty, VI arg_1) {
     VI result = MakeInstruction(insty);
 
     CurrentInstruction()->AddOperand(arg_1);
+
+    if (!IsRelational(insty)) {
     AddUsage(arg_1, instruction_counter_);
+    }
 
     return result;
 }
@@ -152,10 +165,14 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
     VI result = MakeInstruction(insty);
 
     CurrentInstruction()->AddOperand(arg_1);
-    AddUsage(arg_1, instruction_counter_);
-
     CurrentInstruction()->AddOperand(arg_2);
-    AddUsage(arg_2, instruction_counter_);
+
+    AddUsage(arg_1, instruction_counter_);
+    // Here, the assumption is that 
+    // arg_2 is BI
+    if (!IsRelational(insty)) {
+        AddUsage(arg_2, instruction_counter_);
+    }
 
     return result;
 }
@@ -172,6 +189,15 @@ bool Function::IsActive(II ins_idx) const {
     return instruction_map_.at(ins_idx)->IsActive();
 }
 
+bool Function::IsRelational(T insty) const {
+    return (insty == T::INS_BEQ ||
+            insty == T::INS_BNE ||
+            insty == T::INS_BLT ||
+            insty == T::INS_BLE ||
+            insty == T::INS_BGE ||
+            insty == T::INS_BRA);
+}
+
 Instruction::Instruction(T insty, BI containing_bb, II ins_idx) :
     ins_type_(insty),
     containing_bb_(containing_bb),
@@ -180,7 +206,8 @@ Instruction::Instruction(T insty, BI containing_bb, II ins_idx) :
 
 BasicBlock::BasicBlock(BI idx) :
     idx_(idx),
-    is_sealed_(false) {}
+    is_sealed_(false),
+    is_ended_(false) {}
 
 void BasicBlock::AddPredecessor(BI pred_idx) {
     predecessors_.push_back(pred_idx);
