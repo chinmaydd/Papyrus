@@ -12,22 +12,23 @@ var a, b, c;
     let a <- 0;
     let b <- 2;
 
-    call bar;
+    // call bar;
 
-    while a < 5 do
-        let a <- a + 1
-    od;
+    // while a < 5 do
+    //     let a <- a + 1
+    // od;
 
     while a < 5 do
         while 3 < 7 do
             let a <- a + 1;
-            let b <- a + 2
+            let b <- a + 2;
+            return
         od
     od;
 
 	// if a > b then
     //     if 3 < 4 then
-	// 	    let a <- a + 1
+	// 	        let a <- a + 1
     //     else
     //         let b <- a +4
     //     fi
