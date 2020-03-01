@@ -15,7 +15,7 @@ class Visualizer {
 public:
     Visualizer(IRC&);
 
-    void WriteVCG();
+    void WriteVCG(const std::string&);
 
     void UpdateVCG();
 
@@ -30,8 +30,6 @@ public:
 private:
     IRC& irc_;
     std::ofstream graph_;
-
-    bool IsIntrinsic(const std::string&) const;
 };
 
 } // namespace papyrus

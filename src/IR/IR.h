@@ -42,23 +42,24 @@ public:
 
     Value(ValueType);
 
+    const std::vector<II>& GetUsers() const { return uses_; }
     const ValueType GetType() const { return vty_; }
+
     void SetType(ValueType vty) { vty_ = vty; }
     void AddUsage(II ins_idx) { uses_.push_back(ins_idx); }
     void SetConstant(int val) { val_ = val; }
+    void SetIdentifier(const std::string& ident) { identifier_ = ident; }
+    void RemoveUse(II);
 
     std::string Identifier() const { return identifier_; }
-    void SetIdentifier(const std::string& ident) { identifier_ = ident; }
 
     int GetValue() const { return val_; }
 
-    void RemoveUse(II);
-
-    const std::vector<II>& GetUsers() const { return uses_; }
-
 private:
     ValueType vty_;
+
     int val_;
+
     std::string identifier_;
     std::vector<II> uses_;
 };
@@ -108,23 +109,22 @@ public:
     Instruction(InstructionType, BI, II);
 
     void AddOperand(VI val_idx) { operands_.push_back(val_idx); }
-
     void SetResult(VI res) { result_ = res; }
+    void MakeInactive() { is_active_ = false; }
+    void ReplaceUse(VI, VI);
+
     VI Result() const { return result_; }
 
     BI ContainingBB() const { return containing_bb_; }
 
     InstructionType Type() const { return ins_type_; }
-    bool IsPhi() const { return ins_type_ == INS_PHI; }
 
     const std::vector<VI>& Operands() const { return operands_; }
 
-    void ReplaceUse(VI, VI);
-
     std::string ConvertToString() const;
 
+    bool IsPhi() const { return ins_type_ == INS_PHI; }
     bool IsActive() const { return is_active_; }
-    void MakeInactive() { is_active_ = false; }
 
 private:
     InstructionType ins_type_;
@@ -175,30 +175,29 @@ static const std::unordered_map<T, std::string> ins_to_str_ = {
 class BasicBlock {
 public:
     BasicBlock(BI);
+
     void AddPredecessor(BI);
     void AddSuccessor(BI);
-
     void AddInstruction(II, Instruction*);
+    void Seal() { is_sealed_ = true; }
+    void EndBB() { is_ended_ = true; }
+    void SetSelfValue(VI sv) { self_value_ = sv; }
 
     const std::vector<BI> Predecessors() const;
     const std::vector<BI> Successors() const;
-
-    bool IsSealed() const { return is_sealed_; }
-    void Seal() { is_sealed_ = true; }
 
     const std::deque<II>& InstructionOrder() const { return instruction_order_; }
     const std::map<II, Instruction*> Instructions() const { return instructions_; }
 
     bool HasActiveInstructions() const;
-
-    void EndBB() { is_ended_ = true;}
+    bool IsSealed() const { return is_sealed_; }
     bool HasEnded() const { return is_ended_; }
     
     VI GetSelfValue() const { return self_value_; }
-    void SetSelfValue(VI sv) { self_value_ = sv; }
 
 private:
     BI idx_;
+
     std::map<II, Instruction*> instructions_;
     std::deque<II> instruction_order_;
 
@@ -216,91 +215,83 @@ public:
     Function(const std::string&, VI, std::unordered_map<VI, Value*>*);
 
     const std::string& FunctionName() const { return func_name_; }
-
-    VI LocalBase() const { return local_base_; }
-    void SetLocalBase(VI val) { local_base_ = val; }
-
     const Variable* GetVariable(const std::string& var_name) const;
-    void AddVariable(const std::string&, Variable*);
+    const std::unordered_map<BI, BasicBlock*> BasicBlocks() const;
 
-    bool IsVariableLocal(const std::string&) const;
+    void SetLocalBase(VI val) { local_base_ = val; }
+    void AddVariable(const std::string&, Variable*);
+    void AddUsage(VI, II);
+    void SetValueType(VI, V);
+    void WriteVariable(const std::string&, VI);
+    void WriteVariable(const std::string&, BI, VI);
+    void AddBBEdge(BI, BI);        // pred, succ
+    void SealBB(BI);
+    void SetCurrentBB(BI idx) { current_bb_ = idx; }
+
     int GetOffset(const std::string&) const;
+
+    Value* GetValue(VI) const;
+
+    BI CreateBB();
+    BI CurrentBBIdx() const { return current_bb_; }
+
+    BasicBlock* CurrentBB() const;
+    BasicBlock* GetBB(BI) const;
 
     VI CreateConstant(int);
     VI CreateValue(V);
-    void AddUsage(VI, II);
-
-
-    Value* GetValue(VI) const;
-    void SetValueType(VI, V);
-
     VI GetCounter() const { return value_counter_; }
-    
     VI ReadVariable(const std::string&, BI);
-    void WriteVariable(const std::string&, VI);
-    void WriteVariable(const std::string&, BI, VI);
-
-    BI CreateBB();
-    void AddBBEdge(BI, BI);        // pred, succ
-    const std::unordered_map<BI, BasicBlock*> BasicBlocks() const;
-    void SealBB(BI);
-
-    BI CurrentBBIdx() const { return current_bb_; }
-    BasicBlock* CurrentBB() const;
-    BasicBlock* GetBB(BI) const;
-    void SetCurrentBB(BI idx) { current_bb_ = idx; }
-    bool HasEndedBB(BI idx) const;
-
+    VI LocalBase() const { return local_base_; }
     VI MakeInstruction(T);
     VI MakeInstruction(T, VI);
     VI MakeInstruction(T, VI, VI);
+    VI SelfIdx() const { return self_idx_; }
 
     Instruction* CurrentInstruction() const;
     Instruction* GetInstruction(II) const;
+
     bool IsActive(II) const;
+    bool HasEndedBB(BI idx) const;
+    bool IsVariableLocal(const std::string&) const;
 
     std::string ConvertInstructionToString(II) const;
     std::string ConvertValueToString(VI) const;
-
-    VI SelfIdx() const { return self_idx_; }
 
 private:
     std::string func_name_;
 
     VI local_base_;
+    VI value_counter_;
+    VI self_idx_;
     
     Value* self_;
-    VI self_idx_;
 
-    VI value_counter_;
     std::unordered_map<VI, Value*>* value_map_;
     std::unordered_map<std::string, std::unordered_map<BI, VI> > local_defs_;
     std::unordered_map<BI, std::unordered_map<std::string, II> > incomplete_phis_;
+    std::unordered_map<BI, BasicBlock*> basic_block_map_;
+    std::unordered_map<std::string, Variable*> variable_map_;
 
-    II instruction_counter_;
     std::unordered_map<II, Instruction*> instruction_map_;
     std::deque<II> instruction_order_;
 
     BI current_bb_;
     BI bb_counter_;
-    std::unordered_map<BI, BasicBlock*> basic_block_map_;
-
-    std::unordered_map<std::string, Variable*> variable_map_;
+    BI GetBBForInstruction(II);
 
     VI ReadVariableRecursive(const std::string&, BI);
     VI AddPhiOperands(const std::string&, VI);
-    II MakePhi();
     VI TryRemoveTrivialPhi(II);
+    VI ResultForInstruction(II) const;
+
+    II instruction_counter_;
+    II MakePhi();
 
     void AddBBPredecessor(BI, BI); // current, predecessor
     void AddBBSuccessor(BI, BI);   // current, successor
 
-    BI GetBBForInstruction(II);
-
     bool IsPhi(II) const;
-
-    VI ResultForInstruction(II) const;
-
     bool IsRelational(T) const;
 };
 

@@ -7,12 +7,6 @@ using V = Value::ValueType;
 std::string GetBBString(BI idx) {
     return "BB_" + std::to_string(idx);
 }
- 
-bool Visualizer::IsIntrinsic(const std::string& func_name) const {
-    return (func_name == "InputNum" ||
-            func_name == "OutputNum" ||
-            func_name == "OutputNewLine");
-}
 
 std::string Function::ConvertValueToString(VI val_idx) const {
     std::string res = "";
@@ -118,14 +112,14 @@ void Visualizer::UpdateVCG() {
     std::string func_name;
     for (auto func_pair: irc_.Functions()) {
         func_name = func_pair.first;
-        if (!IsIntrinsic(func_name)) {
+        if (!irc_.IsIntrinsic(func_name)) {
             DrawFunc(func_pair.second);
         }
     }
 }
 
-void Visualizer::WriteVCG() {
-    graph_.open("/home/chinmay_dd/Projects/Papyrus/tests/test.vcg");
+void Visualizer::WriteVCG(const std::string& fname) {
+    graph_.open(fname);
 
     // XXX: Subject to change.
     graph_ << "graph: {";

@@ -434,7 +434,7 @@ VI ReturnNode::GenerateIR(IRC& irc) const {
 
     VI interm;
     if (return_expression_ != nullptr) {
-        return_expression_->GenerateIR(irc);
+        interm = return_expression_->GenerateIR(irc);
         result = CF->MakeInstruction(T::INS_RET, interm);
     } else {
         result = CF->MakeInstruction(T::INS_RET);

@@ -73,7 +73,6 @@ VI Function::TryRemoveTrivialPhi(II phi_ins) {
     return same;
 }
 
-
 /*
  * Here, we try and query predecessors of a block for definitions of a variable.
  * If found, we add it as an operand to the Phi

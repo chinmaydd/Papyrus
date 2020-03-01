@@ -7,6 +7,10 @@
 #include "IR/IR.h"
 #include "IR/IRConstructor.h"
 
+#include "Analysis/ConstantFolding.h"
+
+#include "Utils.h"
+
 #include "Visualizer/Visualizer.h"
 
 using namespace papyrus;
@@ -16,13 +20,14 @@ structlog LOGCFG = {};
 int main(int argc, char *argv[]) {
     LOGCFG.headers = true;
     LOGCFG.level = ERROR;
+    Utils utils;
 
     if (argc < 2) {
         LOG(ERROR) << "Please input a file to compile!";
         exit(1);
     }
 
-    // Test file!
+    // Test file
     std::filebuf fb;
     if (!fb.open(argv[1], std::ios::in))
         LOG(ERROR) << "[MAIN] Could not open file!";
@@ -37,8 +42,13 @@ int main(int argc, char *argv[]) {
 
     irconst.BuildIR();
 
+    ConstantFolding cf(irconst);
+    cf.run();
+
+    std::string vcg_fname = utils.ConstructOutFile(argv[1]);
+
     Visualizer viz = Visualizer(irconst);
-    viz.WriteVCG();
+    viz.WriteVCG(vcg_fname);
 
     return 0;
 }

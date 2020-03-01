@@ -1,8 +1,0 @@
-main 
-var x,y,z;
-array [4][4] pqr;
-var a, b, c;
-{
-    let a <- 2;
-    call OutputNum(a)
-}.

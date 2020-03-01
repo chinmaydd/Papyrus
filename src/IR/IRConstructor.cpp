@@ -15,6 +15,12 @@ IRConstructor::IRConstructor(ASTC& astconst) :
     DeclareIntrinsicFunctions();
 }
 
+bool IRConstructor::IsIntrinsic(const std::string& func_name) const {
+    return (func_name == "InputNum" ||
+            func_name == "OutputNum" ||
+            func_name == "OutputNewLine");
+}
+
 void IRConstructor::DeclareIntrinsicFunctions() {
     functions_["InputNum"] = nullptr;
     functions_["OutputNum"] = nullptr;
