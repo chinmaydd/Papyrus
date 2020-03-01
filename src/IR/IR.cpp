@@ -23,6 +23,11 @@ const Variable* Function::GetVariable(const std::string& var_name) const {
 }
 
 void Function::AddVariable(const std::string& var_name, Variable* var) {
+    if (IsVariableLocal(var_name)) {
+        LOG(ERROR) << "[IR] Attempt to redefine local variable " + var_name;
+        exit(1);
+    }
+
     variable_map_[var_name] = var;
 }
 

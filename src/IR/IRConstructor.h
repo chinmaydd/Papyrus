@@ -65,6 +65,8 @@ private:
     ASTConstructor& astconst_;
     
     VI value_counter_;
+
+    void DeclareIntrinsicFunctions();
 };
 
 } // namespace papyrus

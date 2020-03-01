@@ -1,0 +1,46 @@
+main 
+var x,y,z;
+array [4][4] pqr;
+var a, b, c;
+{
+    //let a <- 0;
+    //let b <- 2;
+    //let x <- 3;
+
+    //call bar (2);
+
+    // while a < 5 do
+    //     let a <- a + 1
+    // od;
+
+    while z[0] < 5 do
+        // while 3 < 7 do
+        //     let a <- a + 1;
+        //     let b <- a + 2;
+        //     return
+        // od
+        let a <- 2
+    od
+
+	// if a > b then
+    //     if 3 < 4 then
+	// 	        let a <- a + 1
+    //     else
+    //         let b <- a +4
+    //     fi
+	// else
+	//  	let a <- a + 3
+    // fi;
+
+    // let a <- 1
+}.
+// {
+//     // let x <- 0;
+//     // let pqr[1][2] <- 2;
+//     // if 1 < 2 then
+//     //     let y <- x
+//     // else
+//     //     let x <- 4
+//     // fi;
+//     let x <- 2
+// }.

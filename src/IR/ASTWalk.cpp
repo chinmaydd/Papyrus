@@ -230,21 +230,46 @@ VI FunctionCallNode::GenerateIR(IRC& irc) const {
     std::string func_name = identifier_->IdentifierName();
 
     if (!irc.IsExistFunction(func_name)) {
-        LOG(ERROR) << "[IR] Usage of function " + func_name + " which cannot is not defined";
+        LOG(ERROR) << "[IR] Usage of function " + func_name + " which is not defined";
         exit(1);
     }
 
     CF->GetValue(func_call)->SetIdentifier(identifier_->IdentifierName());
 
-    VI interm;
     // Let us assume here, that the arguments are pushed from L-R
+    VI interm;
     for (auto argument: arguments_) {
         interm = argument->GenerateIR(irc);
         CF->MakeInstruction(T::INS_ARG,
                             interm);
     }
-    VI result = CF->MakeInstruction(T::INS_CALL,
-                                    func_call);
+
+    VI result;
+    if (func_name == "InputNum") {
+        if (arguments_.size() != 0) {
+            LOG(ERROR) << "[IR] Incorrect usage of InputNum() function";
+            exit(1);
+        }
+        
+        result = CF->MakeInstruction(T::INS_READ);
+    } else if (func_name == "OutputNum") {
+        if (arguments_.size() != 1) {
+            LOG(ERROR) << "[IR] Incorrect usage of OutputNum() function";
+            exit(1);
+        }
+
+        result = CF->MakeInstruction(T::INS_WRITEX);
+    } else if (func_name == "OutputNewLine") {
+        if (arguments_.size() != 0) {
+            LOG(ERROR) << "[IR] Incorrct usage of OutputNewLine() function";
+            exit(1);
+        }
+
+        result = CF->MakeInstruction(T::INS_WRITENL);
+    } else {
+        result = CF->MakeInstruction(T::INS_CALL,
+                                     func_call);
+    }
     
     return result;
 }
@@ -279,27 +304,6 @@ VI ITENode::GenerateIR(IRC& irc) const {
     BI then_end = CF->CurrentBBIdx();
 
     if (else_sequence_ == nullptr) {
-        ////////////////////////////////////
-        /*
-         *           //////////////////
-         *           //  conditional //
-         *           //////////////////
-         *                |  |
-         *                |  ---------|
-         *                |           v
-         *                |       //////////////////
-         *                |       // then_branch //
-         *                |       /////////////////
-         *                |           |
-         *                | -----------
-         *                | |
-         *                v v
-         *          ////////////////
-         *          //  f_through //
-         *          ////////////////
-         *
-         */
-         ///////////////////////////////////
         BI f_through = CF->CreateBB();
 
         CF->SetCurrentBB(previous);
@@ -308,7 +312,6 @@ VI ITENode::GenerateIR(IRC& irc) const {
                             reln,
                             bb_val);
                             
-
         CF->AddBBEdge(previous, f_through);
 
         if (!CF->HasEndedBB(then_end)) {
@@ -320,29 +323,6 @@ VI ITENode::GenerateIR(IRC& irc) const {
 
         CF->SetCurrentBB(f_through);
     } else {
-        ////////////////////////////////////
-        /*
-         *           //////////////////
-         *           //  conditional //
-         *           //////////////////
-         *                |  |
-         *         |-------  ---------|
-         *         v                  v
-         *    /////////////////   /////////////////
-         *    // else_branch //   // then_branch //
-         *    /////////////////   /////////////////   
-         *         |                   |
-         *         |                   |
-         *         |                   |
-         *         |                   |
-         *         ---------|  |--------
-         *                  |  |
-         *                  v  v
-         *            ////////////////
-         *            //  f_through //
-         *            ////////////////
-         */
-         /////////////////////////////////////
         BI else_start = CF->CreateBB();
 
         CF->SetCurrentBB(previous);
@@ -506,8 +486,6 @@ void StatSequenceNode::GenerateIR(IRC& irc) const {
         statement = *it;
         result = statement->GenerateIR(irc);
     }
-    
-    // TODO: Return value of last statement parsed.
 }
 
 void FunctionBodyNode::GenerateIR(IRC& irc) const {
@@ -531,26 +509,37 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
     std::string var_name;
     Symbol *sym;
     int total_size;
+    VI expr;
 
     auto local_sym_table = irc.ASTConst().GetLocalSymTable(func_name);
     for (auto table_entry: local_sym_table) {
-        // TODO: Implement formal parameter handling
-        if (table_entry.second == nullptr) {
-            continue;
-        }
-
-        sym = table_entry.second;
-        if (sym->IsArray()) {
-            for (auto dim: sym->GetDimensions()) {
-                total_size *= dim;
-            }
-            offset += total_size;
-        } else {
-            offset += 1;
-        }
-
-        var = new Variable(sym, offset);
         var_name = table_entry.first;
+        sym = table_entry.second;
+
+        if (irc.IsVariableGlobal(var_name)) {
+            LOG(ERROR) << "[IR] Attempt to redefine global variable " + var_name;
+            exit(1);
+        }
+
+        if (sym->IsFormal()) {
+            var = new Variable(sym);
+            // TODO: Handle offsets here
+
+            expr = CF->CreateValue(V::VAL_FORMAL);
+            CF->WriteVariable(var_name, expr);
+        } else {
+            if (sym->IsArray()) {
+                for (auto dim: sym->GetDimensions()) {
+                    total_size *= dim;
+                }
+                offset += total_size;
+            } else {
+                offset += 1;
+            }
+
+            var = new Variable(sym, offset);
+        }
+
         CF->AddVariable(var_name, var);
     }
 

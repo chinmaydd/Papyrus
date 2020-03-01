@@ -32,7 +32,8 @@ void ASTConstructor::AddSymbol(const IdentifierNode* ident, const TypeDeclNode* 
     Symbol *s = new Symbol(ident->IdentifierName(),
                            type_decl->GetDimensions(),
                            type_decl->IsArray(),
-                           current_scope_ == "global");
+                           current_scope_ == "global",
+                           false);
 
     if (current_scope_ == "global") {
         global_symbol_table_.push_back(std::make_pair(ident->IdentifierName(), s));
@@ -45,7 +46,8 @@ void ASTConstructor::AddFormalSymbol(const IdentifierNode* ident) {
     Symbol* s = new Symbol(ident->IdentifierName(),
                            {},
                            false,
-                           false);
+                           false,
+                           true);
                             
     local_symbol_table_.push_back(std::make_pair(ident->IdentifierName(), s));
 }

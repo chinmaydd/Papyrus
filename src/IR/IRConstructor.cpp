@@ -10,7 +10,16 @@ using ASTC = ASTConstructor;
 IRConstructor::IRConstructor(ASTC& astconst) :
     astconst_(astconst),
     value_counter_(0),
-    value_map_(new std::unordered_map<ValueIndex, Value*>()) {}
+    value_map_(new std::unordered_map<ValueIndex, Value*>()) {
+
+    DeclareIntrinsicFunctions();
+}
+
+void IRConstructor::DeclareIntrinsicFunctions() {
+    functions_["InputNum"] = nullptr;
+    functions_["OutputNum"] = nullptr;
+    functions_["OutputNewLine"] = nullptr;
+}
 
 T IRC::ConvertOperation(ArithmeticOperator op) {
     switch(op) {
@@ -47,6 +56,11 @@ T IRC::ConvertOperation(RelationalOperator op) {
 }
 
 void IRC::DeclareFunction(const std::string& func_name) {
+    if (IsExistFunction(func_name)) {
+        LOG(ERROR) << "[IR] Multiple definitions of function " + func_name + " found.";
+        exit(1);
+    }
+
     functions_[func_name] = nullptr;
 }
 
@@ -63,6 +77,11 @@ const Variable* IRC::GetGlobal(const std::string& var_name) const {
 }
 
 void IRC::AddGlobal(const std::string& var_name, Variable* var) {
+    if (IsVariableGlobal(var_name)) {
+        LOG(ERROR) << "[IR] Attempt to redefine global variable " + var_name + " found.";
+        exit(1);
+    }
+
     global_variable_map_[var_name] = var;
 }
 
@@ -87,4 +106,3 @@ void IRC::BuildIR() {
     const ComputationNode* root = astconst_.GetRoot();
     root->GenerateIR(*this);
 }
-
