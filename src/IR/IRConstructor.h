@@ -23,6 +23,7 @@ public:
 
     ASTConstructor& ASTConst() { return astconst_; }
 
+    void DeclareFunction(const std::string&);
     void AddFunction(const std::string&, Function*);
     Function* CurrentFunction() const { return current_function_; }
     void SetCurrentFunction(Function* f) { current_function_ = f; }
@@ -30,6 +31,7 @@ public:
     const std::unordered_map<std::string, Function*> Functions() const {
         return functions_;
     }
+    bool IsExistFunction(const std::string&) const;
 
     bool IsVariableGlobal(const std::string&) const;
     const Variable* GetGlobal(const std::string&) const;
@@ -44,7 +46,6 @@ public:
     void DeclareGlobalBase();
     VI GlobalBase() const { return global_base_idx_; }
 
-    std::string GetInstructionString(T);
     T ConvertOperation(ArithmeticOperator);
     T ConvertOperation(RelationalOperator);
 

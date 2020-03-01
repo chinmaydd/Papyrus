@@ -7,6 +7,7 @@
 #include "Lexer.h"
 #include "IR/Variable.h"
 
+#include <algorithm>
 #include <memory>
 #include <map>
     
@@ -18,10 +19,11 @@ public:
     void ConstructAST();
     const ComputationNode* GetRoot() const { return root_; }
 
-    const std::map<std::string, Symbol*>& GetGlobalSymTable() const {
+    std::vector<std::pair<std::string, Symbol*> > GetGlobalSymTable() {
         return global_symbol_table_;
     }
-    const std::map<std::string, Symbol*>& GetLocalSymTable(const std::string& func_name) const {
+
+    std::vector<std::pair<std::string, Symbol*> > GetLocalSymTable(const std::string& func_name) {
         return symbol_table_.at(func_name);
     }
 
@@ -108,24 +110,19 @@ private:
 
     ///////////////////////////////
     std::string current_scope_;
-    std::map<std::string, std::map<std::string, Symbol*> > symbol_table_;
-    std::map<std::string, Symbol*> local_symbol_table_;
-    std::map<std::string, Symbol*> global_symbol_table_;
+    std::map<std::string, std::vector<std::pair<std::string, Symbol*> > > symbol_table_;
+
+    std::vector<std::pair<std::string, Symbol*> > local_symbol_table_;
+    std::vector<std::pair<std::string, Symbol*> > global_symbol_table_;
 
     void AddSymbol(const IdentifierNode*, const TypeDeclNode*);
-    void AddSymbol(const IdentifierNode*);
+    void AddFormalSymbol(const IdentifierNode*);
 
-    bool IsDefined(const std::string& identifier) {
-        return IsGlobal(identifier) || IsLocal(identifier);
-    }
-    bool IsGlobal(const std::string& identifier) const {
-        return global_symbol_table_.find(identifier) != global_symbol_table_.end();
-    }
-    bool IsLocal(const std::string identifier) const {
-        return local_symbol_table_.find(identifier) != 
-               local_symbol_table_.end();
-    }
+    bool IsGlobal(const std::string&) const;
+    bool IsLocal(const std::string&) const;
+    bool IsDefined(const std::string&) const;
 
+  
     ////////////////////////////////
     IdentifierNode* ParseIdentifier();
     FunctionDeclNode* ParseFunctionDecl();

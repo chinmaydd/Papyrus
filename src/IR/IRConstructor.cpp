@@ -46,25 +46,16 @@ T IRC::ConvertOperation(RelationalOperator op) {
     }
 }
 
-std::string IRC::GetInstructionString(T insty) {
-    switch(insty) {
-        case T::INS_ADDA:
-            return "adda";
-        case T::INS_STORE:
-            return "store";
-        case T::INS_MUL:
-            return "mul";
-        case T::INS_ADD:
-            return "add";
-        case T::INS_SUB:
-            return "sub";
-        default:
-            return "NF";
-    }
+void IRC::DeclareFunction(const std::string& func_name) {
+    functions_[func_name] = nullptr;
 }
 
 void IRC::AddFunction(const std::string& func_name, Function *func) {
     functions_[func_name] = func;
+}
+
+bool IRC::IsExistFunction(const std::string& func_name) const {
+    return functions_.find(func_name) != functions_.end();
 }
 
 const Variable* IRC::GetGlobal(const std::string& var_name) const {

@@ -1,30 +1,26 @@
 main 
-var x,y;
+var x,y,z;
 array [4][4] pqr;
-procedure bar ();
-var p, q, r;
-{
-    let p <- 1
-};
-procedure foo( );
 var a, b, c;
 {
-    let a <- 0;
-    let b <- 2;
+    //let a <- 0;
+    //let b <- 2;
+    //let x <- 3;
 
-    // call bar;
+    //call bar (2);
 
     // while a < 5 do
     //     let a <- a + 1
     // od;
 
-    while a < 5 do
-        while 3 < 7 do
-            let a <- a + 1;
-            let b <- a + 2;
-            return
-        od
-    od;
+    while z[0] < 5 do
+        // while 3 < 7 do
+        //     let a <- a + 1;
+        //     let b <- a + 2;
+        //     return
+        // od
+        let a <- 2
+    od
 
 	// if a > b then
     //     if 3 < 4 then
@@ -36,16 +32,15 @@ var a, b, c;
 	//  	let a <- a + 3
     // fi;
 
-    let c <- a
     // let a <- 1
-};
-{
-    // let x <- 0;
-    // let pqr[1][2] <- 2;
-    // if 1 < 2 then
-    //     let y <- x
-    // else
-    //     let x <- 4
-    // fi;
-    let x <- 2
 }.
+// {
+//     // let x <- 0;
+//     // let pqr[1][2] <- 2;
+//     // if 1 < 2 then
+//     //     let y <- x
+//     // else
+//     //     let x <- 4
+//     // fi;
+//     let x <- 2
+// }.

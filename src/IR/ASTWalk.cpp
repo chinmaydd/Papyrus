@@ -90,14 +90,26 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     VI base, offset, temp;
 
     const Variable* var;
+
     if (CF->IsVariableLocal(var_name)) {
         var    = CF->GetVariable(var_name);
         base   = CF->LocalBase();
         offset = CF->CreateConstant(var->Offset());
-    } else {
+    } else if (irc.IsVariableGlobal(var_name)) {
         var    = irc.GetGlobal(var_name);
         base   = irc.GlobalBase();
         offset = CF->CreateConstant(irc.GlobalOffset(var_name));
+    } else {
+        LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined.";
+        exit(1);
+    }
+
+    if (!var->IsArray()) {
+        LOG(ERROR) << "[IR] Usage of variable " + var_name + " as an array.";
+        exit(1);
+    } else if (indirections_.size() != var->GetDimensions().size()) {
+        LOG(ERROR) << "[IR] Incorrect indirections given to " + var_name + " in usage";
+        exit(1);
     }
 
     VI arr_base = CF->MakeInstruction(T::INS_ADDA, 
@@ -139,11 +151,26 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
 
     VI result = NOTFOUND;
     std::string var_name = identifier_->IdentifierName();
+
+    const Variable* var;
+    if (CF->IsVariableLocal(var_name)) {
+        var = CF->GetVariable(var_name);
+    } else if (irc.IsVariableGlobal(var_name)) {
+        var = irc.GetGlobal(var_name);
+    } else {
+        LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined.";
+        exit(1);
+    }
     
+    if (var->IsArray() && desig_type_ == DESIG_VAR) {
+        LOG(ERROR) << "[IR] Usage of variable " + var_name + " as a variable which is an array";
+        exit(1);
+    }
+
     if (desig_type_ == DESIG_VAR) {
         if (CF->IsVariableLocal(var_name)) {
             result = CF->ReadVariable(var_name, CF->CurrentBBIdx());
-        } else {
+        } else if (irc.IsVariableGlobal(var_name)) {
             int offset = irc.GlobalOffset(var_name);
             VI offset_idx   = CF->CreateConstant(offset);
             VI mem_location = CF->MakeInstruction(T::INS_ADDA,
@@ -151,10 +178,13 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
                                                   offset_idx);
             result = CF->MakeInstruction(T::INS_LOAD,
                                          mem_location);
+        } else {
+            LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined";
+            exit(1);
         }
     } else {
-       auto arr_id = static_cast<const ArrIdentifierNode*>(this);
-       result      = arr_id->GenerateIR(irc);
+        auto arr_id = static_cast<const ArrIdentifierNode*>(this);
+        result      = arr_id->GenerateIR(irc);
     }
 
     return result;
@@ -197,13 +227,24 @@ VI FunctionCallNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing function call";
 
     VI func_call = CF->CreateValue(V::VAL_FUNC);
+    std::string func_name = identifier_->IdentifierName();
+
+    if (!irc.IsExistFunction(func_name)) {
+        LOG(ERROR) << "[IR] Usage of function " + func_name + " which cannot is not defined";
+        exit(1);
+    }
+
     CF->GetValue(func_call)->SetIdentifier(identifier_->IdentifierName());
+
+    VI interm;
+    // Let us assume here, that the arguments are pushed from L-R
+    for (auto argument: arguments_) {
+        interm = argument->GenerateIR(irc);
+        CF->MakeInstruction(T::INS_ARG,
+                            interm);
+    }
     VI result = CF->MakeInstruction(T::INS_CALL,
                                     func_call);
-
-    if (arguments_.size() == 0) {
-        // AddArguments
-    }
     
     return result;
 }
@@ -529,6 +570,7 @@ void ComputationNode::GenerateIR(IRC& irc) const {
     int total_size;
 
     LOG(INFO) << "[IR] Declaring globals";
+
     irc.DeclareGlobalBase();
     auto global_sym_table = irc.ASTConst().GetGlobalSymTable();
     for (auto table_entry: global_sym_table) {
@@ -548,8 +590,9 @@ void ComputationNode::GenerateIR(IRC& irc) const {
         irc.AddGlobal(var_name, var);
     }
 
+    // Forward declaration.
     for (auto funcn: function_declarations_) {
-        
+        irc.DeclareFunction(funcn->GetFunctionName());
     }
     
     for (auto funcn: function_declarations_) {

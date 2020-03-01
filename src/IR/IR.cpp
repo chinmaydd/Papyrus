@@ -154,9 +154,7 @@ VI Function::MakeInstruction(T insty, VI arg_1) {
 
     CurrentInstruction()->AddOperand(arg_1);
 
-    if (!IsRelational(insty)) {
     AddUsage(arg_1, instruction_counter_);
-    }
 
     return result;
 }
@@ -168,11 +166,7 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
     CurrentInstruction()->AddOperand(arg_2);
 
     AddUsage(arg_1, instruction_counter_);
-    // Here, the assumption is that 
-    // arg_2 is BI
-    if (!IsRelational(insty)) {
-        AddUsage(arg_2, instruction_counter_);
-    }
+    AddUsage(arg_2, instruction_counter_);
 
     return result;
 }

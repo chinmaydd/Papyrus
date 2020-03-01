@@ -20,12 +20,12 @@ void ASTConstructor::RaiseParseError(const std::string& error_msg) const {
 
 bool ASTConstructor::MustParseToken(const Lexer::Token& expected_tok, const std::string& func, int line) const {
     if (expected_tok != CurrentToken()) {
-        // XXX: Maybe there is a better way to handle this.
         LOG(ERROR) << "[DEBUG] " << func << ", Line: " << std::to_string(line);
         RaiseParseError(expected_tok);
     }
     return true;
 }
+
 ////////////////////////////////
 
 void ASTConstructor::AddSymbol(const IdentifierNode* ident, const TypeDeclNode* type_decl) {
@@ -35,15 +35,37 @@ void ASTConstructor::AddSymbol(const IdentifierNode* ident, const TypeDeclNode* 
                            current_scope_ == "global");
 
     if (current_scope_ == "global") {
-        global_symbol_table_[ident->IdentifierName()] = s;
+        global_symbol_table_.push_back(std::make_pair(ident->IdentifierName(), s));
     } else {
-        local_symbol_table_[ident->IdentifierName()] = s;
+        local_symbol_table_.push_back(std::make_pair(ident->IdentifierName(), s));
     }
 }
 
-void ASTConstructor::AddSymbol(const IdentifierNode* ident) {
-    // TODO: Formal parameters
-    local_symbol_table_[ident->IdentifierName()] = nullptr;
+void ASTConstructor::AddFormalSymbol(const IdentifierNode* ident) {
+    Symbol* s = new Symbol(ident->IdentifierName(),
+                           {},
+                           false,
+                           false);
+                            
+    local_symbol_table_.push_back(std::make_pair(ident->IdentifierName(), s));
+}
+
+bool ASTConstructor::IsGlobal(const std::string& identifier) const {
+    return std::find_if(global_symbol_table_.begin(), global_symbol_table_.end(), 
+            [&identifier](const std::pair<std::string, Symbol*>& elem) {
+            return elem.first == identifier;
+        }) == global_symbol_table_.end();;
+}
+
+bool ASTConstructor::IsLocal(const std::string& identifier) const {
+    return std::find_if(local_symbol_table_.begin(), local_symbol_table_.end(), 
+            [&identifier](const std::pair<std::string, Symbol*>& elem) {
+            return elem.first == identifier;
+        }) == local_symbol_table_.end();
+}
+
+bool ASTConstructor::IsDefined(const std::string& identifier) const {
+    return IsGlobal(identifier) || IsLocal(identifier);
 }
 
 ////////////////////////////////
@@ -60,7 +82,6 @@ bool ASTConstructor::IsExpressionBegin(const Lexer::Token& token) const {
             Lexer::TOK_NUM        == token ||
             Lexer::TOK_ROUND_OPEN == token ||
             Lexer::TOK_CALL       == token);
-
 }
 ////////////////////////////////
 
@@ -150,12 +171,12 @@ void ASTConstructor::ParseFormalParameters() {
 
     if (Lexer::TOK_IDENT == PeekNextToken()) {
         IdentifierNode* ident = ParseIdentifier();
-        AddSymbol(ident);
+        AddFormalSymbol(ident);
 
         while (Lexer::TOK_COMMA == PeekNextToken()) {
             FetchToken();
             ident = ParseIdentifier();
-            AddSymbol(ident);
+            AddFormalSymbol(ident);
         }
     }
 
@@ -477,7 +498,7 @@ void ASTConstructor::ConstructAST() {
     }
 
     while (Lexer::TOK_FUNCTION == PeekNextToken() ||
-        Lexer::TOK_PROCEDURE == PeekNextToken()) {
+           Lexer::TOK_PROCEDURE == PeekNextToken()) {
         FetchToken();
 
         root->AddFunctionDecl(ParseFunctionDecl());

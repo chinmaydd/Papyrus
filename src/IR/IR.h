@@ -70,11 +70,16 @@ public:
 
         INS_LOAD,
         INS_STORE,
+
         INS_CALL,
+        INS_ARG,
+
         INS_RET,
+        INS_MOVE,
 
         INS_PHI,
 
+        INS_NEG,
         INS_ADD,
         INS_SUB,
         INS_MUL,
@@ -155,6 +160,7 @@ static const std::unordered_map<T, std::string> ins_to_str_ = {
     {T::INS_CALL,   "CALL"},
     {T::INS_RET,    "RET"},
     {T::INS_ANY,    "ANY"},
+    {T::INS_ARG,    "ARG"},
 };
 
 class BasicBlock {
