@@ -53,7 +53,9 @@ public:
 
     std::string Identifier() const { return identifier_; }
 
-    int GetValue() const { return val_; }
+    int GetConstant() const { return val_; }
+
+    bool IsConstant() const { return vty_ == VAL_CONST; }
 
 private:
     ValueType vty_;
@@ -247,6 +249,7 @@ public:
     VI MakeInstruction(T, VI);
     VI MakeInstruction(T, VI, VI);
     VI SelfIdx() const { return self_idx_; }
+    VI Reduce(VI, VI, ArithmeticOperator);
 
     Instruction* CurrentInstruction() const;
     Instruction* GetInstruction(II) const;
@@ -254,6 +257,7 @@ public:
     bool IsActive(II) const;
     bool HasEndedBB(BI idx) const;
     bool IsVariableLocal(const std::string&) const;
+    bool IsReducible(VI, VI) const;
 
     std::string ConvertInstructionToString(II) const;
     std::string ConvertValueToString(VI) const;

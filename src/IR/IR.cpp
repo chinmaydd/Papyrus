@@ -197,6 +197,46 @@ bool Function::IsRelational(T insty) const {
             insty == T::INS_BRA);
 }
 
+bool Function::IsReducible(VI idx_1, VI idx_2) const {
+    return  (GetValue(idx_1)->IsConstant() &&
+             GetValue(idx_2)->IsConstant());
+}
+
+VI Function::Reduce(VI idx_1, VI idx_2, ArithmeticOperator op) {
+    int val_1 = GetValue(idx_1)->GetConstant();
+    int val_2 = GetValue(idx_2)->GetConstant();
+
+    VI result;
+    switch(op) {
+        case BINOP_MUL: {
+            result = CreateConstant(val_1 * val_2);
+            break;
+        }
+        case BINOP_ADD: {
+            result = CreateConstant(val_1 + val_2);
+            break;
+        }
+        case BINOP_SUB: {
+            result = CreateConstant(val_1 - val_2);
+            break;
+        }
+        case BINOP_DIV: {
+            if (val_2 == 0) {
+                LOG(ERROR) << "[IR] Divide by zero found!";
+                exit(1);
+            }
+            result = CreateConstant(val_1 / val_2);
+            break;
+        }
+        default: {
+            LOG(ERROR) << "[IR] Unknwon operation found!";
+            exit(1);
+        }
+    }
+
+    return result;
+}
+
 Instruction::Instruction(T insty, BI containing_bb, II ins_idx) :
     ins_type_(insty),
     containing_bb_(containing_bb),

@@ -54,9 +54,14 @@ VI TermNode::GenerateIR(IRC& irc) const {
         fact  = next_pair.second;
 
         idx_2 = fact->GenerateIR(irc);
-        idx_1 = CF->MakeInstruction(irc.ConvertOperation(op),
-                                    idx_1,
-                                    idx_2);
+
+        if (!CF->IsReducible(idx_1, idx_2)) {
+            idx_1 = CF->MakeInstruction(irc.ConvertOperation(op),
+                                        idx_1,
+                                        idx_2);
+        } else {
+            idx_1 = CF->Reduce(idx_1, idx_2, op);
+        }
     }
 
     return idx_1;
@@ -75,9 +80,14 @@ VI ExpressionNode::GenerateIR(IRC& irc) const {
         term  = next_pair.second;
 
         idx_2 = term->GenerateIR(irc);
-        idx_1 = CF->MakeInstruction(irc.ConvertOperation(op),
-                                    idx_1,
-                                    idx_2);
+
+        if (!CF->IsReducible(idx_1, idx_2)) {
+            idx_1 = CF->MakeInstruction(irc.ConvertOperation(op),
+                                        idx_1,
+                                        idx_2);
+        } else {
+            idx_1 = CF->Reduce(idx_1, idx_2, op);
+        }
     }
 
     return idx_1;
@@ -202,7 +212,7 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
         if (CF->IsVariableLocal(var_name)) {
             CF->WriteVariable(var_name, expr_idx);
         } else {
-            int offset = irc.GlobalOffset(var_name);
+            int offset      = irc.GlobalOffset(var_name);
             VI offset_idx   = CF->CreateConstant(offset);
             VI mem_location = CF->MakeInstruction(T::INS_ADDA,
                                                   irc.GlobalBase(),

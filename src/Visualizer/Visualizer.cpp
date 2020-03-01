@@ -14,7 +14,7 @@ std::string Function::ConvertValueToString(VI val_idx) const {
 
     switch(val->GetType()) {
         case V::VAL_CONST: {
-            res += "#" + std::to_string(val->GetValue());
+            res += "#" + std::to_string(val->GetConstant());
             break;
         }
         case V::VAL_FUNC: {
@@ -22,7 +22,7 @@ std::string Function::ConvertValueToString(VI val_idx) const {
             break;
         }
         case V::VAL_BRANCH: {
-            res += "BB_" + std::to_string(val->GetValue());
+            res += "BB_" + std::to_string(val->GetConstant());
             break;
         }
         default: {
