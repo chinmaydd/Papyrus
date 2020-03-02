@@ -540,17 +540,26 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
         var_name = table_entry.first;
         sym = table_entry.second;
 
-        // if (irc.IsVariableGlobal(var_name)) {
-        //     LOG(ERROR) << "[IR] Attempt to redefine global variable " + var_name;
-        //     exit(1);
-        // }
+        /* Local variables shadow global definitions
+         *
+         * if (irc.IsVariableGlobal(var_name)) {
+         *     LOG(ERROR) << "[IR] Attempt to redefine global variable " + var_name;
+         *     exit(1);
+         * }
+         */
 
         if (sym->IsFormal()) {
+            /*
+             * Creating a location value here to be used for later
+             */
             location = CF->CreateValue(V::VAL_LOCATION);
             var = new Variable(sym, location);
 
-            // TODO: Handle offsets here
-
+            /*
+             * Here, we would like to store ordering of the formal parameters
+             * Ideally, their storage locations, but atleast their order
+             * in the argument sequence
+             */
             expr = CF->CreateValue(V::VAL_FORMAL);
             CF->WriteVariable(var_name, expr);
         } else {
@@ -563,7 +572,15 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
                 offset += 1;
             }
 
+            /* 
+             * Again, here we would like to store localbase+offset in the 
+             * register if possible, but for now we can store this value in
+             * the variable; can be accessed later
+             */
             location = CF->CreateValue(V::VAL_LOCATION);
+            CF->GetValue(location)->SetConstant(offset);
+            CF->GetValue(location)->SetIdentifier(var_name);
+
             var = new Variable(sym, offset, location);
             expr = CF->CreateValue(V::VAL_VAR);
         }
@@ -585,6 +602,7 @@ void ComputationNode::GenerateIR(IRC& irc) const {
     std::string var_name;
     Symbol *sym;
     int total_size;
+    VI location;
 
     LOG(INFO) << "[IR] Declaring globals";
 
@@ -602,13 +620,25 @@ void ComputationNode::GenerateIR(IRC& irc) const {
             offset += 1;
         }
 
-        VI location = irc.CreateValue(V::VAL_LOCATION);
-        var = new Variable(sym, offset, location);
+        /*
+         * We are creating a location value here to simplify loads and
+         * store at a later stage in the IR lowering. This would allow us to
+         * enable better register allocation since the offset is a value 
+         * which needs to be stored in reg. Actually, it is the base+offset
+         * which is more relevant to be stored. But that is a worry for a
+         * later day.
+         */
         var_name = table_entry.first;
+
+        location = irc.CreateValue(V::VAL_LOCATION);
+        irc.GetValue(location)->SetConstant(offset);
+        irc.GetValue(location)->SetIdentifier(var_name);
+
+        var = new Variable(sym, offset, location);
         irc.AddGlobal(var_name, var);
     }
 
-    // Forward declaration.
+    // Forward declaration of functions
     for (auto funcn: function_declarations_) {
         irc.DeclareFunction(funcn->GetFunctionName());
     }

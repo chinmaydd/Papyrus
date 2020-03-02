@@ -29,6 +29,10 @@ std::string Function::ConvertValueToString(VI val_idx) const {
             res += val->Identifier();
             break;
         }
+        case V::VAL_LOCATION: {
+            res += "&global_" + val->Identifier() + " ";
+            break;
+        }
         default: {
             res += "(" + std::to_string(val_idx) + ")";
             break;

@@ -122,6 +122,10 @@ VI IRC::CreateValue(V vty) {
     return value_counter_;
 }
 
+Value* IRC::GetValue(VI value_idx) const {
+    return value_map_->at(value_idx);
+}
+
 void IRC::BuildIR() {
     const ComputationNode* root = astconst_.GetRoot();
     root->GenerateIR(*this);

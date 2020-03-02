@@ -1,6 +1,7 @@
 #ifndef PAPYRUS_ANALYSIS_PASS_H
 #define PAPYRUS_ANALYSIS_PASS_H
 
+#include "IR/IR.h"
 #include "IR/IRConstructor.h"
 
 namespace papyrus {
@@ -12,6 +13,7 @@ public:
 
 protected:
     IRConstructor& irc_;
+    inline IRConstructor& irc() { return irc_; }
 };
 
 } // namespace papyrus

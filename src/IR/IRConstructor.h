@@ -32,10 +32,12 @@ public:
 
     ASTConstructor& ASTConst() { return astconst_; }
 
-    const std::unordered_map<std::string, Function*> Functions() const {
+    std::unordered_map<std::string, Function*> Functions() const {
         return functions_;
     }
+
     const Variable* GetGlobal(const std::string&) const;
+    Value* GetValue(VI) const;
 
     bool IsExistFunction(const std::string&) const;
     bool IsVariableGlobal(const std::string&) const;

@@ -1,4 +1,6 @@
 set(_SOURCE_FILES
+    GlobalClobbering.cpp
+    LoadStoreRemover.cpp
     CSE.cpp
     )
 
