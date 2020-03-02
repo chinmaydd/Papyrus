@@ -118,6 +118,7 @@ public:
 
     void AddOperand(VI val_idx) { operands_.push_back(val_idx); }
     void SetResult(VI res) { result_ = res; }
+    // TODO: This should also remove the usage from the values
     void MakeInactive() { is_active_ = false; }
     void ReplaceUse(VI, VI);
 
@@ -205,6 +206,8 @@ public:
     bool HasEnded() const { return is_ended_; }
     
     VI GetSelfValue() const { return self_value_; }
+
+    BI Idx() const { return idx_; }
 
 private:
     BI idx_;

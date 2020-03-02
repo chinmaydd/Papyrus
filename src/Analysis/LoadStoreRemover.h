@@ -8,14 +8,13 @@
 
 namespace papyrus {
 
+using BI = int;
+using VI = int;
+
 class LoadStoreRemover : public AnalysisPass {
 public:
     LoadStoreRemover(IRConstructor& irc) : AnalysisPass(irc) {}
     void run();
-
-private:
-    std::unordered_map<std::string, bool> local_clobber_;
-    std::unordered_map<std::string, std::unordered_map<std::string, bool> > global_clobber_;
 };
 
 } // namespace papyrus

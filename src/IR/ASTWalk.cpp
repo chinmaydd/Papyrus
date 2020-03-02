@@ -217,8 +217,10 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
 
     if (designator_->GetDesignatorType() == DESIG_VAR) {
         if (CF->IsVariableLocal(var_name)) {
+
             CF->WriteVariable(var_name, expr_idx);
-        } else {
+        } else if (irc.IsVariableGlobal(var_name)) {
+
             VI mem_location = irc.GetLocationValue(var_name);
             result = CF->MakeInstruction(T::INS_STOREG,
                                          expr_idx,
@@ -235,6 +237,9 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
              *                              expr_idx,
              *                              mem_location);
              */
+        } else {
+            LOG(ERROR) << "Usage of variable " + var_name + " which is not defined.";
+            exit(1);
         }
     } else {
        auto arr_id = static_cast<const ArrIdentifierNode*>(designator_);
