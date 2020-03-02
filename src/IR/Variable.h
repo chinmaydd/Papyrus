@@ -7,7 +7,7 @@
 
 namespace papyrus {
 
-using ValueIndex = int;
+using VI = int;
 
 class Symbol {
 public:
@@ -29,17 +29,22 @@ private:
 
 class Variable {
 public:
-    Variable(Symbol*, ValueIndex);
-    Variable(Symbol*);
+    Variable(Symbol*, int, VI);
+    Variable(Symbol*, VI);
 
     const std::vector<int> GetDimensions() const { return sym_->GetDimensions(); }
+
     bool IsArray() const { return sym_->IsArray(); }
     bool IsGlobal() const { return sym_->IsGlobal(); }
+
     int Offset() const { return offset_; }
+
+    VI GetLocationIdx() const { return vi_; }
 
 private:
     Symbol* sym_;
     int offset_;
+    VI vi_;
 };
 
 } // namespace papyrus

@@ -1,5 +1,4 @@
 set(_SOURCE_FILES
-    ConstantFolding.cpp
     CSE.cpp
     )
 

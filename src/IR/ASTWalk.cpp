@@ -181,13 +181,20 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
         if (CF->IsVariableLocal(var_name)) {
             result = CF->ReadVariable(var_name, CF->CurrentBBIdx());
         } else if (irc.IsVariableGlobal(var_name)) {
-            int offset = irc.GlobalOffset(var_name);
-            VI offset_idx   = CF->CreateConstant(offset);
-            VI mem_location = CF->MakeInstruction(T::INS_ADDA,
-                                                  irc.GlobalBase(),
-                                                  offset_idx);
-            result = CF->MakeInstruction(T::INS_LOAD,
+            VI mem_location = irc.GetLocationValue(var_name);
+            result = CF->MakeInstruction(T::INS_LOADG,
                                          mem_location);
+              
+            /* Load generation. Delayed until RegisterAllocation
+             *
+             * int offset      = irc.GlobalOffset(var_name);
+             * VI offset_idx   = CF->CreateConstant(offset);
+             * VI mem_location = CF->MakeInstruction(T::INS_ADDA,
+             *                                       irc.GlobalBase(),
+             *                                       offset_idx);
+             * result = CF->MakeInstruction(T::INS_LOAD,
+             *                              mem_location);
+             */
         } else {
             LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined";
             exit(1);
@@ -212,15 +219,22 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
         if (CF->IsVariableLocal(var_name)) {
             CF->WriteVariable(var_name, expr_idx);
         } else {
-            int offset      = irc.GlobalOffset(var_name);
-            VI offset_idx   = CF->CreateConstant(offset);
-            VI mem_location = CF->MakeInstruction(T::INS_ADDA,
-                                                  irc.GlobalBase(),
-                                                  offset_idx);
-            // XXX: Do we need to use STORE or MOVE?
-            result = CF->MakeInstruction(T::INS_STORE,
+            VI mem_location = irc.GetLocationValue(var_name);
+            result = CF->MakeInstruction(T::INS_STOREG,
                                          expr_idx,
                                          mem_location);
+
+            /* Store generation. Delayed until RegisterAllocation
+             *
+             * int offset      = irc.GlobalOffset(var_name);
+             * VI offset_idx   = CF->CreateConstant(offset);
+             * VI mem_location = CF->MakeInstruction(T::INS_ADDA,
+             *                                       irc.GlobalBase(),
+             *                                       offset_idx);
+             * result = CF->MakeInstruction(T::INS_STORE,
+             *                              expr_idx,
+             *                              mem_location);
+             */
         }
     } else {
        auto arr_id = static_cast<const ArrIdentifierNode*>(designator_);
@@ -519,20 +533,22 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
     std::string var_name;
     Symbol *sym;
     int total_size;
-    VI expr;
+    VI expr, location;
 
     auto local_sym_table = irc.ASTConst().GetLocalSymTable(func_name);
     for (auto table_entry: local_sym_table) {
         var_name = table_entry.first;
         sym = table_entry.second;
 
-        if (irc.IsVariableGlobal(var_name)) {
-            LOG(ERROR) << "[IR] Attempt to redefine global variable " + var_name;
-            exit(1);
-        }
+        // if (irc.IsVariableGlobal(var_name)) {
+        //     LOG(ERROR) << "[IR] Attempt to redefine global variable " + var_name;
+        //     exit(1);
+        // }
 
         if (sym->IsFormal()) {
-            var = new Variable(sym);
+            location = CF->CreateValue(V::VAL_LOCATION);
+            var = new Variable(sym, location);
+
             // TODO: Handle offsets here
 
             expr = CF->CreateValue(V::VAL_FORMAL);
@@ -547,7 +563,9 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
                 offset += 1;
             }
 
-            var = new Variable(sym, offset);
+            location = CF->CreateValue(V::VAL_LOCATION);
+            var = new Variable(sym, offset, location);
+            expr = CF->CreateValue(V::VAL_VAR);
         }
 
         CF->AddVariable(var_name, var);
@@ -584,7 +602,8 @@ void ComputationNode::GenerateIR(IRC& irc) const {
             offset += 1;
         }
 
-        var = new Variable(sym, offset);
+        VI location = irc.CreateValue(V::VAL_LOCATION);
+        var = new Variable(sym, offset, location);
         var_name = table_entry.first;
         irc.AddGlobal(var_name, var);
     }

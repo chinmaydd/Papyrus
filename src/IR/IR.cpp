@@ -131,6 +131,28 @@ II Function::MakePhi() {
     return instruction_counter_;
 }
 
+// NOTE:
+// MakeMove is deprecated since the instruction is not required
+// to be a part of the IR.
+void Function::MakeMove(const std::string& var_name, VI expr_idx) {
+    instruction_counter_++;
+
+    Instruction* inst = new Instruction(T::INS_MOVE,
+                                        CurrentBBIdx(),
+                                        instruction_counter_);
+
+    instruction_map_[instruction_counter_] = inst;
+    instruction_order_.push_back(instruction_counter_);
+
+    VI temp_value = CreateValue(V::VAL_VAR);
+    GetValue(temp_value)->SetIdentifier(var_name);
+
+    inst->AddOperand(expr_idx);
+    inst->AddOperand(temp_value);
+
+    CurrentBB()->AddInstruction(instruction_counter_, inst);
+}
+
 BI Function::GetBBForInstruction(II ins_idx) {
     return instruction_map_[ins_idx]->ContainingBB();
 }
@@ -198,8 +220,7 @@ bool Function::IsRelational(T insty) const {
 }
 
 bool Function::IsReducible(VI idx_1, VI idx_2) const {
-    return  (GetValue(idx_1)->IsConstant() &&
-             GetValue(idx_2)->IsConstant());
+    return  (GetValue(idx_1)->IsConstant() && GetValue(idx_2)->IsConstant());
 }
 
 VI Function::Reduce(VI idx_1, VI idx_2, ArithmeticOperator op) {
@@ -235,6 +256,10 @@ VI Function::Reduce(VI idx_1, VI idx_2, ArithmeticOperator op) {
     }
 
     return result;
+}
+
+VI Function::GetLocationValue(const std::string& var_name) const {
+    return GetVariable(var_name)->GetLocationIdx();
 }
 
 Instruction::Instruction(T insty, BI containing_bb, II ins_idx) :

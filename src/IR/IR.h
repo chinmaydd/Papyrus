@@ -29,6 +29,8 @@ public:
         VAL_LOCALBASE,
         VAL_GLOBALBASE,
 
+        VAL_LOCATION,
+
         VAL_PHI,
 
         VAL_FUNC,
@@ -36,6 +38,7 @@ public:
         VAL_BRANCH,
 
         VAL_FORMAL,
+        VAL_VAR,
 
         VAL_ANY,
     };
@@ -75,6 +78,9 @@ public:
 
         INS_LOAD,
         INS_STORE,
+
+        INS_LOADG,
+        INS_STOREG,
 
         INS_CALL,
         INS_ARG,
@@ -150,6 +156,8 @@ static const std::unordered_map<T, std::string> ins_to_str_ = {
     {T::INS_ADDA,     "ADDA"},
     {T::INS_LOAD,     "LOAD"},
     {T::INS_STORE,    "STORE"},
+    {T::INS_LOADG,    "LOADG"},
+    {T::INS_STOREG,   "STOREG"},
     {T::INS_CALL,     "CALL"},
     {T::INS_PHI,      "PHI"},
     {T::INS_ADD,      "ADD"},
@@ -166,6 +174,7 @@ static const std::unordered_map<T, std::string> ins_to_str_ = {
     {T::INS_BRA,      "BRA"},
     {T::INS_END,      "END"},
     {T::INS_CALL,     "CALL"},
+    {T::INS_MOVE,     "MOVE"},
     {T::INS_RET,      "RET"},
     {T::INS_ANY,      "ANY"},
     {T::INS_ARG,      "ARG"},
@@ -229,6 +238,7 @@ public:
     void AddBBEdge(BI, BI);        // pred, succ
     void SealBB(BI);
     void SetCurrentBB(BI idx) { current_bb_ = idx; }
+    void MakeMove(const std::string&, VI);
 
     int GetOffset(const std::string&) const;
 
@@ -250,6 +260,7 @@ public:
     VI MakeInstruction(T, VI, VI);
     VI SelfIdx() const { return self_idx_; }
     VI Reduce(VI, VI, ArithmeticOperator);
+    VI GetLocationValue(const std::string&) const;
 
     Instruction* CurrentInstruction() const;
     Instruction* GetInstruction(II) const;

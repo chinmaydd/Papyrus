@@ -99,6 +99,10 @@ bool IRC::IsVariableGlobal(const std::string& var_name) const {
     return global_variable_map_.find(var_name) != global_variable_map_.end();
 }
 
+VI IRC::GetLocationValue(const std::string& var_name) const {
+    return GetGlobal(var_name)->GetLocationIdx();
+}
+
 void IRC::DeclareGlobalBase() {
     value_counter_++;
 
@@ -106,6 +110,16 @@ void IRC::DeclareGlobalBase() {
     global_base_idx_ = value_counter_;
 
     value_map_->emplace(value_counter_, global_base_);
+}
+
+VI IRC::CreateValue(V vty) {
+    value_counter_++;
+
+    Value* val = new Value(vty);
+    
+    value_map_->emplace(value_counter_, val);
+    
+    return value_counter_;
 }
 
 void IRC::BuildIR() {

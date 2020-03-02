@@ -25,7 +25,7 @@ public:
 
     std::string CloseNode() const;
 
-    std::string GetEdgeString(BI, BI) const;
+    std::string GetEdgeString(const std::string&, BI, BI) const;
 
 private:
     IRC& irc_;

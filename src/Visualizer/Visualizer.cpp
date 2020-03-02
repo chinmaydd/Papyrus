@@ -25,6 +25,10 @@ std::string Function::ConvertValueToString(VI val_idx) const {
             res += "BB_" + std::to_string(val->GetConstant());
             break;
         }
+        case V::VAL_VAR: {
+            res += val->Identifier();
+            break;
+        }
         default: {
             res += "(" + std::to_string(val_idx) + ")";
             break;
@@ -56,7 +60,7 @@ std::string Visualizer::GetBaseNodeString(BI bb_idx, const std::string& func_nam
     std::string res = "";
 
     res += "node: {\n";
-    res += "title: \"" + GetBBString(bb_idx) + "\"\n";
+    res += "title: \"" + func_name + ":" + GetBBString(bb_idx) + "\"\n";
     res += "label: \"[" + func_name + "] " + GetBBString(bb_idx) + "\n";
 
     return res;
@@ -66,12 +70,12 @@ std::string Visualizer::CloseNode() const {
     return "\"\n}\n";
 }
 
-std::string Visualizer::GetEdgeString(BI source, BI target) const {
+std::string Visualizer::GetEdgeString(const std::string& func_name, BI source, BI target) const {
     std::string res = "";
 
     res += "edge: {\n";
-    res += "sourcename: \"" + GetBBString(source) + "\"\n";
-    res += "targetname: \"" + GetBBString(target) + "\"\n";
+    res += "sourcename: \"" + func_name + ":" + GetBBString(source) + "\"\n";
+    res += "targetname: \"" + func_name + ":" + GetBBString(target) + "\"\n";
     res += "color: black\n";
     res += "}\n";
 
@@ -101,7 +105,7 @@ void Visualizer::DrawFunc(const Function* func) {
 
 
         for (auto succ: bb->Successors()) {
-            bb_graph += GetEdgeString(bb_idx, succ);
+            bb_graph += GetEdgeString(func_name, bb_idx, succ);
         }
     }
 

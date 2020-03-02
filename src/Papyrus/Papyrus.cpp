@@ -7,8 +7,6 @@
 #include "IR/IR.h"
 #include "IR/IRConstructor.h"
 
-#include "Analysis/ConstantFolding.h"
-
 #include "Utils.h"
 
 #include "Visualizer/Visualizer.h"
@@ -42,8 +40,8 @@ int main(int argc, char *argv[]) {
 
     irconst.BuildIR();
 
-    ConstantFolding cf(irconst);
-    cf.run();
+    // ConstantFolding cf(irconst);
+    // cf.run();
 
     std::string vcg_fname = utils.ConstructOutFile(argv[1]);
 

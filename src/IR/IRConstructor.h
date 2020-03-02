@@ -48,6 +48,8 @@ public:
     VI ValueCounter() const { return value_counter_; }
     VI CreateConstant(int);
     VI GlobalBase() const { return global_base_idx_; }
+    VI GetLocationValue(const std::string&) const;
+    VI CreateValue(V);
 
     std::unordered_map<VI, Value*>* ValMap() const { return value_map_; }
 
