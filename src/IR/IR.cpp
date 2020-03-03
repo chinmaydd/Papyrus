@@ -13,6 +13,8 @@ Function::Function(const std::string& func_name, VI value_counter, std::unordere
     bb_counter_(0),
     current_bb_(0),
     instruction_counter_(0),
+    postorder_cfg_({}),
+    rev_postorder_cfg_({}),
     value_map_(value_map) {
         SetLocalBase(CreateValue(V::VAL_LOCALBASE));
         SetCurrentBB(CreateBB());
@@ -196,6 +198,54 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
     AddUsage(arg_2, instruction_counter_);
 
     return result;
+}
+
+void Function::Visit(BI bb_idx, std::unordered_map<BI, bool>& visited) {
+    visited[bb_idx] = true;
+
+    auto bb = basic_block_map_.at(bb_idx);
+    for (auto succ: bb->Successors()) {
+        if (!visited[succ]) {
+            Visit(succ, visited);
+        }
+    }
+
+    postorder_cfg_.push_back(bb_idx);
+}
+
+// Static function?
+std::vector<BI> Function::PostOrderCFG() {
+    if (postorder_cfg_.size() != 0) {
+        return postorder_cfg_;
+    }
+
+    std::unordered_map<BI, bool> visited;
+    // NOTE: BB with idx=1 is assumed to be the entry idx
+    BI entry_idx = 1;
+
+    visited[entry_idx] = true;
+    postorder_cfg_.push_back(entry_idx);
+
+    for (auto bb_pair: basic_block_map_) {
+        auto bb_idx = bb_pair.first;
+
+        if (!visited[bb_idx]) {
+            Visit(bb_idx, visited);
+        }
+    }
+
+    rev_postorder_cfg_ = std::vector<BI>(postorder_cfg_.rbegin(),
+                                         postorder_cfg_.rend());
+    // std::reverse(rev_postorder_cfg_.begin(), rev_postorder_cfg_.end());
+    return postorder_cfg_;
+}
+
+std::vector<BI> Function::ReversePostOrderCFG() {
+    if (postorder_cfg_.size() == 0) {
+        PostOrderCFG();
+    }
+
+    return rev_postorder_cfg_;
 }
 
 Instruction* Function::GetInstruction(II ins_idx) const {

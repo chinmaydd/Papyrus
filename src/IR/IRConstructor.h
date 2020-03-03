@@ -32,9 +32,8 @@ public:
 
     ASTConstructor& ASTConst() { return astconst_; }
 
-    std::unordered_map<std::string, Function*> Functions() const {
-        return functions_;
-    }
+    const std::unordered_map<std::string, Function*>& Functions() const;
+    const std::vector<BI>& PostOrderCFG(const std::string&) const;
 
     const Variable* GetGlobal(const std::string&) const;
     Value* GetValue(VI) const;
@@ -43,7 +42,9 @@ public:
     bool IsVariableGlobal(const std::string&) const;
     bool IsIntrinsic(const std::string&) const;
 
-    Function* CurrentFunction() const { return current_function_; }
+    inline Function* CurrentFunction() const { return current_function_; }
+
+    Function* GetFunction(const std::string&);
 
     int GlobalOffset(const std::string&) const;
 

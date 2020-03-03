@@ -199,7 +199,7 @@ public:
     const std::vector<BI> Successors() const;
 
     const std::deque<II>& InstructionOrder() const { return instruction_order_; }
-    const std::map<II, Instruction*> Instructions() const { return instructions_; }
+    const std::unordered_map<II, Instruction*> Instructions() const { return instructions_; }
 
     bool HasActiveInstructions() const;
     bool IsSealed() const { return is_sealed_; }
@@ -212,7 +212,7 @@ public:
 private:
     BI idx_;
 
-    std::map<II, Instruction*> instructions_;
+    std::unordered_map<II, Instruction*> instructions_;
     std::deque<II> instruction_order_;
 
     std::vector<BI> predecessors_;
@@ -231,6 +231,12 @@ public:
     const std::string& FunctionName() const { return func_name_; }
     const Variable* GetVariable(const std::string& var_name) const;
     const std::unordered_map<BI, BasicBlock*> BasicBlocks() const;
+
+    std::vector<BI> PostOrderCFG();
+    std::vector<BI> ReversePostOrderCFG();
+
+    std::string ConvertInstructionToString(II) const;
+    std::string ConvertValueToString(VI) const;
 
     void SetLocalBase(VI val) { local_base_ = val; }
     void AddVariable(const std::string&, Variable*);
@@ -255,12 +261,15 @@ public:
 
     VI CreateConstant(int);
     VI CreateValue(V);
+
     VI GetCounter() const { return value_counter_; }
     VI ReadVariable(const std::string&, BI);
     VI LocalBase() const { return local_base_; }
+
     VI MakeInstruction(T);
     VI MakeInstruction(T, VI);
     VI MakeInstruction(T, VI, VI);
+
     VI SelfIdx() const { return self_idx_; }
     VI Reduce(VI, VI, ArithmeticOperator);
     VI GetLocationValue(const std::string&) const;
@@ -273,8 +282,6 @@ public:
     bool IsVariableLocal(const std::string&) const;
     bool IsReducible(VI, VI) const;
 
-    std::string ConvertInstructionToString(II) const;
-    std::string ConvertValueToString(VI) const;
 
 private:
     std::string func_name_;
@@ -292,7 +299,11 @@ private:
     std::unordered_map<std::string, Variable*> variable_map_;
 
     std::unordered_map<II, Instruction*> instruction_map_;
+
     std::deque<II> instruction_order_;
+
+    std::vector<BI> postorder_cfg_;
+    std::vector<BI> rev_postorder_cfg_;
 
     BI current_bb_;
     BI bb_counter_;
@@ -308,6 +319,7 @@ private:
 
     void AddBBPredecessor(BI, BI); // current, predecessor
     void AddBBSuccessor(BI, BI);   // current, successor
+    void Visit(BI, std::unordered_map<BI, bool>&);
 
     bool IsPhi(II) const;
     bool IsRelational(T) const;

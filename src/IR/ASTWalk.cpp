@@ -3,14 +3,24 @@
 using namespace papyrus;
 
 #define CF irc.CurrentFunction()
+#define MI irc.CurrentFunction()->MakeInstruction
+#define CC irc.CurrentFunction()->CreateConstant
+#define CV irc.CurrentFunction()->CreateValue
 #define NOTFOUND -1
 
+/*
+ * ConstantNode is converted into Value with VAL_CONST and the value of the
+ * number embedded in it
+ */
 VI ConstantNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "Parsing constant";
 
-    return CF->CreateConstant(value_);
+    return CC(value_);
 }
 
+/*
+ * FactorNode is converted into a Value as well
+ */
 VI FactorNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "Parsing factor";
 
@@ -41,9 +51,16 @@ VI FactorNode::GenerateIR(IRC& irc) const {
     return result;
 }
 
+/* 
+ * Convert TermNode into a Value
+ */
 VI TermNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "Parsing term";
 
+    // Convert the primary factor into a Value
+    // For each of the (other) secondary factors, convert them to a value
+    // and then FACTOR_1 (op) FACTOR_2
+    // and so on..
     VI idx_1, idx_2;
     idx_1 = primary_factor_->GenerateIR(irc);
 
@@ -55,10 +72,12 @@ VI TermNode::GenerateIR(IRC& irc) const {
 
         idx_2 = fact->GenerateIR(irc);
 
+        // Check if factor is reducible
+        // If yes, fold it.
         if (!CF->IsReducible(idx_1, idx_2)) {
-            idx_1 = CF->MakeInstruction(irc.ConvertOperation(op),
-                                        idx_1,
-                                        idx_2);
+            //////////////////////////////////////////////////
+            idx_1 = MI(irc.ConvertOperation(op), idx_1, idx_2);
+            //////////////////////////////////////////////////
         } else {
             idx_1 = CF->Reduce(idx_1, idx_2, op);
         }
@@ -67,9 +86,16 @@ VI TermNode::GenerateIR(IRC& irc) const {
     return idx_1;
 }
 
+/*
+ * Convert Expression into a Value
+ */
 VI ExpressionNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "Parsing expression";
 
+    // Convert the primary term into a value
+    // For each of the (other) secondary terms, convert them to a value
+    // and then TERM_1 (op) TERM_2
+    // and so on..
     VI idx_1, idx_2;
     idx_1 = primary_term_->GenerateIR(irc);
 
@@ -81,10 +107,12 @@ VI ExpressionNode::GenerateIR(IRC& irc) const {
 
         idx_2 = term->GenerateIR(irc);
 
+        // Check if term is reducible
+        // If yes, fold it.
         if (!CF->IsReducible(idx_1, idx_2)) {
-            idx_1 = CF->MakeInstruction(irc.ConvertOperation(op),
-                                        idx_1,
-                                        idx_2);
+            //////////////////////////////////////////////////
+            idx_1 = MI(irc.ConvertOperation(op), idx_1, idx_2);
+            //////////////////////////////////////////////////
         } else {
             idx_1 = CF->Reduce(idx_1, idx_2, op);
         }
@@ -93,6 +121,10 @@ VI ExpressionNode::GenerateIR(IRC& irc) const {
     return idx_1;
 }
 
+/*
+ * For arrays, we do not perform any kind of optimizations. Ideally, we should
+ * take care optimizing base value calculations and only change the index
+ */
 VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "Parsing ArrIdentifier";
 
@@ -100,15 +132,15 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     VI base, offset, temp;
 
     const Variable* var;
-
+    // Locals v/s Global
     if (CF->IsVariableLocal(var_name)) {
         var    = CF->GetVariable(var_name);
         base   = CF->LocalBase();
-        offset = CF->CreateConstant(var->Offset());
+        offset = CC(var->Offset());
     } else if (irc.IsVariableGlobal(var_name)) {
         var    = irc.GetGlobal(var_name);
         base   = irc.GlobalBase();
-        offset = CF->CreateConstant(irc.GlobalOffset(var_name));
+        offset = CC(irc.GlobalOffset(var_name));
     } else {
         LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined.";
         exit(1);
@@ -122,40 +154,44 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         exit(1);
     }
 
-    VI arr_base = CF->MakeInstruction(T::INS_ADDA, 
-                                      offset,
-                                      base);
+    //////////////////////////////////////////////////
+    VI arr_base = MI(T::INS_ADDA, offset, base);
+    //////////////////////////////////////////////////
 
     auto it = indirections_.rbegin();
     ExpressionNode* expr  = *it;
     VI offset_idx = expr->GenerateIR(irc);
     it++;
 
+    // Calculate the offset
     VI dim_idx;
     int dim_offset = 1;
     auto dim_it    = var->GetDimensions().rbegin();
 
     while (it != indirections_.rend()) {
         dim_offset *= *dim_it;
-        dim_idx     = CF->CreateConstant(dim_offset);
+        dim_idx     = CC(dim_offset);
 
         expr = *it;
-        temp = CF->MakeInstruction(T::INS_MUL, 
-                                   dim_idx, 
-                                   expr->GenerateIR(irc));
+        //////////////////////////////////////////////////
+        temp = MI(T::INS_MUL, dim_idx, expr->GenerateIR(irc));
+        //////////////////////////////////////////////////
 
-        offset_idx = CF->MakeInstruction(T::INS_ADDA,
-                                         offset_idx,
-                                         temp);
+        //////////////////////////////////////////////////
+        offset_idx = MI(T::INS_ADDA, offset_idx, temp);
+        //////////////////////////////////////////////////
         it++;
         dim_it++;
     }
 
-    return CF->MakeInstruction(T::INS_ADDA,
-                               arr_base,
-                               offset_idx);
+    //////////////////////////////////////////////////
+    return MI(T::INS_ADDA, arr_base, offset_idx);
+    //////////////////////////////////////////////////
 }
 
+/*
+ * Depending on the type of the variable local v/s global generate a Value
+ */
 VI DesignatorNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing designator";
 
@@ -179,21 +215,20 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
 
     if (desig_type_ == DESIG_VAR) {
         if (CF->IsVariableLocal(var_name)) {
+            // Load variable. Can be thought of as a "SSA Read"
             result = CF->ReadVariable(var_name, CF->CurrentBBIdx());
         } else if (irc.IsVariableGlobal(var_name)) {
-            VI mem_location = irc.GetLocationValue(var_name);
-            result = CF->MakeInstruction(T::INS_LOADG,
-                                         mem_location);
+            VI mem_location = irc.GetLocationValue(var_name); 
+            //////////////////////////////////////////////////
+            result = MI(T::INS_LOADG, mem_location);
+            //////////////////////////////////////////////////
               
             /* Load generation. Delayed until RegisterAllocation
              *
              * int offset      = irc.GlobalOffset(var_name);
-             * VI offset_idx   = CF->CreateConstant(offset);
-             * VI mem_location = CF->MakeInstruction(T::INS_ADDA,
-             *                                       irc.GlobalBase(),
-             *                                       offset_idx);
-             * result = CF->MakeInstruction(T::INS_LOAD,
-             *                              mem_location);
+             * VI offset_idx   = CC(offset);
+             * VI mem_location = MI(T::INS_ADDA, irc.GlobalBase(), offset_idx);
+             * result = MI(T::INS_LOAD, mem_location);
              */
         } else {
             LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined";
@@ -217,23 +252,24 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
 
     if (designator_->GetDesignatorType() == DESIG_VAR) {
         if (CF->IsVariableLocal(var_name)) {
-
+            // Overwrite variable definition in the SSA Context
             CF->WriteVariable(var_name, expr_idx);
         } else if (irc.IsVariableGlobal(var_name)) {
 
             VI mem_location = irc.GetLocationValue(var_name);
-            result = CF->MakeInstruction(T::INS_STOREG,
-                                         expr_idx,
-                                         mem_location);
+
+            //////////////////////////////////////////////////
+            result = MI(T::INS_STOREG, expr_idx, mem_location);
+            //////////////////////////////////////////////////
 
             /* Store generation. Delayed until RegisterAllocation
              *
              * int offset      = irc.GlobalOffset(var_name);
-             * VI offset_idx   = CF->CreateConstant(offset);
-             * VI mem_location = CF->MakeInstruction(T::INS_ADDA,
+             * VI offset_idx   = CC(offset);
+             * VI mem_location = MI(T::INS_ADDA,
              *                                       irc.GlobalBase(),
              *                                       offset_idx);
-             * result = CF->MakeInstruction(T::INS_STORE,
+             * result = MI(T::INS_STORE,
              *                              expr_idx,
              *                              mem_location);
              */
@@ -244,9 +280,9 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
     } else {
        auto arr_id = static_cast<const ArrIdentifierNode*>(designator_);
        VI mem_location = arr_id->GenerateIR(irc);
-       result = CF->MakeInstruction(T::INS_STORE,
-                                    expr_idx,
-                                    mem_location);
+       //////////////////////////////////////////////////
+       result = MI(T::INS_STORE, expr_idx, mem_location);
+       //////////////////////////////////////////////////
     }
 
     return result;
@@ -255,7 +291,7 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
 VI FunctionCallNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing function call";
 
-    VI func_call = CF->CreateValue(V::VAL_FUNC);
+    VI func_call = CV(V::VAL_FUNC);
     std::string func_name = identifier_->IdentifierName();
 
     if (!irc.IsExistFunction(func_name)) {
@@ -268,9 +304,10 @@ VI FunctionCallNode::GenerateIR(IRC& irc) const {
     // Let us assume here, that the arguments are pushed from L-R
     VI interm;
     for (auto argument: arguments_) {
-        interm = argument->GenerateIR(irc);
-        CF->MakeInstruction(T::INS_ARG,
-                            interm);
+        interm = argument->GenerateIR(irc); 
+        //////////////////////////////////////////////////
+        MI(T::INS_ARG, interm);
+        //////////////////////////////////////////////////
     }
 
     VI result;
@@ -280,24 +317,31 @@ VI FunctionCallNode::GenerateIR(IRC& irc) const {
             exit(1);
         }
         
-        result = CF->MakeInstruction(T::INS_READ);
+        //////////////////////////////////////////////////
+        result = MI(T::INS_READ);
+        //////////////////////////////////////////////////
     } else if (func_name == "OutputNum") {
         if (arguments_.size() != 1) {
             LOG(ERROR) << "[IR] Incorrect usage of OutputNum() function";
             exit(1);
         }
 
-        result = CF->MakeInstruction(T::INS_WRITEX);
+        //////////////////////////////////////////////////
+        result = MI(T::INS_WRITEX);
+        //////////////////////////////////////////////////
     } else if (func_name == "OutputNewLine") {
         if (arguments_.size() != 0) {
             LOG(ERROR) << "[IR] Incorrct usage of OutputNewLine() function";
             exit(1);
         }
 
-        result = CF->MakeInstruction(T::INS_WRITENL);
+        //////////////////////////////////////////////////
+        result = MI(T::INS_WRITENL);
+        //////////////////////////////////////////////////
     } else {
-        result = CF->MakeInstruction(T::INS_CALL,
-                                     func_call);
+        //////////////////////////////////////////////////
+        result = MI(T::INS_CALL, func_call);
+        //////////////////////////////////////////////////
     }
     
     return result;
@@ -309,9 +353,13 @@ VI RelationNode::GenerateIR(IRC& irc) const {
     VI expr_1 = left_expr_->GenerateIR(irc);
     VI expr_2 = right_expr_->GenerateIR(irc);
 
-    return CF->MakeInstruction(T::INS_CMP, expr_1, expr_2);
+    //////////////////////////////////////////////////
+    return MI(T::INS_CMP, expr_1, expr_2);
+    //////////////////////////////////////////////////
 }
-
+/*
+ * TODO: Draw picture.
+ */
 VI ITENode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing ITE";
 
@@ -337,9 +385,9 @@ VI ITENode::GenerateIR(IRC& irc) const {
 
         CF->SetCurrentBB(previous);
         VI bb_val = CF->GetBB(f_through)->GetSelfValue();
-        CF->MakeInstruction(irc.ConvertOperation(op),
-                            reln,
-                            bb_val);
+        //////////////////////////////////////////////////
+        MI(irc.ConvertOperation(op), reln, bb_val);
+        //////////////////////////////////////////////////
                             
         CF->AddBBEdge(previous, f_through);
 
@@ -356,9 +404,9 @@ VI ITENode::GenerateIR(IRC& irc) const {
 
         CF->SetCurrentBB(previous);
         VI bb_val = CF->GetBB(else_start)->GetSelfValue();
-        CF->MakeInstruction(irc.ConvertOperation(op),
-                            reln,
-                            bb_val);
+        //////////////////////////////////////////////////
+        MI(irc.ConvertOperation(op), reln, bb_val);
+        //////////////////////////////////////////////////
         
         CF->AddBBEdge(previous, else_start);
         CF->SealBB(else_start);
@@ -381,16 +429,18 @@ VI ITENode::GenerateIR(IRC& irc) const {
         if (!then_ended) {
             CF->SetCurrentBB(then_end);
             VI bb_val = CF->GetBB(f_through)->GetSelfValue();
-            CF->MakeInstruction(T::INS_BRA,
-                                bb_val);
+            //////////////////////////////////////////////////
+            MI(T::INS_BRA, bb_val);
+            //////////////////////////////////////////////////
             CF->AddBBEdge(then_end, f_through);
         }
 
         if (!else_ended) {
             CF->SetCurrentBB(else_end);
             VI bb_val = CF->GetBB(f_through)->GetSelfValue();
-            CF->MakeInstruction(T::INS_BRA,
-                                bb_val);
+            //////////////////////////////////////////////////
+            MI(T::INS_BRA, bb_val);
+            //////////////////////////////////////////////////
 
             CF->AddBBEdge(else_end, f_through);
         }
@@ -402,6 +452,9 @@ VI ITENode::GenerateIR(IRC& irc) const {
     return result;
 }
 
+/*
+ * TODO: Draw picture.
+ */
 VI WhileNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing While";
 
@@ -412,8 +465,9 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     BI loop_header = CF->CreateBB();
 
     VI bb_val = CF->GetBB(loop_header)->GetSelfValue();
-    CF->MakeInstruction(T::INS_BRA,
-                        bb_val);
+    //////////////////////////////////////////////////
+    MI(T::INS_BRA, bb_val);
+    //////////////////////////////////////////////////
 
     CF->AddBBEdge(previous, loop_header);
     CF->SealBB(previous);
@@ -437,8 +491,9 @@ VI WhileNode::GenerateIR(IRC& irc) const {
         CF->AddBBEdge(loop_end, loop_header);
         CF->SetCurrentBB(loop_end);
         VI bb_val = CF->GetBB(loop_header)->GetSelfValue();
-        CF->MakeInstruction(T::INS_BRA,
-                            bb_val);
+        //////////////////////////////////////////////////
+        MI(T::INS_BRA, bb_val);
+        //////////////////////////////////////////////////
     }
 
     CF->SealBB(loop_end);
@@ -448,9 +503,9 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     RelationalOperator op = loop_condition_->GetOp();
 
     bb_val = CF->GetBB(next_bb)->GetSelfValue();
-    CF->MakeInstruction(irc.ConvertOperation(op),
-                        reln,
-                        bb_val);
+    //////////////////////////////////////////////////
+    MI(irc.ConvertOperation(op), reln, bb_val);
+    //////////////////////////////////////////////////
 
     CF->SealBB(next_bb);
     CF->SetCurrentBB(next_bb);
@@ -458,15 +513,20 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     return result;
 }
 
+// Generate a Return Node
 VI ReturnNode::GenerateIR(IRC& irc) const {
     ValueIndex result = NOTFOUND;
 
     VI interm;
     if (return_expression_ != nullptr) {
         interm = return_expression_->GenerateIR(irc);
-        result = CF->MakeInstruction(T::INS_RET, interm);
+        //////////////////////////////////////////////////
+        result = MI(T::INS_RET, interm);
+        //////////////////////////////////////////////////
     } else {
-        result = CF->MakeInstruction(T::INS_RET);
+        //////////////////////////////////////////////////
+        result = MI(T::INS_RET);
+        //////////////////////////////////////////////////
     }
 
     CF->GetBB(CF->CurrentBBIdx())->EndBB();
@@ -474,6 +534,7 @@ VI ReturnNode::GenerateIR(IRC& irc) const {
     return result;
 }
 
+// Handle each type of statement possible
 VI StatementNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing statement";
 
@@ -508,6 +569,7 @@ VI StatementNode::GenerateIR(IRC& irc) const {
     return result;
 }
 
+// For each statement, generate a result
 void StatSequenceNode::GenerateIR(IRC& irc) const {
     StatementNode* statement;
     VI result;
@@ -517,12 +579,14 @@ void StatSequenceNode::GenerateIR(IRC& irc) const {
     }
 }
 
+// Simple handling of statement sequences
 void FunctionBodyNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing function body for: " << CF->FunctionName();
 
     func_statement_sequence_->GenerateIR(irc);
 }
 
+// Generic functions to declaring and defining functions
 void FunctionDeclNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing function: " << identifier_->IdentifierName();
 
@@ -557,7 +621,7 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
             /*
              * Creating a location value here to be used for later
              */
-            location = CF->CreateValue(V::VAL_LOCATION);
+            location = CV(V::VAL_LOCATION);
             var = new Variable(sym, location);
 
             /*
@@ -565,7 +629,7 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
              * Ideally, their storage locations, but atleast their order
              * in the argument sequence
              */
-            expr = CF->CreateValue(V::VAL_FORMAL);
+            expr = CV(V::VAL_FORMAL);
             CF->WriteVariable(var_name, expr);
         } else {
             if (sym->IsArray()) {
@@ -582,12 +646,12 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
              * register if possible, but for now we can store this value in
              * the variable; can be accessed later
              */
-            location = CF->CreateValue(V::VAL_LOCATION);
+            location = CV(V::VAL_LOCATION);
             CF->GetValue(location)->SetConstant(offset);
             CF->GetValue(location)->SetIdentifier(var_name);
 
             var = new Variable(sym, offset, location);
-            expr = CF->CreateValue(V::VAL_VAR);
+            expr = CV(V::VAL_VAR);
         }
 
         CF->AddVariable(var_name, var);
@@ -599,6 +663,7 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
     irc.ClearCurrentFunction();
 }
 
+// Handle Root Computation!
 void ComputationNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing Computation Root";
 
@@ -663,5 +728,7 @@ void ComputationNode::GenerateIR(IRC& irc) const {
     if (computation_body_ != nullptr)
         computation_body_->GenerateIR(irc);
 
-    CF->MakeInstruction(T::INS_END);
+    //////////////////////////////////////////////////
+    MI(T::INS_END);
+    //////////////////////////////////////////////////
 }

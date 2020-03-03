@@ -78,6 +78,18 @@ bool IRC::IsExistFunction(const std::string& func_name) const {
     return functions_.find(func_name) != functions_.end();
 }
 
+Function* IRC::GetFunction(const std::string& func_name) {
+    return functions_.at(func_name);
+}
+
+const std::vector<BI>& IRC::PostOrderCFG(const std::string& func_name) const {
+    return functions_.at(func_name)->PostOrderCFG();
+}
+
+const std::unordered_map<std::string, Function*>& IRC::Functions() const {
+    return functions_;
+}
+
 const Variable* IRC::GetGlobal(const std::string& var_name) const {
     return global_variable_map_.at(var_name);
 }
