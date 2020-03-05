@@ -2,8 +2,7 @@
 
 using namespace papyrus;
 
-#define NOTFOUND -1
-
+#define NOTFOUND -1 
 Value::Value(ValueType vty) :
     vty_(vty) {}
 
@@ -236,7 +235,7 @@ std::vector<BI> Function::PostOrderCFG() {
 
     rev_postorder_cfg_ = std::vector<BI>(postorder_cfg_.rbegin(),
                                          postorder_cfg_.rend());
-    // std::reverse(rev_postorder_cfg_.begin(), rev_postorder_cfg_.end());
+
     return postorder_cfg_;
 }
 

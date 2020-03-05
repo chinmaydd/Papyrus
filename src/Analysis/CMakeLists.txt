@@ -1,5 +1,6 @@
 set(_SOURCE_FILES
     AnalysisPass.cpp
+    LiveVar.cpp
     GlobalClobbering.cpp
     InterprocCall.cpp
     LoadStoreRemover.cpp

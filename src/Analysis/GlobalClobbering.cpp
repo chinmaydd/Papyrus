@@ -3,12 +3,7 @@
 using namespace papyrus;
 
 GlobalClobbering::GlobalClobbering(IRConstructor& irc) :
-    AnalysisPass(irc) {
-
-    InterprocCallAnalysis ipc(irc);
-    ipc.run();
-    callee_info_ = ipc.GetCalleeInfo();
-}
+    AnalysisPass(irc) {}
 
 bool GlobalClobbering::IsMemoryStore(T insty) const {
     return (insty == T::INS_STOREG);
@@ -102,6 +97,10 @@ void GlobalClobbering::Visit(const std::string& fn_name) {
 
 void GlobalClobbering::run() {
 
+    InterprocCallAnalysis ipc(irc());
+    ipc.run();
+    callee_info_ = ipc.GetCalleeInfo();
+
     for (auto fn_pair: irc().Functions()) {
         auto fn_name = fn_pair.first;
         if (!irc().IsIntrinsic(fn_name)) {
@@ -113,10 +112,12 @@ void GlobalClobbering::run() {
     // Visit all callee's of a function before you visit itself
     for (auto fn_pair: irc().Functions()) {
         auto fn_name = fn_pair.first;
-        if (!irc().IsIntrinsic(fn_name)) {
-            if (!visited_[fn_name]) {
-                Visit(fn_name);
-            }
+        if (irc().IsIntrinsic(fn_name)) {
+            continue;
+        } 
+
+        if (!visited_[fn_name]) {
+            Visit(fn_name);
         }
     }
 }
