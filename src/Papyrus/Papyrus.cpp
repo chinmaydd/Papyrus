@@ -8,6 +8,7 @@
 #include "IR/IRConstructor.h"
 
 #include "Analysis/LoadStoreRemover.h"
+#include "Analysis/LiveVar.h"
 
 #include "Utils.h"
 
@@ -42,8 +43,11 @@ int main(int argc, char *argv[]) {
 
     irconst.BuildIR();
 
-    LoadStoreRemover lsr(irconst);
-    lsr.run();
+    // LoadStoreRemover lsr(irconst);
+    // lsr.run();
+
+    // LiveVar lv(irconst);
+    // lv.run();
 
     std::string vcg_fname = utils.ConstructOutFile(argv[1]);
 

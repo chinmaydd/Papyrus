@@ -7,8 +7,9 @@
 
 namespace papyrus {
 
-using ValueMap = std::unordered_map<VI, bool>;
-using LocalLiveVar = std::unordered_map<II, ValueMap>;
+using V = Value::ValueType;
+using ValueSet = std::unordered_set<VI>;
+using LocalLiveVar = std::unordered_map<II, ValueSet>;
 
 class LiveVar : public AnalysisPass {
 public:

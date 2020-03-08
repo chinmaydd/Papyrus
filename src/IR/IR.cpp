@@ -6,6 +6,11 @@ using namespace papyrus;
 Value::Value(ValueType vty) :
     vty_(vty) {}
 
+bool Value::RequiresReg() const {
+    return (vty_ != V::VAL_FORMAL ||
+            vty_ != V::VAL_BRANCH);
+}
+
 Function::Function(const std::string& func_name, VI value_counter, std::unordered_map<VI, Value*>* value_map):
     func_name_(func_name),
     value_counter_(value_counter),
@@ -14,6 +19,8 @@ Function::Function(const std::string& func_name, VI value_counter, std::unordere
     instruction_counter_(0),
     postorder_cfg_({}),
     rev_postorder_cfg_({}),
+    hash_map_({}),
+    constant_map_({}),
     value_map_(value_map) {
         SetLocalBase(CreateValue(V::VAL_LOCALBASE));
         SetCurrentBB(CreateBB());
@@ -41,11 +48,17 @@ int Function::GetOffset(const std::string& var_name) const {
 }
 
 VI Function::CreateConstant(int val) {
+    if (constant_map_.find(val) != constant_map_.end()) {
+        return constant_map_.at(val);
+    }
+
     Value* v = new Value(V::VAL_CONST);
     v->SetConstant(val); 
 
     value_counter_++;
     value_map_->emplace(value_counter_, v);
+
+    constant_map_.insert({val, value_counter_});
 
     return value_counter_;
 }
@@ -124,7 +137,7 @@ II Function::MakePhi() {
     instruction_map_[instruction_counter_] = inst;
     instruction_order_.push_front(instruction_counter_);
 
-    VI result = CreateValue(V::VAL_ANY);
+    VI result = CreateValue(V::VAL_PHI);
     inst->SetResult(result);
 
     CurrentBB()->AddInstruction(instruction_counter_, inst);
@@ -158,11 +171,64 @@ BI Function::GetBBForInstruction(II ins_idx) {
     return instruction_map_[ins_idx]->ContainingBB();
 }
 
+/*
+ * These are hashes used for Common-Subexpression Elimination during
+ * the IR building phase. The algorithm is such that, it allows us to check 
+ * if we are building the same instruction again (since we almost 
+ * navigate across the CFG in dominating order
+ *
+ * The hash is built such that:
+ *
+ * INSTRUCTION_ARG1_ARG2
+ * OR
+ * INSTRUCTION_ARG1
+ *
+ * Here, arguments are sorted and hence the generated hash will be unique.
+ * We will just reuse the value generated earlier.
+ */
+std::string Function::HashInstruction(T insty) const {
+    // Handle function calls here.
+    // We could also get around calling the same functions here
+    // I guess the conditions for that are that the function should not clobber
+    // anything and should generate the same result for the same input
+    // This is tough to check at this stage of the analysis however.
+    return "NOTFOUND";
+}
+
+std::string Function::HashInstruction(T insty, VI arg_1) const {
+    std::string return_str = "";
+    return_str            += ins_to_str_.at(insty) + "_";
+    return_str            += std::to_string(arg_1);
+
+    return return_str;
+}
+
+std::string Function::HashInstruction(T insty, VI arg_1, VI arg_2) const {
+    std::string return_str = "";
+    return_str            += ins_to_str_.at(insty) + "_";
+
+    if (arg_1 < arg_2) {
+        return_str += std::to_string(arg_1) + "_";
+        return_str += std::to_string(arg_2);
+    } else {
+        return_str += std::to_string(arg_2) + "_";
+        return_str += std::to_string(arg_1);
+    }
+
+    return return_str;
+}
+
+bool Function::IsEliminable(T insty) const {
+    return (insty != T::INS_CALL &&
+            insty != T::INS_ARG);
+}
+
+/*
+ * Create Instructions for the IR
+ */
 VI Function::MakeInstruction(T insty) {
     instruction_counter_++;
-    Instruction* inst = new Instruction(insty,
-                                        CurrentBBIdx(),
-                                        instruction_counter_);
+    Instruction* inst = new Instruction(insty, CurrentBBIdx(), instruction_counter_);
 
     instruction_map_[instruction_counter_] = inst;
     instruction_order_.push_back(instruction_counter_);
@@ -178,16 +244,32 @@ VI Function::MakeInstruction(T insty) {
 }
 
 VI Function::MakeInstruction(T insty, VI arg_1) {
+    auto hash_str = HashInstruction(insty, arg_1);
+    if (IsEliminable(insty)) {
+        if (hash_map_.find(hash_str) != hash_map_.end()) {
+            return hash_map_.at(hash_str);
+        }
+    }
+
     VI result = MakeInstruction(insty);
 
     CurrentInstruction()->AddOperand(arg_1);
-
     AddUsage(arg_1, instruction_counter_);
+
+    if (IsEliminable(insty)) {
+        hash_map_.insert({hash_str, result});
+    }
 
     return result;
 }
 
 VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
+    auto hash_str = HashInstruction(insty, arg_1, arg_2);
+
+    if (hash_map_.find(hash_str) != hash_map_.end()) {
+        return hash_map_.at(hash_str);
+    }
+
     VI result = MakeInstruction(insty);
 
     CurrentInstruction()->AddOperand(arg_1);
@@ -195,6 +277,8 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
 
     AddUsage(arg_1, instruction_counter_);
     AddUsage(arg_2, instruction_counter_);
+
+    hash_map_.insert({hash_str, result});
 
     return result;
 }
@@ -311,12 +395,22 @@ VI Function::GetLocationValue(const std::string& var_name) const {
     return GetVariable(var_name)->GetLocationIdx();
 }
 
+VI Function::ResultForInstruction(II ins_idx) const {
+    return instruction_map_.at(ins_idx)->Result();
+}
+
+/*
+ * Function definitions for instructions
+ */
 Instruction::Instruction(T insty, BI containing_bb, II ins_idx) :
     ins_type_(insty),
     containing_bb_(containing_bb),
     ins_idx_(ins_idx),
     is_active_(true) {}
 
+/*
+ * Function definitions for BBs
+ */
 BasicBlock::BasicBlock(BI idx) :
     idx_(idx),
     is_sealed_(false),
@@ -359,8 +453,3 @@ bool BasicBlock::HasActiveInstructions() const {
 
     return false;
 }
-
-VI Function::ResultForInstruction(II ins_idx) const {
-    return instruction_map_.at(ins_idx)->Result();
-}
-

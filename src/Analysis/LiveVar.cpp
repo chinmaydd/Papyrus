@@ -10,22 +10,36 @@ void LiveVar::run() {
         }
 
         auto fn = fn_pair.second;
+        live_vars_[fn_name] = {};
+        ValueSet live_set = {};
+        VI mark_for_removal;
+
         for (auto bb_idx: fn->ReversePostOrderCFG()) {
             auto bb = fn->GetBB(bb_idx);
             auto ins_order = bb->InstructionOrder();
 
-            live_vars_[fn_name] = {};
-            ValueMap live_set = {};
-
             for (auto it = ins_order.rbegin(); it != ins_order.rend(); it++) {
                 auto ins_idx = *it;
                 auto ins = fn->GetInstruction(ins_idx);
-                auto result = ins->Result();
+                if (!ins->IsActive()) {
+                    continue;
+                }
 
-                live_vars_[fn_name][ins_idx] = live_set;
+                live_set.erase(mark_for_removal);
+                mark_for_removal = ins->Result();
+
+                for (auto operand: ins->Operands()) {
+                    if (fn->GetValue(operand)->RequiresReg()) {
+                        live_set.insert(operand);
+                    }
+                }
+
+                live_vars_[fn_name][ins_idx] = ValueSet(live_set);
             }
         }
     }
+
+    LOG(ERROR) << "[ANALYSIS] LiveVar analysis done!";
 }
 
 LocalLiveVar LiveVar::LiveVarsInFunction(const std::string& func_name) const {

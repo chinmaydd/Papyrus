@@ -25,24 +25,17 @@ class IRConstructor;
 class Value {
 public:
     enum ValueType {
-        VAL_NONE,
-
+        VAL_ANY,
         VAL_CONST,
         VAL_LOCALBASE,
         VAL_GLOBALBASE,
-
         VAL_LOCATION,
-
         VAL_PHI,
-
         VAL_FUNC,
-        
-        VAL_BRANCH,
-
-        VAL_FORMAL,
         VAL_VAR,
 
-        VAL_ANY,
+        VAL_BRANCH,
+        VAL_FORMAL,
     };
 
     Value(ValueType);
@@ -61,6 +54,7 @@ public:
     int GetConstant() const { return val_; }
 
     bool IsConstant() const { return vty_ == VAL_CONST; }
+    bool RequiresReg() const;
 
 private:
     ValueType vty_;
@@ -239,6 +233,10 @@ public:
 
     std::string ConvertInstructionToString(II) const;
     std::string ConvertValueToString(VI) const;
+    
+    std::string HashInstruction(T, VI, VI) const;
+    std::string HashInstruction(T, VI) const;
+    std::string HashInstruction(T) const;
 
     void SetLocalBase(VI val) { local_base_ = val; }
     void AddVariable(const std::string&, Variable*);
@@ -299,6 +297,8 @@ private:
     std::unordered_map<BI, std::unordered_map<std::string, II> > incomplete_phis_;
     std::unordered_map<BI, BasicBlock*> basic_block_map_;
     std::unordered_map<std::string, Variable*> variable_map_;
+    std::unordered_map<std::string, VI> hash_map_;
+    std::unordered_map<int, VI> constant_map_;
 
     std::unordered_map<II, Instruction*> instruction_map_;
 
@@ -325,6 +325,7 @@ private:
 
     bool IsPhi(II) const;
     bool IsRelational(T) const;
+    bool IsEliminable(T) const;
 };
 
 } // namespace papyrus

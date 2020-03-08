@@ -9,6 +9,7 @@ class CSE : public AnalysisPass {
 public:
     CSE(IRConstructor& irc) : AnalysisPass(irc) {}
     void run();
+
 };
 
 } // namespace papyrus

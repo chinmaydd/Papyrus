@@ -82,7 +82,7 @@ Function* IRC::GetFunction(const std::string& func_name) {
     return functions_.at(func_name);
 }
 
-const std::vector<BI>& IRC::PostOrderCFG(const std::string& func_name) const {
+std::vector<BI> IRC::PostOrderCFG(const std::string& func_name) const {
     return functions_.at(func_name)->PostOrderCFG();
 }
 
