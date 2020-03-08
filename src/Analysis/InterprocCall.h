@@ -5,17 +5,19 @@
 
 namespace papyrus {
 
+using VarMap = std::unordered_map<std::string, std::unordered_set<std::string> >;
+
 class InterprocCallAnalysis : public AnalysisPass {
 public:
     InterprocCallAnalysis(IRConstructor& irc) : AnalysisPass(irc) {}
     void run();
 
-    const std::unordered_map<std::string, std::unordered_map<std::string, bool> >& GetCallerInfo() const;
-    const std::unordered_map<std::string, std::unordered_map<std::string, bool> >& GetCalleeInfo() const;
+    const VarMap& GetCallerInfo() const;
+    const VarMap& GetCalleeInfo() const;
 
 private:
-    std::unordered_map<std::string, std::unordered_map<std::string, bool> > caller_info_;
-    std::unordered_map<std::string, std::unordered_map<std::string, bool> > callee_info_;
+    VarMap caller_info_;
+    VarMap callee_info_;
 
     bool IsFunctionCall(T) const;
 };

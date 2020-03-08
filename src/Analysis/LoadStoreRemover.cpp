@@ -105,9 +105,8 @@ void LoadStoreRemover::run() {
                     // Executed after call
                     // Take into account the kill introduced by functions
                     // on global vars.
-                    for (auto clob_pair: global_clobber_[fn_name]) {
-                        auto var_name = clob_pair.first;
-                        local_clobber[var_name] = {true, NOTFOUND};
+                    for (auto clob_var: global_clobber_[fn_name]) {
+                        local_clobber[clob_var] = {true, NOTFOUND};
                     }
                 }
             }

@@ -15,13 +15,14 @@ void LiveVar::run() {
             auto ins_order = bb->InstructionOrder();
 
             live_vars_[fn_name] = {};
+            ValueMap live_set = {};
 
             for (auto it = ins_order.rbegin(); it != ins_order.rend(); it++) {
                 auto ins_idx = *it;
                 auto ins = fn->GetInstruction(ins_idx);
+                auto result = ins->Result();
 
-                live_vars_[fn_name][ins_idx] = {};
-
+                live_vars_[fn_name][ins_idx] = live_set;
             }
         }
     }

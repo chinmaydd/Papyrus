@@ -9,23 +9,23 @@
 namespace papyrus {
 
 using T = Instruction::InstructionType;
+using VarMap = std::unordered_map<std::string, std::unordered_set<std::string> >;
 
 class GlobalClobbering : public AnalysisPass {
 public:
     GlobalClobbering(IRConstructor&);
     void run();
 
-    const std::unordered_map<std::string, std::unordered_map<std::string, bool> >& GetClobberStatus() const;
-    const std::unordered_map<std::string, std::unordered_map<std::string, bool> >& GetReadDefStatus() const;
+    const VarMap& GetClobberStatus() const;
+    const VarMap& GetReadDefStatus() const;
 
 private:
-    std::unordered_map<std::string, std::unordered_map<std::string, bool> > clobbered_vars_;
-    std::unordered_map<std::string, std::unordered_map<std::string, bool> > read_vars_;
+    VarMap clobbered_vars_;
+    VarMap read_vars_;
 
-    std::unordered_map<std::string, bool> visited_;
+    std::unordered_set<std::string> visited_;
 
-    std::unordered_map<std::string, std::unordered_map<std::string, bool> > callee_info_;
-
+    VarMap callee_info_;
     
     bool IsMemoryStore(T) const;
     bool IsMemoryLoad(T) const;

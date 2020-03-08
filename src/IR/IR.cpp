@@ -199,12 +199,12 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
     return result;
 }
 
-void Function::Visit(BI bb_idx, std::unordered_map<BI, bool>& visited) {
-    visited[bb_idx] = true;
+void Function::Visit(BI bb_idx, std::unordered_set<BI>& visited) {
+    visited.insert(bb_idx);
 
     auto bb = basic_block_map_.at(bb_idx);
     for (auto succ: bb->Successors()) {
-        if (!visited[succ]) {
+        if (visited.find(succ) == visited.end()) {
             Visit(succ, visited);
         }
     }
@@ -218,17 +218,17 @@ std::vector<BI> Function::PostOrderCFG() {
         return postorder_cfg_;
     }
 
-    std::unordered_map<BI, bool> visited;
+    std::unordered_set<BI> visited;
     // NOTE: BB with idx=1 is assumed to be the entry idx
     BI entry_idx = 1;
 
-    visited[entry_idx] = true;
+    visited.insert(entry_idx);
     postorder_cfg_.push_back(entry_idx);
 
     for (auto bb_pair: basic_block_map_) {
         auto bb_idx = bb_pair.first;
 
-        if (!visited[bb_idx]) {
+        if (visited.find(bb_idx) == visited.end()) {
             Visit(bb_idx, visited);
         }
     }

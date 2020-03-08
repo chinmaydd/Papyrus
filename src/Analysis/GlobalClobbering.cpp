@@ -18,27 +18,26 @@ bool GlobalClobbering::IsFunctionCall(T insty) const {
 }
 
 void GlobalClobbering::Clobber(const std::string& fn_name, const std::string& var_name) {
-    clobbered_vars_[fn_name][var_name] = true;
+    clobbered_vars_[fn_name].insert(var_name);
 }
 
 void GlobalClobbering::ReadDef(const std::string& fn_name, const std::string& var_name) {
-    read_vars_[fn_name][var_name] = true;
+    read_vars_[fn_name].insert(var_name);
 }
 
-const std::unordered_map<std::string, std::unordered_map<std::string, bool> >& GlobalClobbering::GetClobberStatus() const {
+const VarMap& GlobalClobbering::GetClobberStatus() const {
     return clobbered_vars_;
 }
 
-const std::unordered_map<std::string, std::unordered_map<std::string, bool> >& GlobalClobbering::GetReadDefStatus() const {
+const VarMap& GlobalClobbering::GetReadDefStatus() const {
     return read_vars_;
 }
 
 void GlobalClobbering::Visit(const std::string& fn_name) {
-    visited_[fn_name] = true;
+    visited_.insert(fn_name);
 
-    for (auto callee_pair: callee_info_[fn_name]) {
-        auto callee = callee_pair.first;
-        if (!visited_[callee]) {
+    for (auto callee: callee_info_[fn_name]) {
+        if (visited_.find(callee) == visited_.end()) {
             Visit(callee);
         }
     }
@@ -78,18 +77,16 @@ void GlobalClobbering::Visit(const std::string& fn_name) {
      // all the potential callee's of this function. This can now 
      // allow us to merge global clobbering information into that 
      // of the current function
-     for (auto callee_pair: callee_info_[fn_name]) {
-         auto callee = callee_pair.first;
-
+     for (auto callee: callee_info_[fn_name]) {
          if (clobbered_vars_.find(callee) != clobbered_vars_.end()) {
-             for (auto clob_pair: clobbered_vars_[callee]) {
-                 clobbered_vars_[fn_name][clob_pair.first] = true;
+             for (auto clob_var: clobbered_vars_[callee]) {
+                 clobbered_vars_[fn_name].insert(clob_var);
              }
          }
 
          if (read_vars_.find(callee) != read_vars_.end()) {
-             for (auto read_pair: read_vars_[callee]) {
-                 read_vars_[fn_name][read_pair.first] = true;
+             for (auto read_var: read_vars_[callee]) {
+                 read_vars_[fn_name].insert(read_var);
              }
          }
      }
@@ -101,13 +98,6 @@ void GlobalClobbering::run() {
     ipc.run();
     callee_info_ = ipc.GetCalleeInfo();
 
-    for (auto fn_pair: irc().Functions()) {
-        auto fn_name = fn_pair.first;
-        if (!irc().IsIntrinsic(fn_name)) {
-            visited_[fn_name] = false;
-        }
-    }
-
     // Topological Sort
     // Visit all callee's of a function before you visit itself
     for (auto fn_pair: irc().Functions()) {
@@ -116,7 +106,7 @@ void GlobalClobbering::run() {
             continue;
         } 
 
-        if (!visited_[fn_name]) {
+        if (visited_.find(fn_name) == visited_.end()) {
             Visit(fn_name);
         }
     }

@@ -6,11 +6,13 @@
 #include "Variable.h"
 
 #include <vector>
-#include <map>
-#include <unordered_map>
-#include <deque>
 #include <algorithm>
+
+#include <deque>
+#include <map>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 
 using VI = int; // ValueIndex
 using BI = int; // BasicBlockIndex
@@ -319,7 +321,7 @@ private:
 
     void AddBBPredecessor(BI, BI); // current, predecessor
     void AddBBSuccessor(BI, BI);   // current, successor
-    void Visit(BI, std::unordered_map<BI, bool>&);
+    void Visit(BI, std::unordered_set<BI>&);
 
     bool IsPhi(II) const;
     bool IsRelational(T) const;

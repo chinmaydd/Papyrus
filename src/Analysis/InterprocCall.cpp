@@ -30,18 +30,18 @@ void InterprocCallAnalysis::run() {
                     VI callee_vi = inst->Operands().at(0);
                     auto callee = irc().GetValue(callee_vi)->Identifier();
 
-                    caller_info_[callee][caller] = true;
-                    callee_info_[caller][callee] = true;
+                    caller_info_[callee].insert(caller);
+                    callee_info_[caller].insert(callee);
                 }
             }
         }
     }
 }
 
-const std::unordered_map<std::string, std::unordered_map<std::string, bool> >& InterprocCallAnalysis::GetCallerInfo() const {
+const VarMap& InterprocCallAnalysis::GetCallerInfo() const {
     return caller_info_;
 }
 
-const std::unordered_map<std::string, std::unordered_map<std::string, bool> >& InterprocCallAnalysis::GetCalleeInfo() const {
+const VarMap& InterprocCallAnalysis::GetCalleeInfo() const {
     return callee_info_;
 }
