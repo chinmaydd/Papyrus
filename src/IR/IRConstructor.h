@@ -33,6 +33,7 @@ public:
     ASTConstructor& ASTConst() { return astconst_; }
 
     const std::unordered_map<std::string, Function*>& Functions() const;
+    const std::map<std::string, Variable*>& Globals() const;
     std::vector<BI> PostOrderCFG(const std::string&) const;
 
     const Variable* GetGlobal(const std::string&) const;

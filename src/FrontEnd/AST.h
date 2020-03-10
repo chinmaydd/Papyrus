@@ -158,12 +158,19 @@ public:
 
     RelationalOperator GetOp() const { return op_; }
 
+    bool IsReducible(ValueIndex, ValueIndex) const;
+
     ValueIndex GenerateIR(IRC&) const;
+    ValueIndex Left() const { return left_idx_; }
+    ValueIndex Right() const { return right_idx_; }
 
 private:
     ExpressionNode* left_expr_;
     RelationalOperator op_;
     ExpressionNode* right_expr_;
+
+    ValueIndex left_idx_;
+    ValueIndex right_idx_;
 };
 ////////////////////////////////
 
@@ -242,6 +249,7 @@ public:
     void AddElseClause(StatSequenceNode*);
 
     ValueIndex GenerateIR(IRC&) const;
+    ValueIndex HandleReducibleCmp(IRC&, ValueIndex, ValueIndex) const;
 
 private:
     RelationNode* relation_;
@@ -269,6 +277,7 @@ public:
     WhileNode(RelationNode*, StatSequenceNode*);
 
     ValueIndex GenerateIR(IRC&) const;
+    ValueIndex HandleReducibleCmp(IRC&, ValueIndex, ValueIndex) const;
 
 private:
     RelationNode* loop_condition_;

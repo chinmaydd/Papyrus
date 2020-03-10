@@ -220,7 +220,10 @@ std::string Function::HashInstruction(T insty, VI arg_1, VI arg_2) const {
 
 bool Function::IsEliminable(T insty) const {
     return (insty != T::INS_CALL &&
-            insty != T::INS_ARG);
+            insty != T::INS_ARG &&
+            insty != T::INS_BRA &&
+            insty != T::INS_LOADG &&
+            insty != T::INS_STOREG);
 }
 
 /*
@@ -245,8 +248,11 @@ VI Function::MakeInstruction(T insty) {
 
 VI Function::MakeInstruction(T insty, VI arg_1) {
     auto hash_str = HashInstruction(insty, arg_1);
+
+    // Check if instruction can be removed
     if (IsEliminable(insty)) {
         if (hash_map_.find(hash_str) != hash_map_.end()) {
+            LOG(INFO) << "Removed " << hash_str;
             return hash_map_.at(hash_str);
         }
     }
@@ -266,8 +272,12 @@ VI Function::MakeInstruction(T insty, VI arg_1) {
 VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
     auto hash_str = HashInstruction(insty, arg_1, arg_2);
 
-    if (hash_map_.find(hash_str) != hash_map_.end()) {
-        return hash_map_.at(hash_str);
+    // Check if instruction can be removed
+    if (IsEliminable(insty)) {
+        if (hash_map_.find(hash_str) != hash_map_.end()) {
+            LOG(INFO) << "Removed " << hash_str;
+            return hash_map_.at(hash_str);
+        }
     }
 
     VI result = MakeInstruction(insty);
@@ -278,7 +288,9 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
     AddUsage(arg_1, instruction_counter_);
     AddUsage(arg_2, instruction_counter_);
 
-    hash_map_.insert({hash_str, result});
+    if (IsEliminable(insty)) {
+        hash_map_.insert({hash_str, result});
+    }
 
     return result;
 }
@@ -353,7 +365,7 @@ bool Function::IsRelational(T insty) const {
 }
 
 bool Function::IsReducible(VI idx_1, VI idx_2) const {
-    return  (GetValue(idx_1)->IsConstant() && GetValue(idx_2)->IsConstant());
+    return (GetValue(idx_1)->IsConstant() && GetValue(idx_2)->IsConstant());
 }
 
 VI Function::Reduce(VI idx_1, VI idx_2, ArithmeticOperator op) {
@@ -385,6 +397,68 @@ VI Function::Reduce(VI idx_1, VI idx_2, ArithmeticOperator op) {
         default: {
             LOG(ERROR) << "[IR] Unknwon operation found!";
             exit(1);
+        }
+    }
+
+    return result;
+}
+
+int Function::ReduceCondition(RelationalOperator op, VI left, VI right) const {
+    int l_val = GetValue(left)->GetConstant();
+    int r_val = GetValue(right)->GetConstant();
+
+    int THEN = 1;
+    int ELSE = 2;
+    int result = 0;
+
+    switch (op) {
+        case RELOP_EQ: {
+            if (l_val == r_val) {
+                result = THEN;
+            } else {
+                result = ELSE; 
+            }
+            break;
+        }
+        case RELOP_NEQ: {
+            if (l_val != r_val) {
+                result = THEN;
+            } else {
+                result = ELSE;
+            }
+            break;
+        }
+        case RELOP_LT: {
+            if (l_val < r_val) {
+                result = THEN;
+            } else {
+                result = ELSE;
+            }
+            break;
+        }
+        case RELOP_LTE: {
+            if (l_val <= r_val) {
+                result = THEN;
+            } else {
+                result = ELSE;
+            }
+            break;
+        }
+        case RELOP_GT: {
+            if (l_val > r_val) {
+                result = THEN;
+            } else {
+                result = ELSE;
+            }
+            break;
+        }
+        case RELOP_GTE: {
+            if (l_val >= r_val) {
+                result = THEN;
+            } else {
+                result = ELSE;
+            }
+            break;
         }
     }
 

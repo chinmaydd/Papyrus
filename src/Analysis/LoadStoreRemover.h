@@ -4,7 +4,7 @@
 #include "AnalysisPass.h"
 #include "GlobalClobbering.h"
 
-#include <stack>
+#include <queue>
 
 namespace papyrus {
 
@@ -15,6 +15,11 @@ class LoadStoreRemover : public AnalysisPass {
 public:
     LoadStoreRemover(IRConstructor& irc) : AnalysisPass(irc) {}
     void run();
+
+private:
+    bool IsMemoryStore(Instruction*) const;
+    VarMap global_clobber_;
+    VarMap load_deps_;
 };
 
 } // namespace papyrus

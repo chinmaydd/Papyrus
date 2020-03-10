@@ -114,7 +114,6 @@ public:
 
     void AddOperand(VI val_idx) { operands_.push_back(val_idx); }
     void SetResult(VI res) { result_ = res; }
-    // TODO: This should also remove the usage from the values
     void MakeInactive() { is_active_ = false; }
     void ReplaceUse(VI, VI);
 
@@ -250,6 +249,7 @@ public:
     void MakeMove(const std::string&, VI);
 
     int GetOffset(const std::string&) const;
+    int ReduceCondition(RelationalOperator, VI, VI) const;
 
     Value* GetValue(VI) const;
 

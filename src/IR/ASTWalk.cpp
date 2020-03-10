@@ -7,6 +7,7 @@ using namespace papyrus;
 #define CC irc.CurrentFunction()->CreateConstant
 #define CV irc.CurrentFunction()->CreateValue
 #define NOTFOUND -1
+#define REDUCIBLE -2
 
 /*
  * ConstantNode is converted into Value with VAL_CONST and the value of the
@@ -128,7 +129,7 @@ VI ExpressionNode::GenerateIR(IRC& irc) const {
 VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "Parsing ArrIdentifier";
 
-    std::string var_name = IdentifierName();
+    auto var_name = IdentifierName();
     VI base, offset, temp;
 
     const Variable* var;
@@ -158,21 +159,28 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     VI arr_base = MI(T::INS_ADDA, offset, base);
     //////////////////////////////////////////////////
 
-    auto it = indirections_.rbegin();
-    ExpressionNode* expr  = *it;
+    auto ind_temp(indirections_);
+    std::reverse(ind_temp.begin(), ind_temp.end());
+    auto it = ind_temp.begin();
+
+    auto expr  = *it;
     VI offset_idx = expr->GenerateIR(irc);
     it++;
 
     // Calculate the offset
     VI dim_idx;
     int dim_offset = 1;
-    auto dim_it    = var->GetDimensions().rbegin();
 
-    while (it != indirections_.rend()) {
+    std::vector<int> var_temp(var->GetDimensions());
+    std::reverse(var_temp.begin(), var_temp.end());
+    auto dim_it = var_temp.begin();
+
+    while (it != ind_temp.end()) {
         dim_offset *= *dim_it;
         dim_idx     = CC(dim_offset);
 
         expr = *it;
+
         //////////////////////////////////////////////////
         temp = MI(T::INS_MUL, dim_idx, expr->GenerateIR(irc));
         //////////////////////////////////////////////////
@@ -180,6 +188,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         //////////////////////////////////////////////////
         offset_idx = MI(T::INS_ADDA, offset_idx, temp);
         //////////////////////////////////////////////////
+ 
         it++;
         dim_it++;
     }
@@ -196,7 +205,7 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing designator";
 
     VI result = NOTFOUND;
-    std::string var_name = identifier_->IdentifierName();
+    auto var_name = identifier_->IdentifierName();
 
     const Variable* var;
     if (CF->IsVariableLocal(var_name)) {
@@ -219,17 +228,17 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
             result = CF->ReadVariable(var_name, CF->CurrentBBIdx());
         } else if (irc.IsVariableGlobal(var_name)) {
             VI mem_location = irc.GetLocationValue(var_name); 
+
             //////////////////////////////////////////////////
             result = MI(T::INS_LOADG, mem_location);
             //////////////////////////////////////////////////
               
-            /* Load generation. Delayed until RegisterAllocation
-             *
-             * int offset      = irc.GlobalOffset(var_name);
-             * VI offset_idx   = CC(offset);
-             * VI mem_location = MI(T::INS_ADDA, irc.GlobalBase(), offset_idx);
-             * result = MI(T::INS_LOAD, mem_location);
-             */
+            // Load generation. Delayed until RegisterAllocation
+            //
+            // int offset      = irc.GlobalOffset(var_name);
+            // VI offset_idx   = CC(offset);
+            // VI mem_location = MI(T::INS_ADDA, irc.GlobalBase(), offset_idx);
+            // result = MI(T::INS_LOAD, mem_location);
         } else {
             LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined";
             exit(1);
@@ -248,7 +257,7 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
     VI result = NOTFOUND;
 
     VI expr_idx  = value_->GenerateIR(irc);
-    std::string var_name = designator_->IdentifierName();
+    auto var_name = designator_->IdentifierName();
 
     if (designator_->GetDesignatorType() == DESIG_VAR) {
         if (CF->IsVariableLocal(var_name)) {
@@ -262,17 +271,11 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
             result = MI(T::INS_STOREG, expr_idx, mem_location);
             //////////////////////////////////////////////////
 
-            /* Store generation. Delayed until RegisterAllocation
-             *
-             * int offset      = irc.GlobalOffset(var_name);
-             * VI offset_idx   = CC(offset);
-             * VI mem_location = MI(T::INS_ADDA,
-             *                                       irc.GlobalBase(),
-             *                                       offset_idx);
-             * result = MI(T::INS_STORE,
-             *                              expr_idx,
-             *                              mem_location);
-             */
+            // Store generation. Delayed until RegisterAllocation
+            // int offset      = irc.GlobalOffset(var_name);
+            // VI offset_idx   = CC(offset);
+            // VI mem_location = MI(T::INS_ADDA, irc.GlobalBase(), offset_idx);
+            // result = MI(T::INS_STORE, expr_idx, mem_location);
         } else {
             LOG(ERROR) << "Usage of variable " + var_name + " which is not defined.";
             exit(1);
@@ -292,7 +295,7 @@ VI FunctionCallNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing function call";
 
     VI func_call = CV(V::VAL_FUNC);
-    std::string func_name = identifier_->IdentifierName();
+    auto func_name = identifier_->IdentifierName();
 
     if (!irc.IsExistFunction(func_name)) {
         LOG(ERROR) << "[IR] Usage of function " + func_name + " which is not defined";
@@ -357,8 +360,37 @@ VI RelationNode::GenerateIR(IRC& irc) const {
     return MI(T::INS_CMP, expr_1, expr_2);
     //////////////////////////////////////////////////
 }
+
+VI ITENode::HandleReducibleCmp(IRConstructor& irc, VI left, VI right) const {
+    LOG(INFO) << "[IR] Reducing CFG";
+
+    VI result = NOTFOUND;
+
+    // Make current instruction inactive and remove uses of expressions
+    CF->CurrentInstruction()->MakeInactive();
+    // TODO: Remove usages of exprs
+
+    auto op = relation_->GetOp();
+
+    // Check if we want to explore THEN or ELSE branch of the condition.
+    // We will discard the other.
+    int THEN = 1;
+    int ELSE = 2;
+    auto retval = CF->ReduceCondition(op, left, right);
+
+    if (retval == THEN) {
+        then_sequence_->GenerateIR(irc);
+    } else {
+        if (else_sequence_ != nullptr) {
+            else_sequence_->GenerateIR(irc);
+        }
+    }
+
+    return result;
+}
+
 /*
- * TODO: Draw picture.
+ * TODO: Draw fancy ascii picture.
  */
 VI ITENode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing ITE";
@@ -366,7 +398,23 @@ VI ITENode::GenerateIR(IRC& irc) const {
     VI result = NOTFOUND;
 
     VI reln = relation_->GenerateIR(irc);
-    RelationalOperator op = relation_->GetOp();
+    auto op = relation_->GetOp();
+
+    // Here, we handle the case where the control flow is reducible. 
+    // The reason for doing this during AST construction is that we already
+    // know a lot of information about the "constantness" of the conditionals
+    // It might be a waste of time to perform this as an analysis since, 
+    // reducing the CFG at this stage also allows us to get rid of 
+    // unnecessary PHI functions.
+    auto curr_ins = CF->CurrentInstruction();
+    VI left_expr  = curr_ins->Operands().at(0);
+    VI right_expr = curr_ins->Operands().at(1);
+
+    if (CF->IsReducible(left_expr, right_expr)) {
+        // Early return
+        return HandleReducibleCmp(irc, left_expr, right_expr);
+    }
+    ///////////////////////////////////////////////
 
     BI previous = CF->CurrentBBIdx();
     CF->SealBB(previous);
@@ -385,6 +433,7 @@ VI ITENode::GenerateIR(IRC& irc) const {
 
         CF->SetCurrentBB(previous);
         VI bb_val = CF->GetBB(f_through)->GetSelfValue();
+
         //////////////////////////////////////////////////
         MI(irc.ConvertOperation(op), reln, bb_val);
         //////////////////////////////////////////////////
@@ -404,6 +453,7 @@ VI ITENode::GenerateIR(IRC& irc) const {
 
         CF->SetCurrentBB(previous);
         VI bb_val = CF->GetBB(else_start)->GetSelfValue();
+
         //////////////////////////////////////////////////
         MI(irc.ConvertOperation(op), reln, bb_val);
         //////////////////////////////////////////////////
@@ -453,7 +503,7 @@ VI ITENode::GenerateIR(IRC& irc) const {
 }
 
 /*
- * TODO: Draw picture.
+ * TODO: Draw fancy ascii picture.
  */
 VI WhileNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing While";
@@ -465,6 +515,12 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     BI loop_header = CF->CreateBB();
 
     VI bb_val = CF->GetBB(loop_header)->GetSelfValue();
+    
+    //////////////////////////////////////////////////
+    // TODO: Implement loop condition checking for 
+    // reducibility
+    //////////////////////////////////////////////////
+
     //////////////////////////////////////////////////
     MI(T::INS_BRA, bb_val);
     //////////////////////////////////////////////////
@@ -500,7 +556,7 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     CF->SealBB(loop_header);
 
     CF->SetCurrentBB(loop_header);
-    RelationalOperator op = loop_condition_->GetOp();
+    auto op = loop_condition_->GetOp();
 
     bb_val = CF->GetBB(next_bb)->GetSelfValue();
     //////////////////////////////////////////////////
@@ -515,7 +571,7 @@ VI WhileNode::GenerateIR(IRC& irc) const {
 
 // Generate a Return Node
 VI ReturnNode::GenerateIR(IRC& irc) const {
-    ValueIndex result = NOTFOUND;
+    VI result = NOTFOUND;
 
     VI interm;
     if (return_expression_ != nullptr) {
@@ -590,14 +646,13 @@ void FunctionBodyNode::GenerateIR(IRC& irc) const {
 void FunctionDeclNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing function: " << identifier_->IdentifierName();
 
-    std::string func_name = identifier_->IdentifierName();
-
-    Function* func = new Function(func_name, irc.ValueCounter(), irc.ValMap());
+    auto func_name = identifier_->IdentifierName();
+    auto func = new Function(func_name, irc.ValueCounter(), irc.ValMap());
 
     irc.AddFunction(func_name, func);
     irc.SetCurrentFunction(func);
 
-    int offset = 0;
+    int offset = 0, old_offset;
     Variable *var;
     std::string var_name;
     Symbol *sym;
@@ -609,30 +664,24 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
         var_name = table_entry.first;
         sym = table_entry.second;
 
-        /* Local variables shadow global definitions
-         *
-         * if (irc.IsVariableGlobal(var_name)) {
-         *     LOG(ERROR) << "[IR] Attempt to redefine global variable " + var_name;
-         *     exit(1);
-         * }
-         */
-
+        // Local variables shadow global definitions
+        // if (irc.IsVariableGlobal(var_name)) {
+        //     exit(1);
+        // }
         if (sym->IsFormal()) {
-            /*
-             * Creating a location value here to be used for later
-             */
+            // Creating a location value here to be used for later
             location = CV(V::VAL_LOCATION);
             var = new Variable(sym, location);
 
-            /*
-             * Here, we would like to store ordering of the formal parameters
-             * Ideally, their storage locations, but atleast their order
-             * in the argument sequence
-             */
+            // We would like to store ordering of the formal parameters
+            // Ideally, their storage locations, but atleast their order
+            // in the argument sequence
             expr = CV(V::VAL_FORMAL);
             CF->WriteVariable(var_name, expr);
         } else {
+            old_offset = offset;
             if (sym->IsArray()) {
+                total_size = 1;
                 for (auto dim: sym->GetDimensions()) {
                     total_size *= dim;
                 }
@@ -641,17 +690,15 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
                 offset += 1;
             }
 
-            /* 
-             * Again, here we would like to store localbase+offset in the 
-             * register if possible, but for now we can store this value in
-             * the variable; can be accessed later
-             */
+            // Again, here we would like to store localbase+offset in the 
+            // register if possible, but for now we can store this value in
+            // the variable; can be accessed later
             location = CV(V::VAL_LOCATION);
-            CF->GetValue(location)->SetConstant(offset);
+            CF->GetValue(location)->SetConstant(old_offset);
             CF->GetValue(location)->SetIdentifier(var_name);
 
-            var = new Variable(sym, offset, location);
-            expr = CV(V::VAL_VAR);
+            var = new Variable(sym, old_offset, location);
+            // XXX: Why was this added: expr = CV(V::VAL_VAR);
         }
 
         CF->AddVariable(var_name, var);
@@ -667,7 +714,7 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
 void ComputationNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing Computation Root";
 
-    int offset = 0;
+    int offset = 0, old_offset;
     Variable *var;
     std::string var_name;
     Symbol *sym;
@@ -681,6 +728,7 @@ void ComputationNode::GenerateIR(IRC& irc) const {
     for (auto table_entry: global_sym_table) {
         sym = table_entry.second;
         total_size = 1;
+        old_offset = offset;
         if (sym->IsArray()) {
             for (auto dim: sym->GetDimensions()) {
                 total_size *= dim;
@@ -690,21 +738,19 @@ void ComputationNode::GenerateIR(IRC& irc) const {
             offset += 1;
         }
 
-        /*
-         * We are creating a location value here to simplify loads and
-         * store at a later stage in the IR lowering. This would allow us to
-         * enable better register allocation since the offset is a value 
-         * which needs to be stored in reg. Actually, it is the base+offset
-         * which is more relevant to be stored. But that is a worry for a
-         * later day.
-         */
+        // We are creating a location value here to simplify loads and
+        // store at a later stage in the IR lowering. This would allow us to
+        // enable better register allocation since the offset is a value 
+        // which needs to be stored in reg. Actually, it is the base+offset
+        // which is more relevant to be stored. But that is a worry for a
+        // later day.
         var_name = table_entry.first;
 
         location = irc.CreateValue(V::VAL_LOCATION);
-        irc.GetValue(location)->SetConstant(offset);
+        irc.GetValue(location)->SetConstant(old_offset);
         irc.GetValue(location)->SetIdentifier(var_name);
 
-        var = new Variable(sym, offset, location);
+        var = new Variable(sym, old_offset, location);
         irc.AddGlobal(var_name, var);
     }
 
@@ -716,17 +762,23 @@ void ComputationNode::GenerateIR(IRC& irc) const {
     for (auto funcn: function_declarations_) {
         funcn->GenerateIR(irc);
     }
+
+    GlobalClobbering gc(irc);
+    gc.run();
     
     LOG(INFO) << "[IR] Parsing main";
 
-    std::string func_name = "main";
-    Function* func = new Function(func_name, irc.ValueCounter(), irc.ValMap());
+    // We could perform some analysis since we have already looked at functions
+    // and their definitions.
+    auto func_name = "main";
+    auto func = new Function(func_name, irc.ValueCounter(), irc.ValMap());
 
     irc.AddFunction(func_name, func);
     irc.SetCurrentFunction(func);
 
-    if (computation_body_ != nullptr)
+    if (computation_body_ != nullptr) {
         computation_body_->GenerateIR(irc);
+    }
 
     //////////////////////////////////////////////////
     MI(T::INS_END);

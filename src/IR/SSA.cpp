@@ -53,6 +53,8 @@ VI Function::TryRemoveTrivialPhi(II phi_ins) {
         same = op;
     }
 
+    // Check if we can remove generation of a value when it is not
+    // defined.
     if (same == NOTFOUND) {
         same = CreateValue(V::VAL_ANY);
     }
