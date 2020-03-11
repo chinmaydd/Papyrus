@@ -10,6 +10,7 @@ public:
     CSE(IRConstructor& irc) : AnalysisPass(irc) {}
     void run();
 
+private:
 };
 
 } // namespace papyrus

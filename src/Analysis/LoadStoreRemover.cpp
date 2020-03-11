@@ -31,6 +31,30 @@ std::vector<std::string> LoadStoreRemover::GlobalsUsedAcrossCall(Instruction* in
     return retvec;
 }
 
+void LoadStoreRemover::CheckAndReduce(Instruction* ins) {
+    auto ins_type = ins->Type();
+
+    if (fn->IsArithmetic(ins_type)) {
+        auto idx_1 = ins->Operands().at(0);
+        auto idx_2 = ins->Operands().at(1);
+        if (fn->IsReducible(idx_1, idx_2)) {
+            auto result  = ins->Result();
+            auto res_val = fn->Reduce(idx_1, idx_2, ins_type);
+        }
+    }
+}
+
+bool LoadStoreRemover::CanSeal(BI bb_idx) {
+    auto bb = fn->GetBB(bb_idx);
+    for (auto pred: bb->Predecessors()) {
+        if (!fn->GetBB(pred)->IsSealed()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void LoadStoreRemover::run() {
     // Run GlobalClobbering Analysis
     // Run a different analysis to get this information
@@ -40,7 +64,7 @@ void LoadStoreRemover::run() {
     global_clobber_ = gc.GetClobberStatus();
     load_deps_      = gc.GetReadDefStatus();
 
-    auto fn = irc().GetFunction("main");
+    fn = irc().GetFunction("main");
 
     // pseudo-globals will store all variables which are sort-of
     // untouched by other function calls.
@@ -76,14 +100,17 @@ void LoadStoreRemover::run() {
 
     // Employ a worklist-style algorithm which will traverse through all the BB
     // of the graph.
-    auto entry_idx = 1;
-    std::stack<BI> worklist;
+    std::stack<BI> worklist = {};
     std::unordered_set<BI> seen_once;
+
+    auto entry_idx = 1;
     worklist.push(entry_idx);
 
     while (!worklist.empty()) {
         auto bb_idx = worklist.top();
         worklist.pop();
+
+        LOG(ERROR) << std::to_string(bb_idx);
 
         auto bb = fn->GetBB(bb_idx);
         auto bb_type = bb->Type();
@@ -100,6 +127,10 @@ void LoadStoreRemover::run() {
                 auto var_val = fn->GetValue(var_idx);
                 auto var_name = var_val->Identifier();
 
+                // For each global load, check if it is a pseudo-global.
+                // In that case, dont touch it.
+                // Else, introduce a reverse mapping and discard the instruction
+                // which defined it.
                 if (pseudo_globals.find(var_name) == pseudo_globals.end()) {
                     var_val->RemoveUse(ins_idx);
                     ins->MakeInactive();
@@ -111,6 +142,10 @@ void LoadStoreRemover::run() {
                 auto var_val = fn->GetValue(var_idx);
                 auto var_name = var_val->Identifier();
 
+                // For each global store, check if it is a pseudo-global.
+                // In that case, dont touch it.
+                // Else, WriteVariable() definition into that block. This 
+                // uses the earlier SSA Generation algorithm.
                 if (pseudo_globals.find(var_name) == pseudo_globals.end()) {
                     var_val->RemoveUse(ins_idx);
                     ins->MakeInactive();
@@ -119,6 +154,9 @@ void LoadStoreRemover::run() {
                 }
             } else {
                 auto ins_oper = ins->Operands();
+                // For all other instructions, check if they are using the LOADG
+                // generated result. In that case, replace it with the SSA-based
+                // ReadVariable() output.
                 for (auto oper: ins_oper) {
                     if (reverse_mapping.find(oper) != reverse_mapping.end()) {
                         auto var_val = fn->GetValue(oper);
@@ -129,20 +167,37 @@ void LoadStoreRemover::run() {
                         var_val->RemoveUse(ins_idx);
                     }
                 }
+
+                CheckAndReduce(ins);
             }
         }
 
+
+        // This is ingenious part of this hacky-algorithm. In case of loop-heads;
+        // we ideally want to explore the body of the loop and seal it only
+        // after we have explored the entire body. In that case, we only mark the
+        // loop_head as seen once and push the body but not the fall-through.
+        // Once we visit this node again, we add the through and seal this block
+        // as done in the earlier SSA algorithm.
+        //
+        // For all other BBs, we push its successors and seal the block.
         if (bb_type == B::BB_LOOPHEAD) {
             if (seen_once.find(bb_idx) == seen_once.end()) {
                 seen_once.insert(bb_idx);
-                worklist.push(bb->Successors().at(1)); // loop_body
+                auto loop_body = bb->Successors().at(1);
+                fn->SealBB(loop_body);    // loop_body
+                worklist.push(loop_body); // loop_body
             } else {
-                fn->SealBB(bb_idx);
-                worklist.push(bb->Successors().at(0)); // through
+                auto through = bb->Successors().at(0);
+                fn->SealBB(bb_idx);     // loop_head
+                fn->SealBB(through);    // through
+                worklist.push(through); // through
             }
         } else {
-            fn->SealBB(bb_idx);
             for (auto succ: bb->Successors()) {
+                if (CanSeal(succ)) {
+                    fn->SealBB(succ);
+                }
                 worklist.push(succ);
             }
         }

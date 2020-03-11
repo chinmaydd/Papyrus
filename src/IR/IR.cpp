@@ -359,8 +359,36 @@ bool Function::IsRelational(T insty) const {
             insty == T::INS_BRA);
 }
 
+bool Function::IsArithmetic(T insty) const {
+    return (insty == T::INS_ADD ||
+            insty == T::INS_SUB ||
+            insty == T::INS_MUL ||
+            insty == T::INS_DIV);
+}
+
 bool Function::IsReducible(VI idx_1, VI idx_2) const {
     return (GetValue(idx_1)->IsConstant() && GetValue(idx_2)->IsConstant());
+}
+
+VI Function::Reduce(VI idx_1, VI idx_2, T ins_type) {
+    switch (ins_type) {
+        case T::INS_ADD: {
+            return Reduce(idx_1, idx_2, BINOP_ADD);
+        }
+        case T::INS_SUB: {
+            return Reduce(idx_1, idx_2, BINOP_SUB);
+        }
+        case T::INS_MUL: {
+            return Reduce(idx_1, idx_2, BINOP_MUL);
+        }
+        case T::INS_DIV: {
+            return Reduce(idx_1, idx_2, BINOP_DIV);
+        }
+        default: {
+            LOG(ERROR) << "[IR] Unknwon operation found!";
+            exit(1);
+        }
+    }
 }
 
 VI Function::Reduce(VI idx_1, VI idx_2, ArithmeticOperator op) {

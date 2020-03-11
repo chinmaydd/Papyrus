@@ -14,13 +14,22 @@ using VI = int;
 
 class LoadStoreRemover : public AnalysisPass {
 public:
-    LoadStoreRemover(IRConstructor& irc) : AnalysisPass(irc) {}
+    LoadStoreRemover(IRConstructor& irc) : 
+        hash_map_({}),
+        AnalysisPass(irc) {}
     void run();
 
 private:
     std::vector<std::string> GlobalsUsedAcrossCall(Instruction*);
+    void CheckAndReduce(Instruction*);
+    bool CanSeal(BI);
+
     VarMap global_clobber_;
     VarMap load_deps_;
+
+    std::unordered_map<std::string, VI> hash_map_;
+    Function* fn;
+    
 };
 
 } // namespace papyrus

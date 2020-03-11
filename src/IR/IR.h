@@ -147,35 +147,35 @@ using T = Instruction::InstructionType;
 using V = Value::ValueType;
 
 static const std::unordered_map<T, std::string> ins_to_str_ = {
-    {T::INS_NONE,     "NONE"},
-    {T::INS_ADDA,     "ADDA"},
-    {T::INS_LOAD,     "LOAD"},
-    {T::INS_STORE,    "STORE"},
-    {T::INS_LOADG,    "LOADG"},
-    {T::INS_STOREG,   "STOREG"},
-    {T::INS_CALL,     "CALL"},
-    {T::INS_PHI,      "PHI"},
-    {T::INS_ADD,      "ADD"},
-    {T::INS_SUB,      "SUB"},
-    {T::INS_MUL,      "MUL"},
-    {T::INS_DIV,      "DIV"},
-    {T::INS_CMP,      "CMP"},
-    {T::INS_BEQ,      "BEQ"},
-    {T::INS_BNE,      "BNE"},
-    {T::INS_BLT,      "BLT"},
-    {T::INS_BLE,      "BLE"},
-    {T::INS_BGT,      "BGT"},
-    {T::INS_BGE,      "BGE"},
-    {T::INS_BRA,      "BRA"},
-    {T::INS_END,      "END"},
-    {T::INS_CALL,     "CALL"},
-    {T::INS_MOVE,     "MOVE"},
-    {T::INS_RET,      "RET"},
-    {T::INS_ANY,      "ANY"},
-    {T::INS_ARG,      "ARG"},
-    {T::INS_READ,     "READ"},
-    {T::INS_WRITEX,   "WRITE"},
-    {T::INS_WRITENL,  "WRITENL"},
+    {T::INS_NONE,    "NONE"},
+    {T::INS_ADDA,    "ADDA"},
+    {T::INS_LOAD,    "LOAD"},
+    {T::INS_STORE,   "STORE"},
+    {T::INS_LOADG,   "LOADG"},
+    {T::INS_STOREG,  "STOREG"},
+    {T::INS_CALL,    "CALL"},
+    {T::INS_PHI,     "PHI"},
+    {T::INS_ADD,     "ADD"},
+    {T::INS_SUB,     "SUB"},
+    {T::INS_MUL,     "MUL"},
+    {T::INS_DIV,     "DIV"},
+    {T::INS_CMP,     "CMP"},
+    {T::INS_BEQ,     "BEQ"},
+    {T::INS_BNE,     "BNE"},
+    {T::INS_BLT,     "BLT"},
+    {T::INS_BLE,     "BLE"},
+    {T::INS_BGT,     "BGT"},
+    {T::INS_BGE,     "BGE"},
+    {T::INS_BRA,     "BRA"},
+    {T::INS_END,     "END"},
+    {T::INS_CALL,    "CALL"},
+    {T::INS_MOVE,    "MOVE"},
+    {T::INS_RET,     "RET"},
+    {T::INS_ANY,     "ANY"},
+    {T::INS_ARG,     "ARG"},
+    {T::INS_READ,    "READ"},
+    {T::INS_WRITEX,  "WRITE"},
+    {T::INS_WRITENL, "WRITENL"},
 };
 
 class BasicBlock {
@@ -299,6 +299,7 @@ public:
 
     VI SelfIdx() const { return self_idx_; }
     VI Reduce(VI, VI, ArithmeticOperator);
+    VI Reduce(VI, VI, T);
     VI GetLocationValue(const std::string&) const;
 
     Instruction* CurrentInstruction() const;
@@ -308,7 +309,7 @@ public:
     bool HasEndedBB(BI idx) const;
     bool IsVariableLocal(const std::string&) const;
     bool IsReducible(VI, VI) const;
-
+    bool IsArithmetic(T) const;
 
 private:
     std::string func_name_;
