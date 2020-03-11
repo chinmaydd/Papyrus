@@ -5,11 +5,11 @@ using namespace papyrus;
 GlobalClobbering::GlobalClobbering(IRConstructor& irc) :
     AnalysisPass(irc) {}
 
-bool GlobalClobbering::IsMemoryStore(T insty) const {
+bool GlobalClobbering::IsGlobalStore(T insty) const {
     return (insty == T::INS_STOREG);
 }
 
-bool GlobalClobbering::IsMemoryLoad(T insty) const {
+bool GlobalClobbering::IsGlobalLoad(T insty) const {
     return (insty == T::INS_LOADG);
 }
 
@@ -43,6 +43,7 @@ void GlobalClobbering::Visit(const std::string& fn_name) {
     }
 
     auto fn = irc().GetFunction(fn_name);
+
     // Traverse the function control flow in reverse postorder
     for (auto bb_idx: fn->ReversePostOrderCFG()) {
         auto bb = fn->GetBB(bb_idx);
@@ -50,7 +51,7 @@ void GlobalClobbering::Visit(const std::string& fn_name) {
         for (auto ins_idx: bb->InstructionOrder()) {
             auto inst = fn->GetInstruction(ins_idx);
 
-            if (inst->IsActive() && IsMemoryStore(inst->Type())) {
+            if (inst->IsActive() && IsGlobalStore(inst->Type())) {
                 // Perform two major checks:
                 // 1. Check if instruction is active.
                 // 2. Check if it is a store to a global variable
@@ -60,7 +61,7 @@ void GlobalClobbering::Visit(const std::string& fn_name) {
 
                 // Clobber the global variable value here.
                 Clobber(fn_name, val->Identifier());
-            } else if (inst->IsActive() && IsMemoryLoad(inst->Type())) {
+            } else if (inst->IsActive() && IsGlobalLoad(inst->Type())) {
                 // 1. Check if instruction is active
                 // 2. Check if it is a load from a global variable
                 auto operands = inst->Operands();
@@ -102,7 +103,7 @@ void GlobalClobbering::run() {
     // Visit all callee's of a function before you visit itself
     for (auto fn_pair: irc().Functions()) {
         auto fn_name = fn_pair.first;
-        if (irc().IsIntrinsic(fn_name)) {
+        if (irc().IsIntrinsic(fn_name) || fn_name == "main") {
             continue;
         } 
 

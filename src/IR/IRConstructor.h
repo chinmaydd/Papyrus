@@ -36,7 +36,7 @@ public:
     const std::map<std::string, Variable*>& Globals() const;
     std::vector<BI> PostOrderCFG(const std::string&) const;
 
-    const Variable* GetGlobal(const std::string&) const;
+    Variable* GetGlobal(const std::string&) const;
     Value* GetValue(VI) const;
 
     bool IsExistFunction(const std::string&) const;

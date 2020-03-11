@@ -133,6 +133,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     VI base, offset, temp;
 
     const Variable* var;
+
     // Locals v/s Global
     if (CF->IsVariableLocal(var_name)) {
         var    = CF->GetVariable(var_name);
@@ -272,6 +273,7 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
             //////////////////////////////////////////////////
 
             // Store generation. Delayed until RegisterAllocation
+            //
             // int offset      = irc.GlobalOffset(var_name);
             // VI offset_idx   = CC(offset);
             // VI mem_location = MI(T::INS_ADDA, irc.GlobalBase(), offset_idx);
@@ -419,7 +421,7 @@ VI ITENode::GenerateIR(IRC& irc) const {
     BI previous = CF->CurrentBBIdx();
     CF->SealBB(previous);
 
-    BI then_start  = CF->CreateBB();
+    BI then_start  = CF->CreateBB(B::BB_THEN);
     CF->AddBBEdge(previous, then_start);
 
     CF->SealBB(then_start);
@@ -429,7 +431,7 @@ VI ITENode::GenerateIR(IRC& irc) const {
     BI then_end = CF->CurrentBBIdx();
 
     if (else_sequence_ == nullptr) {
-        BI f_through = CF->CreateBB();
+        BI f_through = CF->CreateBB(B::BB_THROUGH);
 
         CF->SetCurrentBB(previous);
         VI bb_val = CF->GetBB(f_through)->GetSelfValue();
@@ -438,18 +440,18 @@ VI ITENode::GenerateIR(IRC& irc) const {
         MI(irc.ConvertOperation(op), reln, bb_val);
         //////////////////////////////////////////////////
                             
-        CF->AddBBEdge(previous, f_through);
-
         if (!CF->HasEndedBB(then_end)) {
             CF->AddBBEdge(then_end, f_through);
         }
+
+        CF->AddBBEdge(previous, f_through);
 
         CF->SealBB(then_end);
         CF->SealBB(f_through);
 
         CF->SetCurrentBB(f_through);
     } else {
-        BI else_start = CF->CreateBB();
+        BI else_start = CF->CreateBB(B::BB_ELSE);
 
         CF->SetCurrentBB(previous);
         VI bb_val = CF->GetBB(else_start)->GetSelfValue();
@@ -474,7 +476,7 @@ VI ITENode::GenerateIR(IRC& irc) const {
             return result;
         }
 
-        BI f_through = CF->CreateBB();
+        BI f_through = CF->CreateBB(B::BB_THROUGH);
 
         if (!then_ended) {
             CF->SetCurrentBB(then_end);
@@ -491,7 +493,6 @@ VI ITENode::GenerateIR(IRC& irc) const {
             //////////////////////////////////////////////////
             MI(T::INS_BRA, bb_val);
             //////////////////////////////////////////////////
-
             CF->AddBBEdge(else_end, f_through);
         }
 
@@ -512,7 +513,7 @@ VI WhileNode::GenerateIR(IRC& irc) const {
 
     BI previous = CF->CurrentBBIdx();
 
-    BI loop_header = CF->CreateBB();
+    BI loop_header = CF->CreateBB(B::BB_LOOPHEAD);
 
     VI bb_val = CF->GetBB(loop_header)->GetSelfValue();
     
@@ -528,11 +529,12 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     CF->AddBBEdge(previous, loop_header);
     CF->SealBB(previous);
 
-    BI loop_body = CF->CreateBB();
-    CF->AddBBEdge(loop_header, loop_body);
+    BI loop_body = CF->CreateBB(B::BB_LOOPBODY);
 
-    VI next_bb = CF->CreateBB();
+    VI next_bb = CF->CreateBB(B::BB_THROUGH);
+
     CF->AddBBEdge(loop_header, next_bb);
+    CF->AddBBEdge(loop_header, loop_body);
 
     CF->SetCurrentBB(loop_header);
     VI reln = loop_condition_->GenerateIR(irc);
@@ -763,9 +765,6 @@ void ComputationNode::GenerateIR(IRC& irc) const {
         funcn->GenerateIR(irc);
     }
 
-    GlobalClobbering gc(irc);
-    gc.run();
-    
     LOG(INFO) << "[IR] Parsing main";
 
     // We could perform some analysis since we have already looked at functions

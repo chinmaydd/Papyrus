@@ -19,6 +19,11 @@ public:
     const VarMap& GetClobberStatus() const;
     const VarMap& GetReadDefStatus() const;
 
+    // These should be ideally a part of Instruction?
+    bool IsGlobalStore(T) const;
+    bool IsGlobalLoad(T) const;
+    bool IsFunctionCall(T) const;
+
 private:
     VarMap clobbered_vars_;
     VarMap read_vars_;
@@ -26,10 +31,6 @@ private:
     std::unordered_set<std::string> visited_;
 
     VarMap callee_info_;
-    
-    bool IsMemoryStore(T) const;
-    bool IsMemoryLoad(T) const;
-    bool IsFunctionCall(T) const;
 
     void Visit(const std::string&);
 

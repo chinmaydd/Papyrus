@@ -94,7 +94,7 @@ const std::map<std::string, Variable*>& IRC::Globals() const {
     return global_variable_map_;
 }
 
-const Variable* IRC::GetGlobal(const std::string& var_name) const {
+Variable* IRC::GetGlobal(const std::string& var_name) const {
     return global_variable_map_.at(var_name);
 }
 

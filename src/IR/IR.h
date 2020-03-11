@@ -112,7 +112,7 @@ public:
 
     Instruction(InstructionType, BI, II);
 
-    void AddOperand(VI val_idx) { operands_.push_back(val_idx); }
+    void AddOperand(VI); 
     void SetResult(VI res) { result_ = res; }
     void MakeInactive() { is_active_ = false; }
     void ReplaceUse(VI, VI);
@@ -141,7 +141,6 @@ private:
     BI containing_bb_;
 
     bool is_active_;
-
 };
 
 using T = Instruction::InstructionType;
@@ -181,12 +180,23 @@ static const std::unordered_map<T, std::string> ins_to_str_ = {
 
 class BasicBlock {
 public:
-    BasicBlock(BI);
+    enum BBType {
+        BB_START,
+        BB_LOOPHEAD,
+        BB_LOOPBODY,
+        BB_THEN,
+        BB_ELSE,
+        BB_THROUGH,
+        BB_END
+    };
+
+    BasicBlock(BI, BBType);
 
     void AddPredecessor(BI);
     void AddSuccessor(BI);
     void AddInstruction(II, Instruction*);
     void Seal() { is_sealed_ = true; }
+    void Unseal() { is_sealed_ = false; }
     void EndBB() { is_ended_ = true; }
     void SetSelfValue(VI sv) { self_value_ = sv; }
 
@@ -204,8 +214,11 @@ public:
 
     BI Idx() const { return idx_; }
 
+    BBType Type() const { return type_; }
+
 private:
     BI idx_;
+    BBType type_;
 
     std::unordered_map<II, Instruction*> instructions_;
     std::deque<II> instruction_order_;
@@ -217,6 +230,18 @@ private:
     bool is_ended_;
 
     VI self_value_;
+};
+
+using B = BasicBlock::BBType;
+
+static const std::unordered_map<B, std::string> bra_to_str_ = {
+    { B::BB_START,    "BB_START"}, 
+    { B::BB_LOOPHEAD, "BB_LOOPHEAD"},
+    { B::BB_LOOPBODY, "BB_LOOPBODY"},
+    { B::BB_THEN,     "BB_THEN"}, 
+    { B::BB_ELSE,     "BB_ELSE"},  
+    { B::BB_THROUGH,  "BB_THROUGH"},
+    { B::BB_END,      "BB_END"}
 };
 
 class Function {
@@ -245,6 +270,7 @@ public:
     void WriteVariable(const std::string&, BI, VI);
     void AddBBEdge(BI, BI);        // pred, succ
     void SealBB(BI);
+    void UnsealAllBB();
     void SetCurrentBB(BI idx) { current_bb_ = idx; }
     void MakeMove(const std::string&, VI);
 
@@ -253,7 +279,7 @@ public:
 
     Value* GetValue(VI) const;
 
-    BI CreateBB();
+    BI CreateBB(B);
     BI CurrentBBIdx() const { return current_bb_; }
 
     BasicBlock* CurrentBB() const;
@@ -264,6 +290,7 @@ public:
 
     VI GetCounter() const { return value_counter_; }
     VI ReadVariable(const std::string&, BI);
+    VI ReadGlobal(const std::string&, BI);
     VI LocalBase() const { return local_base_; }
 
     VI MakeInstruction(T);
@@ -312,7 +339,9 @@ private:
     BI GetBBForInstruction(II);
 
     VI ReadVariableRecursive(const std::string&, BI);
+    VI ReadGlobalRecursive(const std::string&, BI);
     VI AddPhiOperands(const std::string&, VI);
+    VI SearchAndFillPhi(const std::string&, VI);
     VI TryRemoveTrivialPhi(II);
     VI ResultForInstruction(II) const;
 

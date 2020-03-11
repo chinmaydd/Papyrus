@@ -5,6 +5,7 @@
 #include "GlobalClobbering.h"
 
 #include <queue>
+#include <assert.h>
 
 namespace papyrus {
 
@@ -17,7 +18,7 @@ public:
     void run();
 
 private:
-    bool IsMemoryStore(Instruction*) const;
+    std::vector<std::string> GlobalsUsedAcrossCall(Instruction*);
     VarMap global_clobber_;
     VarMap load_deps_;
 };

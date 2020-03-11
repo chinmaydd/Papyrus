@@ -43,8 +43,8 @@ int main(int argc, char *argv[]) {
 
     irconst.BuildIR();
 
-    // LoadStoreRemover lsr(irconst);
-    // lsr.run();
+    LoadStoreRemover lsr(irconst);
+    lsr.run();
 
     // LiveVar lv(irconst);
     // lv.run();

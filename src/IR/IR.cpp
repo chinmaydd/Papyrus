@@ -23,7 +23,7 @@ Function::Function(const std::string& func_name, VI value_counter, std::unordere
     constant_map_({}),
     value_map_(value_map) {
         SetLocalBase(CreateValue(V::VAL_LOCALBASE));
-        SetCurrentBB(CreateBB());
+        SetCurrentBB(CreateBB(B::BB_START));
 }
 
 const Variable* Function::GetVariable(const std::string& var_name) const { 
@@ -85,10 +85,10 @@ void Function::SetValueType(VI val_idx, V val_type) {
     val->SetType(val_type);
 }
 
-BI Function::CreateBB() {
+BI Function::CreateBB(B bb_type) {
     bb_counter_++;
 
-    BasicBlock* bb = new BasicBlock(bb_counter_);
+    BasicBlock* bb = new BasicBlock(bb_counter_, bb_type);
     basic_block_map_[bb_counter_] = bb;
 
     VI sv = CreateValue(V::VAL_BRANCH);
@@ -298,7 +298,8 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
 void Function::Visit(BI bb_idx, std::unordered_set<BI>& visited) {
     visited.insert(bb_idx);
 
-    auto bb = basic_block_map_.at(bb_idx);
+    auto bb = GetBB(bb_idx);
+    
     for (auto succ: bb->Successors()) {
         if (visited.find(succ) == visited.end()) {
             Visit(succ, visited);
@@ -318,16 +319,10 @@ std::vector<BI> Function::PostOrderCFG() {
     // NOTE: BB with idx=1 is assumed to be the entry idx
     BI entry_idx = 1;
 
-    visited.insert(entry_idx);
-    postorder_cfg_.push_back(entry_idx);
-
-    for (auto bb_pair: basic_block_map_) {
-        auto bb_idx = bb_pair.first;
-
-        if (visited.find(bb_idx) == visited.end()) {
-            Visit(bb_idx, visited);
-        }
-    }
+    // Here, we can check if there are any BBs which are not visited.
+    // This is probably not going to happen since the way the IR is constructed
+    // it does not allow for it.
+    Visit(entry_idx, visited);
 
     rev_postorder_cfg_ = std::vector<BI>(postorder_cfg_.rbegin(),
                                          postorder_cfg_.rend());
@@ -482,11 +477,18 @@ Instruction::Instruction(T insty, BI containing_bb, II ins_idx) :
     ins_idx_(ins_idx),
     is_active_(true) {}
 
+void Instruction::AddOperand(VI val_idx) {
+    if (std::find(operands_.begin(), operands_.end(), val_idx) == operands_.end()) {
+        operands_.push_back(val_idx);
+    }
+}
+
 /*
  * Function definitions for BBs
  */
-BasicBlock::BasicBlock(BI idx) :
+BasicBlock::BasicBlock(BI idx, B type) :
     idx_(idx),
+    type_(type),
     is_sealed_(false),
     is_ended_(false) {}
 

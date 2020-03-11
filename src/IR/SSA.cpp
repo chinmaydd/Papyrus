@@ -216,3 +216,13 @@ void Function::SealBB(BI bb_idx) {
 
     basic_block_map_.at(bb_idx)->Seal();
 }
+
+/*
+ * This function is introduced to run the SSA Pass once again for 
+ * global vars.
+ */
+void Function::UnsealAllBB() {
+    for (auto bb_idx: PostOrderCFG()) {
+        GetBB(bb_idx)->Unseal();
+    }
+}
