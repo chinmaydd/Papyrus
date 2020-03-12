@@ -197,6 +197,7 @@ public:
     void AddInstruction(II, Instruction*);
     void Seal() { is_sealed_ = true; }
     void Unseal() { is_sealed_ = false; }
+    void MarkDead() { is_dead_ = true; }
     void EndBB() { is_ended_ = true; }
     void SetSelfValue(VI sv) { self_value_ = sv; }
 
@@ -209,6 +210,7 @@ public:
     bool HasActiveInstructions() const;
     bool IsSealed() const { return is_sealed_; }
     bool HasEnded() const { return is_ended_; }
+    bool IsDead() const { return is_dead_; }
     
     VI GetSelfValue() const { return self_value_; }
 
@@ -228,6 +230,7 @@ private:
 
     bool is_sealed_;
     bool is_ended_;
+    bool is_dead_;
 
     VI self_value_;
 };
@@ -273,6 +276,7 @@ public:
     void UnsealAllBB();
     void SetCurrentBB(BI idx) { current_bb_ = idx; }
     void MakeMove(const std::string&, VI);
+    void ReplaceUse(VI, VI);
 
     int GetOffset(const std::string&) const;
     int ReduceCondition(RelationalOperator, VI, VI) const;
@@ -310,6 +314,7 @@ public:
     bool IsVariableLocal(const std::string&) const;
     bool IsReducible(VI, VI) const;
     bool IsArithmetic(T) const;
+    bool IsRelational(T) const;
 
 private:
     std::string func_name_;
@@ -354,7 +359,6 @@ private:
     void Visit(BI, std::unordered_set<BI>&);
 
     bool IsPhi(II) const;
-    bool IsRelational(T) const;
     bool IsEliminable(T) const;
 };
 

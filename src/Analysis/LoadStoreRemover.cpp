@@ -31,21 +31,52 @@ std::vector<std::string> LoadStoreRemover::GlobalsUsedAcrossCall(Instruction* in
     return retvec;
 }
 
+/* 
+ * Optimizing function. 
+ * Currently implements constant folding and CSE
+ */
 void LoadStoreRemover::CheckAndReduce(Instruction* ins) {
     auto ins_type = ins->Type();
 
     if (fn->IsArithmetic(ins_type)) {
         auto idx_1 = ins->Operands().at(0);
         auto idx_2 = ins->Operands().at(1);
+
         if (fn->IsReducible(idx_1, idx_2)) {
-            auto result  = ins->Result();
-            auto res_val = fn->Reduce(idx_1, idx_2, ins_type);
+            auto old_idx  = ins->Result();
+            auto new_idx  = fn->Reduce(idx_1, idx_2, ins_type);
+
+            fn->ReplaceUse(old_idx, new_idx);
+            ins->MakeInactive();
+        } else {
+           auto hash_str = fn->HashInstruction(ins_type, idx_1, idx_2);
+
+           if (hash_map_.find(hash_str) != hash_map_.end()) {
+               auto old_idx = ins->Result();
+               auto new_idx = hash_map_.at(hash_str);
+            
+               if (old_idx != new_idx) {
+                   fn->ReplaceUse(old_idx, new_idx);
+                   ins->MakeInactive();
+               }
+           } else {
+               hash_map_.insert({hash_str, ins->Result()});
+           }
         }
-    }
+    } // TODO: Relational nodes.
 }
 
+/* 
+ * Check if we can seal the current BB. According to Braun et. al, we should
+ * seal a BB only if its predecessors are sealed.
+ */
 bool LoadStoreRemover::CanSeal(BI bb_idx) {
     auto bb = fn->GetBB(bb_idx);
+
+    if (bb->IsSealed()) {
+        return false;
+    }
+
     for (auto pred: bb->Predecessors()) {
         if (!fn->GetBB(pred)->IsSealed()) {
             return false;
@@ -109,8 +140,6 @@ void LoadStoreRemover::run() {
     while (!worklist.empty()) {
         auto bb_idx = worklist.top();
         worklist.pop();
-
-        LOG(ERROR) << std::to_string(bb_idx);
 
         auto bb = fn->GetBB(bb_idx);
         auto bb_type = bb->Type();
@@ -188,17 +217,24 @@ void LoadStoreRemover::run() {
                 fn->SealBB(loop_body);    // loop_body
                 worklist.push(loop_body); // loop_body
             } else {
+                // In case we are seeing the successor a second time, 
+                // we push the through block.
                 auto through = bb->Successors().at(0);
-                fn->SealBB(bb_idx);     // loop_head
-                fn->SealBB(through);    // through
                 worklist.push(through); // through
             }
         } else {
+            // We check if we can seal the current BB. If not, push successor
+            // and move on.
+            if (CanSeal(bb_idx)) {
+                fn->SealBB(bb_idx);
+            }
+
             for (auto succ: bb->Successors()) {
+                worklist.push(succ);
+                // We check if we can seal the successor node.
                 if (CanSeal(succ)) {
                     fn->SealBB(succ);
                 }
-                worklist.push(succ);
             }
         }
     }

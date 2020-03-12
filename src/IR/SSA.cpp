@@ -59,20 +59,25 @@ VI Function::TryRemoveTrivialPhi(II phi_ins) {
         same = CreateValue(V::VAL_ANY);
     }
 
-    auto phi_val = GetValue(result);
-    phi_val->RemoveUse(phi_ins);
+    ReplaceUse(result, same);
     ins->MakeInactive();
 
-    for (auto use_idx: phi_val->GetUsers()) {
-        ins = GetInstruction(use_idx);
-        ins->ReplaceUse(result, same);
-    }
-
-    for (auto use_idx: phi_val->GetUsers()) {
+    for (auto use_idx: GetValue(result)->GetUsers()) {
         TryRemoveTrivialPhi(use_idx);
     }
 
     return same;
+}
+
+void Function::ReplaceUse(VI old_idx, VI new_idx) {
+    auto old_val = GetValue(old_idx);
+    auto new_val = GetValue(new_idx);
+
+    for (auto use_idx: old_val->GetUsers()) {
+        auto ins = GetInstruction(use_idx);
+        ins->ReplaceUse(old_idx, new_idx);
+        new_val->AddUsage(use_idx);
+    }
 }
 
 /*

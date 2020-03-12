@@ -28,6 +28,7 @@ private:
     VarMap load_deps_;
 
     std::unordered_map<std::string, VI> hash_map_;
+    std::unordered_set<std::string> visited_;
     Function* fn;
     
 };

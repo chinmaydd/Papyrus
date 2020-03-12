@@ -355,8 +355,7 @@ bool Function::IsRelational(T insty) const {
             insty == T::INS_BNE ||
             insty == T::INS_BLT ||
             insty == T::INS_BLE ||
-            insty == T::INS_BGE ||
-            insty == T::INS_BRA);
+            insty == T::INS_BGE);
 }
 
 bool Function::IsArithmetic(T insty) const {
@@ -518,6 +517,7 @@ BasicBlock::BasicBlock(BI idx, B type) :
     idx_(idx),
     type_(type),
     is_sealed_(false),
+    is_dead_(false),
     is_ended_(false) {}
 
 void BasicBlock::AddPredecessor(BI pred_idx) {

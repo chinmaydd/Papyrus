@@ -415,7 +415,7 @@ VI ITENode::GenerateIR(IRC& irc) const {
     if (CF->IsReducible(left_expr, right_expr)) {
         // Early return
         return HandleReducibleCmp(irc, left_expr, right_expr);
-    }
+    } // TODO: Handle values being same but not constants
     ///////////////////////////////////////////////
 
     BI previous = CF->CurrentBBIdx();

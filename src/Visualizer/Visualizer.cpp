@@ -44,7 +44,6 @@ std::string Function::ConvertValueToString(VI val_idx) const {
 
 std::string Function::ConvertInstructionToString(II ins_idx) const {
     Instruction* ins = GetInstruction(ins_idx);
-    bool is_relational = IsRelational(ins->Type());
     std::string res = "";
 
     res += "(" + std::to_string(ins->Result()) + ")" + " ";
@@ -93,6 +92,10 @@ void Visualizer::DrawFunc(const Function* func) {
     for (auto bb_pair: func->BasicBlocks()) {
         BI bb_idx = bb_pair.first;
         auto bb   = bb_pair.second;
+
+        if (bb->IsDead()) {
+            continue;
+        }
 
         bb_graph += GetBaseNodeString(bb_idx, func_name);
 
