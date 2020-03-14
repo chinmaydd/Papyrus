@@ -228,8 +228,6 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
             // Load variable. Can be thought of as a "SSA Read"
             result = CF->ReadVariable(var_name, CF->CurrentBBIdx());
         } else if (irc.IsVariableGlobal(var_name)) {
-            // VI mem_location = irc.GetLocationValue(var_name); 
-
             //////////////////////////////////////////////////
             int offset      = irc.GlobalOffset(var_name);
             VI offset_idx   = CC(offset*4);

@@ -122,6 +122,8 @@ public:
 
     const std::vector<VI>& Operands() const { return operands_; }
 
+    II Index() const { return ins_idx_; }
+
     std::string ConvertToString() const;
 
     bool IsPhi() const { return ins_type_ == INS_PHI; }

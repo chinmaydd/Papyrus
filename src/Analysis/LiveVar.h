@@ -9,18 +9,19 @@ namespace papyrus {
 
 using V = Value::ValueType;
 using ValueSet = std::unordered_set<VI>;
-using LocalLiveVar = std::unordered_map<II, ValueSet>;
+using LiveIn  = std::unordered_map<II, ValueSet>;
+using LiveOut = std::unordered_map<II, ValueSet>;
+using BBLiveIn = std::unordered_map<BI, LiveIn>;
+using BBLiveOut = std::unordered_map<BI, LiveOut>;
 
 class LiveVar : public AnalysisPass {
 public:
     LiveVar(IRConstructor& irc) : AnalysisPass(irc) {}
     void run();
 
-    LocalLiveVar LiveVarsInFunction(const std::string&) const;
-
 private:
-    std::unordered_map<std::string, LocalLiveVar> live_vars_;
-
+    std::unordered_map<std::string, BBLiveIn> live_in_vars_;
+    std::unordered_map<std::string, BBLiveOut> live_out_vars_;
 };
 } // namespace papyrus
 
