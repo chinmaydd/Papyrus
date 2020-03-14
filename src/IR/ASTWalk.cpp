@@ -138,11 +138,11 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     if (CF->IsVariableLocal(var_name)) {
         var    = CF->GetVariable(var_name);
         base   = CF->LocalBase();
-        offset = CC(var->Offset());
+        offset = CC(var->Offset()*4);
     } else if (irc.IsVariableGlobal(var_name)) {
         var    = irc.GetGlobal(var_name);
         base   = irc.GlobalBase();
-        offset = CC(irc.GlobalOffset(var_name));
+        offset = CC(irc.GlobalOffset(var_name)*4);
     } else {
         LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined.";
         exit(1);
@@ -178,7 +178,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
 
     while (it != ind_temp.end()) {
         dim_offset *= *dim_it;
-        dim_idx     = CC(dim_offset);
+        dim_idx     = CC(dim_offset*4);
 
         expr = *it;
 
@@ -228,18 +228,15 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
             // Load variable. Can be thought of as a "SSA Read"
             result = CF->ReadVariable(var_name, CF->CurrentBBIdx());
         } else if (irc.IsVariableGlobal(var_name)) {
-            VI mem_location = irc.GetLocationValue(var_name); 
+            // VI mem_location = irc.GetLocationValue(var_name); 
 
             //////////////////////////////////////////////////
-            result = MI(T::INS_LOADG, mem_location);
+            int offset      = irc.GlobalOffset(var_name);
+            VI offset_idx   = CC(offset*4);
+            VI mem_location = MI(T::INS_ADDA, irc.GlobalBase(), offset_idx);
+            CF->GetValue(mem_location)->SetIdentifier(var_name);
+            result = MI(T::INS_LOAD, mem_location);
             //////////////////////////////////////////////////
-              
-            // Load generation. Delayed until RegisterAllocation
-            //
-            // int offset      = irc.GlobalOffset(var_name);
-            // VI offset_idx   = CC(offset);
-            // VI mem_location = MI(T::INS_ADDA, irc.GlobalBase(), offset_idx);
-            // result = MI(T::INS_LOAD, mem_location);
         } else {
             LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined";
             exit(1);
@@ -265,19 +262,13 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
             // Overwrite variable definition in the SSA Context
             CF->WriteVariable(var_name, expr_idx);
         } else if (irc.IsVariableGlobal(var_name)) {
-
-            VI mem_location = irc.GetLocationValue(var_name);
-
             //////////////////////////////////////////////////
-            result = MI(T::INS_STOREG, expr_idx, mem_location);
+            int offset      = irc.GlobalOffset(var_name);
+            VI offset_idx   = CC(offset*4);
+            VI mem_location = MI(T::INS_ADDA, irc.GlobalBase(), offset_idx);
+            CF->GetValue(mem_location)->SetIdentifier(var_name);
+            result = MI(T::INS_STORE, expr_idx, mem_location);
             //////////////////////////////////////////////////
-
-            // Store generation. Delayed until RegisterAllocation
-            //
-            // int offset      = irc.GlobalOffset(var_name);
-            // VI offset_idx   = CC(offset);
-            // VI mem_location = MI(T::INS_ADDA, irc.GlobalBase(), offset_idx);
-            // result = MI(T::INS_STORE, expr_idx, mem_location);
         } else {
             LOG(ERROR) << "Usage of variable " + var_name + " which is not defined.";
             exit(1);

@@ -72,6 +72,7 @@ VI Function::CreateValue(V vty) {
     return value_counter_;
 }
 
+
 void Function::AddUsage(VI val_idx, II ins_idx) {
     value_map_->at(val_idx)->AddUsage(ins_idx);
 }
@@ -222,8 +223,8 @@ bool Function::IsEliminable(T insty) const {
     return (insty != T::INS_CALL &&
             insty != T::INS_ARG &&
             insty != T::INS_BRA &&
-            insty != T::INS_LOADG &&
-            insty != T::INS_STOREG);
+            insty != T::INS_LOAD &&
+            insty != T::INS_STORE);
 }
 
 /*
@@ -556,4 +557,9 @@ bool BasicBlock::HasActiveInstructions() const {
     }
 
     return false;
+}
+
+II BasicBlock::GetAddAForLS(II ins_idx) const {
+    auto it = std::find(instruction_order_.begin(), instruction_order_.end(), ins_idx);
+    return (*it - 1);
 }

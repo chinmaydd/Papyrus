@@ -151,7 +151,7 @@ void LoadStoreRemover::run() {
             auto ins_type = ins->Type();
             auto result = ins->Result();
 
-            if (gc.IsGlobalLoad(ins_type)) {
+            if (IsGlobalLoad(ins_type)) {
                 auto var_idx = ins->Operands().at(0);
                 auto var_val = fn->GetValue(var_idx);
                 auto var_name = var_val->Identifier();
@@ -162,11 +162,16 @@ void LoadStoreRemover::run() {
                 // which defined it.
                 if (pseudo_globals.find(var_name) == pseudo_globals.end()) {
                     var_val->RemoveUse(ins_idx);
-                    ins->MakeInactive();
+                    auto adda_idx = bb->GetAddAForLS(ins_idx);
+                    auto adda = fn->GetInstruction(adda_idx);
+                    if (adda->Type() == T::INS_ADDA) {
+                        adda->MakeInactive();
+                    }
 
+                    ins->MakeInactive();
                     reverse_mapping.insert({result, var_name});
                 }
-            } else if (gc.IsGlobalStore(ins_type)) {
+            } else if (IsGlobalStore(ins_type)) {
                 auto var_idx = ins->Operands().at(1);
                 auto var_val = fn->GetValue(var_idx);
                 auto var_name = var_val->Identifier();
@@ -177,8 +182,13 @@ void LoadStoreRemover::run() {
                 // uses the earlier SSA Generation algorithm.
                 if (pseudo_globals.find(var_name) == pseudo_globals.end()) {
                     var_val->RemoveUse(ins_idx);
-                    ins->MakeInactive();
+                    auto adda_idx = bb->GetAddAForLS(ins_idx);
+                    auto adda = fn->GetInstruction(adda_idx);
+                    if (adda->Type() == T::INS_ADDA) {
+                        adda->MakeInactive();
+                    }
 
+                    ins->MakeInactive();
                     fn->WriteVariable(var_name, ins->Operands().at(0));
                 }
             } else {

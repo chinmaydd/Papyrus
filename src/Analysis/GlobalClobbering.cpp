@@ -5,18 +5,6 @@ using namespace papyrus;
 GlobalClobbering::GlobalClobbering(IRConstructor& irc) :
     AnalysisPass(irc) {}
 
-bool GlobalClobbering::IsGlobalStore(T insty) const {
-    return (insty == T::INS_STOREG);
-}
-
-bool GlobalClobbering::IsGlobalLoad(T insty) const {
-    return (insty == T::INS_LOADG);
-}
-
-bool GlobalClobbering::IsFunctionCall(T insty) const {
-    return (insty == T::INS_CALL);
-}
-
 void GlobalClobbering::Clobber(const std::string& fn_name, const std::string& var_name) {
     clobbered_vars_[fn_name].insert(var_name);
 }

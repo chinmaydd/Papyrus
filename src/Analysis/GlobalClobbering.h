@@ -19,11 +19,6 @@ public:
     const VarMap& GetClobberStatus() const;
     const VarMap& GetReadDefStatus() const;
 
-    // These should be ideally a part of Instruction?
-    bool IsGlobalStore(T) const;
-    bool IsGlobalLoad(T) const;
-    bool IsFunctionCall(T) const;
-
 private:
     VarMap clobbered_vars_;
     VarMap read_vars_;

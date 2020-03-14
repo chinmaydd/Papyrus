@@ -75,9 +75,6 @@ public:
         INS_LOAD,
         INS_STORE,
 
-        INS_LOADG,
-        INS_STOREG,
-
         INS_CALL,
         INS_ARG,
 
@@ -146,13 +143,25 @@ private:
 using T = Instruction::InstructionType;
 using V = Value::ValueType;
 
+static bool IsGlobalStore(T insty) {
+    return (insty == T::INS_STORE);
+}
+
+static bool IsGlobalLoad(T insty) {
+    return (insty == T::INS_LOAD);
+}
+
+static bool IsFunctionCall(T insty) {
+    return (insty == T::INS_CALL);
+}
+
 static const std::unordered_map<T, std::string> ins_to_str_ = {
     {T::INS_NONE,    "NONE"},
     {T::INS_ADDA,    "ADDA"},
     {T::INS_LOAD,    "LOAD"},
     {T::INS_STORE,   "STORE"},
-    {T::INS_LOADG,   "LOADG"},
-    {T::INS_STOREG,  "STOREG"},
+    {T::INS_LOAD,   "LOADG"},
+    {T::INS_STORE,  "STOREG"},
     {T::INS_CALL,    "CALL"},
     {T::INS_PHI,     "PHI"},
     {T::INS_ADD,     "ADD"},
@@ -213,6 +222,8 @@ public:
     bool IsDead() const { return is_dead_; }
     
     VI GetSelfValue() const { return self_value_; }
+
+    II GetAddAForLS(II) const;
 
     BI Idx() const { return idx_; }
 
