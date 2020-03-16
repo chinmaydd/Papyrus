@@ -110,6 +110,8 @@ public:
     Instruction(InstructionType, BI, II);
 
     void AddOperand(VI); 
+    void AddOperand(VI, BI);
+
     void SetResult(VI res) { result_ = res; }
     void MakeInactive() { is_active_ = false; }
     void ReplaceUse(VI, VI);
@@ -129,6 +131,8 @@ public:
     bool IsPhi() const { return ins_type_ == INS_PHI; }
     bool IsActive() const { return is_active_; }
 
+    const std::unordered_map<BI, VI> OpSource() { return op_source_; }
+
 private:
     InstructionType ins_type_;
 
@@ -138,6 +142,8 @@ private:
     II ins_idx_;
 
     BI containing_bb_;
+    // Currently implemented only for Phi
+    std::unordered_map<BI, VI> op_source_;
 
     bool is_active_;
 };
@@ -270,6 +276,7 @@ public:
 
     std::vector<BI> PostOrderCFG();
     std::vector<BI> ReversePostOrderCFG();
+    std::vector<BI> ExitBlocks();
 
     std::string ConvertInstructionToString(II) const;
     std::string ConvertValueToString(VI) const;
@@ -288,6 +295,7 @@ public:
     void SealBB(BI);
     void UnsealAllBB();
     void SetCurrentBB(BI idx) { current_bb_ = idx; }
+    void AddExitBlock(BI idx);
     void MakeMove(const std::string&, VI);
     void ReplaceUse(VI, VI);
 
@@ -352,6 +360,7 @@ private:
 
     std::vector<BI> postorder_cfg_;
     std::vector<BI> rev_postorder_cfg_;
+    std::vector<BI> exit_blocks_;
 
     BI current_bb_;
     BI bb_counter_;

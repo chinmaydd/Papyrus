@@ -477,10 +477,12 @@ VI ITENode::GenerateIR(IRC& irc) const {
         }
 
         if (!else_ended) {
-            CF->SetCurrentBB(else_end);
-            VI bb_val = CF->GetBB(f_through)->GetSelfValue();
             //////////////////////////////////////////////////
-            MI(T::INS_BRA, bb_val);
+            // Removed since we can directly fall-through from else.
+            //
+            // CF->SetCurrentBB(else_end);
+            // VI bb_val = CF->GetBB(f_through)->GetSelfValue();
+            // MI(T::INS_BRA, bb_val);
             //////////////////////////////////////////////////
             CF->AddBBEdge(else_end, f_through);
         }
@@ -512,7 +514,9 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     //////////////////////////////////////////////////
 
     //////////////////////////////////////////////////
-    MI(T::INS_BRA, bb_val);
+    // Removed since loop header would be a fall-through
+    //
+    // MI(T::INS_BRA, bb_val);
     //////////////////////////////////////////////////
 
     CF->AddBBEdge(previous, loop_header);
@@ -577,6 +581,7 @@ VI ReturnNode::GenerateIR(IRC& irc) const {
     }
 
     CF->GetBB(CF->CurrentBBIdx())->EndBB();
+    CF->AddExitBlock(CF->CurrentBBIdx());
 
     return result;
 }

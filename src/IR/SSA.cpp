@@ -95,7 +95,7 @@ VI Function::AddPhiOperands(const std::string& var_name, II phi_ins) {
     auto ins = GetInstruction(phi_ins);
 
     for (auto pred: bb->Predecessors()) {
-        ins->AddOperand(ReadVariable(var_name, pred));
+        ins->AddOperand(ReadVariable(var_name, pred), pred);
     }
 
     return TryRemoveTrivialPhi(phi_ins);

@@ -15,22 +15,27 @@ std::string Function::ConvertValueToString(VI val_idx) const {
     switch(val->GetType()) {
         case V::VAL_CONST: {
             res += "#" + std::to_string(val->GetConstant());
+            res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
         case V::VAL_FUNC: {
             res += "&" + val->Identifier();
+            res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
         case V::VAL_BRANCH: {
             res += "BB_" + std::to_string(val->GetConstant());
+            res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
         case V::VAL_VAR: {
             res += val->Identifier();
+            res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
         case V::VAL_LOCATION: {
             res += "&global_" + val->Identifier() + " ";
+            res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
         default: {

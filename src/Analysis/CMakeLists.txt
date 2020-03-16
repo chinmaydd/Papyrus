@@ -1,8 +1,8 @@
 set(_SOURCE_FILES
-    LiveVar.cpp
     GlobalClobbering.cpp
     InterprocCall.cpp
     LoadStoreRemover.cpp
+    IGBuilder.cpp
     )
 
 add_library(Analysis OBJECT

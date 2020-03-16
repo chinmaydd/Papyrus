@@ -8,7 +8,7 @@
 #include "IR/IRConstructor.h"
 
 #include "Analysis/LoadStoreRemover.h"
-#include "Analysis/LiveVar.h"
+#include "Analysis/IGBuilder.h"
 
 #include "Utils.h"
 
@@ -46,8 +46,8 @@ int main(int argc, char *argv[]) {
     LoadStoreRemover lsr(irconst);
     lsr.run();
 
-    // LiveVar lv(irconst);
-    // lv.run();
+    IGBuilder igb(irconst);
+    igb.run();
 
     std::string vcg_fname = utils.ConstructOutFile(argv[1]);
 

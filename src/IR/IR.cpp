@@ -128,6 +128,10 @@ bool Function::HasEndedBB(BI bb_idx) const {
     return GetBB(bb_idx)->HasEnded();
 }
 
+void Function::AddExitBlock(BI bb_idx) {
+    exit_blocks_.push_back(bb_idx);
+}
+
 II Function::MakePhi() {
     instruction_counter_++;
 
@@ -339,6 +343,10 @@ std::vector<BI> Function::ReversePostOrderCFG() {
     return rev_postorder_cfg_;
 }
 
+std::vector<BI> Function::ExitBlocks() {
+    return exit_blocks_;
+}
+
 Instruction* Function::GetInstruction(II ins_idx) const {
     return instruction_map_.at(ins_idx);
 }
@@ -503,12 +511,22 @@ Instruction::Instruction(T insty, BI containing_bb, II ins_idx) :
     ins_type_(insty),
     containing_bb_(containing_bb),
     ins_idx_(ins_idx),
+    op_source_({}),
     is_active_(true) {}
 
 void Instruction::AddOperand(VI val_idx) {
     if (std::find(operands_.begin(), operands_.end(), val_idx) == operands_.end()) {
         operands_.push_back(val_idx);
     }
+}
+
+/*
+ * This function is being written so as to add the root of the read operand
+ * in the phi
+ */
+void Instruction::AddOperand(VI val_idx, BI pred) {
+    AddOperand(val_idx);
+    op_source_[pred] = val_idx;
 }
 
 /*
