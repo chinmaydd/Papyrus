@@ -33,7 +33,6 @@ public:
         VAL_PHI,
         VAL_FUNC,
         VAL_VAR,
-
         VAL_BRANCH,
         VAL_FORMAL,
     };
@@ -48,6 +47,7 @@ public:
     void SetConstant(int val) { val_ = val; }
     void SetIdentifier(const std::string& ident) { identifier_ = ident; }
     void RemoveUse(II);
+    void AddDepth(int depth) { loop_depth_ = depth; }
 
     std::string Identifier() const { return identifier_; }
 
@@ -60,6 +60,7 @@ private:
     ValueType vty_;
 
     int val_;
+    int loop_depth_;
 
     std::string identifier_;
     std::vector<II> uses_;

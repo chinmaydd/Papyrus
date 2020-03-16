@@ -2,7 +2,20 @@
 
 using namespace papyrus;
 
-InterferenceGraph::InterferenceGraph() {}
+// Helper to print out valueset to console
+void PrintValueSet(const ValueSet& vs) {
+    std::cout << "**********************" << std::endl;
+    for (auto elem: vs) {
+        std::cout << std::to_string(elem) << ", ";
+    }
+    std::cout << std::endl << "**********************" << std::endl;
+}
+
+/*
+ * Method definitions for InterferenceGraph
+ */
+InterferenceGraph::InterferenceGraph() :
+    cluster_id_(0) {}
 
 void InterferenceGraph::AddInterference(VI source, VI dest) {
     if (ig_.find(source) == ig_.end()) {
@@ -28,6 +41,58 @@ void InterferenceGraph::PrintToConsole() const {
     }
 }
 
+bool InterferenceGraph::Interferes(VI arg_1, VI arg_2) {
+    // Maybe there should be a default "add" mode
+    if (ig_.find(arg_1) == ig_.end()) {
+        ig_[arg_1] = {};
+    }
+
+    if (ig_.find(arg_2) == ig_.end()) {
+        ig_[arg_2] = {};
+    }
+
+    return (ig_.at(arg_1).find(arg_2) != ig_.at(arg_1).end());
+}
+
+void InterferenceGraph::RegisterMerge(const std::vector<VI>& values) {
+    // Technically, we have to merge all the operands in the Phi
+    std::unordered_set<VI> neighbors;
+
+    int cluster_found = -1;
+    for (auto val: values) {
+        if (val_to_cluster_.find(val) != val_to_cluster_.end()) {
+            cluster_found = val_to_cluster_.at(val);
+            break;
+        }
+    }
+
+    if (cluster_found == -1) {
+        cluster_id_++;
+        cluster_found = cluster_id_;
+    }
+
+    for (auto val: values) {
+        val_to_cluster_[val] = cluster_found;
+    }
+}
+
+void InterferenceGraph::Merge() {
+    for (auto val_pair: ig_) {
+        auto val_idx = val_pair.first;
+        auto neighbors = val_pair.second;
+        if (val_to_cluster_.find(val_idx) != val_to_cluster_.end()) {
+            // It is part of a cluster
+            auto cluster_id = val_to_cluster_.at(val_idx);
+            for (auto neighbor: neighbors) {
+                cluster_neighbors_[cluster_id].insert(neighbor);
+            }
+        }
+    }
+}
+
+/*
+ * Method definitions for IGBuilder
+ */
 IGBuilder::IGBuilder(IRConstructor& irc) : 
     AnalysisPass(irc),
     loop_depth_(0),
@@ -37,13 +102,40 @@ void IGBuilder::AddInterference(VI source, VI dest) {
     ig_.AddInterference(source, dest);
 }
 
-// Helper
-void PrintValueSet(const ValueSet& vs) {
-    std::cout << "**********************" << std::endl;
-    for (auto elem: vs) {
-        std::cout << std::to_string(elem) << ", ";
+InterferenceGraph& IGBuilder::IG() {
+    return ig_;
+}
+
+void IGBuilder::CoalesceNodes(Function* fn) {
+    for (auto bb_pair: fn->BasicBlocks()) {
+        auto bb_idx = bb_pair.first;
+        auto bb = bb_pair.second;
+
+        for (auto ins_idx: bb->InstructionOrder()) {
+            auto ins = fn->GetInstruction(ins_idx);
+
+            if (!ins->IsActive()) {
+                continue;
+            }
+
+            if (ins->Type() == T::INS_PHI) {
+                auto result = ins->Result();
+                auto arg_1  = ins->Operands().at(0);
+                auto arg_2  = ins->Operands().at(1);
+
+                if (!ig_.Interferes(arg_1, result) &&
+                    !ig_.Interferes(arg_2, result) &&
+                    !ig_.Interferes(arg_1, arg_2)) {
+                    ig_.RegisterMerge({arg_1, arg_2, result});
+                }
+            } else {
+                // We would have seen all phis till now
+                break;
+            }
+        }
     }
-    std::cout << std::endl << "**********************" << std::endl;
+
+    ig_.Merge();
 }
 
 void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
@@ -56,11 +148,17 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
     for (auto succ_idx: bb->Successors()) {
         auto succ = fn->GetBB(succ_idx);
 
-        if (succ->Type() == B::BB_LOOPHEAD &&
-            fn->IsBackEdge(bb_idx, succ_idx)) {
-            // This implies we are at loop end
-            // Back edge found. Decide later.
-            continue;
+        if (succ->Type() == B::BB_LOOPHEAD) {
+            if (fn->IsBackEdge(bb_idx, succ_idx)) {
+                // This implies we are at loop end
+                // Back edge found. Decide later.
+                continue;
+            } else {
+                // TODO: Take this into account!
+                loop_depth_++;
+                ProcessBlock(fn, succ);
+                loop_depth_--;
+            }
         } else {
             ProcessBlock(fn, succ);
         }
@@ -111,6 +209,8 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
 
         // Output operand
         auto result = ins->Result();
+        // Add depth to the result
+        fn->GetValue(result)->AddDepth(loop_depth_);
         bb_live.erase(result);
 
         if (ins->Type() != T::INS_PHI) {
@@ -131,9 +231,6 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
         }
     }
 
-    // LOG(ERROR) << std::to_string(bb_idx);
-    // PrintValueSet(bb_live);
-
     bb_live_in[bb_idx] = bb_live;
     visited.insert(bb_idx);
 }
@@ -153,7 +250,6 @@ void IGBuilder::run() {
         bb_live_in = {};
         //////////////////////////
         
-        // auto exit_blocks = fn->ExitBlocks();
         auto entry_idx = 1;
         auto bb = fn->GetBB(entry_idx);
 
@@ -161,6 +257,12 @@ void IGBuilder::run() {
 
         live_in_vars_[fn_name] = bb_live_in;
 
-        LOG(ERROR) << "************";
+        CoalesceNodes(fn);
     }
+
+    LOG(ERROR) << "Done";
+
+    // Next steps:
+    // Spill
+    // Color
 }
