@@ -67,7 +67,6 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
     }
 
     bb_live = {};
-    LOG(ERROR) << "Now visiting: " << std::to_string(bb_idx);
 
     auto rev_ins_order = bb->InstructionOrder();
     auto bb_from = rev_ins_order.front();
@@ -102,8 +101,6 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
         }
     }
 
-    // PrintValueSet(bb_live);
-
     for (auto ins_idx: rev_ins_order) {
         auto ins = fn->GetInstruction(ins_idx);
 
@@ -112,19 +109,17 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
             continue;
         }
 
-        // TODO: Run analysis as to what instruction type this is
-        // TODO: Or, we can perform some analysis on what kind of a value
-        // it is.
-
         // Output operand
         auto result = ins->Result();
         bb_live.erase(result);
 
-        // Input operand
-        for (auto op: ins->Operands()) {
-            // Remove phi from live
-            if (ins->Type() != T::INS_PHI) {
-                bb_live.insert(op);
+        if (ins->Type() != T::INS_PHI) {
+            for (auto op: ins->Operands()) {
+                auto val = fn->GetValue(op);
+
+                if (val->Type() != V::VAL_BRANCH) {
+                    bb_live.insert(op);
+                }
             }
         }
 
@@ -134,9 +129,10 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
                 AddInterference(*it, *sub_it);
             }
         }
-
-        // PrintValueSet(bb_live);
     }
+
+    // LOG(ERROR) << std::to_string(bb_idx);
+    // PrintValueSet(bb_live);
 
     bb_live_in[bb_idx] = bb_live;
     visited.insert(bb_idx);

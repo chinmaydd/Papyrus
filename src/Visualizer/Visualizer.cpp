@@ -12,7 +12,7 @@ std::string Function::ConvertValueToString(VI val_idx) const {
     std::string res = "";
     Value *val = GetValue(val_idx);
 
-    switch(val->GetType()) {
+    switch(val->Type()) {
         case V::VAL_CONST: {
             res += "#" + std::to_string(val->GetConstant());
             res += "_(" + std::to_string(val_idx) + ")";

@@ -41,7 +41,7 @@ public:
     Value(ValueType);
 
     const std::vector<II>& GetUsers() const { return uses_; }
-    const ValueType GetType() const { return vty_; }
+    const ValueType Type() const { return vty_; }
 
     void SetType(ValueType vty) { vty_ = vty; }
     void AddUsage(II ins_idx) { uses_.push_back(ins_idx); }
