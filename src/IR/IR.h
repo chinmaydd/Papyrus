@@ -298,6 +298,7 @@ public:
     void AddExitBlock(BI idx);
     void MakeMove(const std::string&, VI);
     void ReplaceUse(VI, VI);
+    void AddBackEdge(VI, VI);
 
     int GetOffset(const std::string&) const;
     int ReduceCondition(RelationalOperator, VI, VI) const;
@@ -336,6 +337,7 @@ public:
     bool IsReducible(VI, VI) const;
     bool IsArithmetic(T) const;
     bool IsRelational(T) const;
+    bool IsBackEdge(VI, VI) const;
 
 private:
     std::string func_name_;
@@ -361,6 +363,8 @@ private:
     std::vector<BI> postorder_cfg_;
     std::vector<BI> rev_postorder_cfg_;
     std::vector<BI> exit_blocks_;
+
+    std::unordered_map<VI, VI> back_edges_;
 
     BI current_bb_;
     BI bb_counter_;

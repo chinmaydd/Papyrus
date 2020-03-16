@@ -9,8 +9,6 @@ namespace papyrus {
 
 using V = Value::ValueType;
 using ValueSet  = std::unordered_set<VI>;
-using LiveIn    = std::unordered_map<II, ValueSet>;
-using LiveOut   = std::unordered_map<II, ValueSet>;
 using BBLiveIn  = std::unordered_map<BI, ValueSet>;
 using BBLiveOut = std::unordered_map<BI, ValueSet>;
 
@@ -33,6 +31,13 @@ public:
 private:
     std::unordered_map<std::string, BBLiveIn> live_in_vars_;
     std::unordered_map<std::string, BBLiveOut> live_out_vars_;
+
+    void ProcessBlock(Function*, BasicBlock*);
+
+    BBLiveIn bb_live_in;
+    ValueSet bb_live;
+    std::unordered_set<BI> visited;
+    int loop_depth_;
 
     InterferenceGraph& ig_;
 };

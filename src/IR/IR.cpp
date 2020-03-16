@@ -20,6 +20,7 @@ Function::Function(const std::string& func_name, VI value_counter, std::unordere
     postorder_cfg_({}),
     rev_postorder_cfg_({}),
     hash_map_({}),
+    back_edges_({}),
     constant_map_({}),
     value_map_(value_map) {
         SetLocalBase(CreateValue(V::VAL_LOCALBASE));
@@ -130,6 +131,18 @@ bool Function::HasEndedBB(BI bb_idx) const {
 
 void Function::AddExitBlock(BI bb_idx) {
     exit_blocks_.push_back(bb_idx);
+}
+
+void Function::AddBackEdge(VI from, VI to) {
+    back_edges_.insert({from, to});
+}
+
+bool Function::IsBackEdge(VI from, VI to) const {
+    if (back_edges_.find(from) == back_edges_.end()) {
+        return false;
+    }
+
+    return back_edges_.at(from) == to;
 }
 
 II Function::MakePhi() {

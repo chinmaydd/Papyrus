@@ -62,7 +62,12 @@ VI Function::TryRemoveTrivialPhi(II phi_ins) {
     ReplaceUse(result, same);
     ins->MakeInactive();
 
-    for (auto use_idx: GetValue(result)->GetUsers()) {
+    // Replace instance in local_defs_
+    auto res = GetValue(result);
+    auto ident = res->Identifier();
+    local_defs_[ident][ins->ContainingBB()] = same;
+
+    for (auto use_idx: res->GetUsers()) {
         TryRemoveTrivialPhi(use_idx);
     }
 
@@ -139,6 +144,9 @@ VI Function::ReadVariableRecursive(const std::string& var_name, BI bb_idx) {
         result = AddPhiOperands(var_name, phi_ins);
     }
 
+    // Add identifier for phi
+    GetValue(result)->SetIdentifier(var_name);
+
     SetCurrentBB(cur_bb_idx);
     WriteVariable(var_name, bb_idx, result);
     return result;
@@ -197,6 +205,8 @@ void Function::SealBB(BI bb_idx) {
 
             ins = GetInstruction(ins_idx);
             if (!ins->IsActive()) {
+                // This Phi has become inactive; which means we should make sure
+                // that all instructions which use its result are made inactive.
                 continue;
             }
 
@@ -204,6 +214,7 @@ void Function::SealBB(BI bb_idx) {
             for (auto val_idx: ins->Operands()) {
                 // Find the users of the particular value
                 // and redirect their use to be that of the Phi instead
+                //
                 // NOTE: This is to be done for values in the block
                 // under consideration since otherwise, it could
                 // potentially lead to other issues.

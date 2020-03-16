@@ -477,13 +477,6 @@ VI ITENode::GenerateIR(IRC& irc) const {
         }
 
         if (!else_ended) {
-            //////////////////////////////////////////////////
-            // Removed since we can directly fall-through from else.
-            //
-            // CF->SetCurrentBB(else_end);
-            // VI bb_val = CF->GetBB(f_through)->GetSelfValue();
-            // MI(T::INS_BRA, bb_val);
-            //////////////////////////////////////////////////
             CF->AddBBEdge(else_end, f_through);
         }
 
@@ -513,12 +506,6 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     // reducibility
     //////////////////////////////////////////////////
 
-    //////////////////////////////////////////////////
-    // Removed since loop header would be a fall-through
-    //
-    // MI(T::INS_BRA, bb_val);
-    //////////////////////////////////////////////////
-
     CF->AddBBEdge(previous, loop_header);
     CF->SealBB(previous);
 
@@ -540,6 +527,7 @@ VI WhileNode::GenerateIR(IRC& irc) const {
 
     if (!CF->HasEndedBB(loop_end)) {
         CF->AddBBEdge(loop_end, loop_header);
+        CF->AddBackEdge(loop_end, loop_header);
         CF->SetCurrentBB(loop_end);
         VI bb_val = CF->GetBB(loop_header)->GetSelfValue();
         //////////////////////////////////////////////////
@@ -629,6 +617,9 @@ void StatSequenceNode::GenerateIR(IRC& irc) const {
         statement = *it;
         result = statement->GenerateIR(irc);
     }
+
+    // TODO: Generate an implicit return instruction if not already
+    // generated.
 }
 
 // Simple handling of statement sequences
@@ -664,6 +655,7 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
         // if (irc.IsVariableGlobal(var_name)) {
         //     exit(1);
         // }
+
         if (sym->IsFormal()) {
             // Creating a location value here to be used for later
             location = CV(V::VAL_LOCATION);
