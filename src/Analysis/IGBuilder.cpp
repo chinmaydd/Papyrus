@@ -86,7 +86,7 @@ void InterferenceGraph::Merge() {
             for (auto neighbor: neighbors) {
                 cluster_neighbors_[cluster_id].insert(neighbor);
             }
-        }
+        } // TODO: Add else
     }
 }
 
@@ -167,9 +167,12 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
     bb_live = {};
 
     auto rev_ins_order = bb->InstructionOrder();
-    auto bb_from = rev_ins_order.front();
-    auto bb_end  = rev_ins_order.back();
-    std::reverse(rev_ins_order.begin(), rev_ins_order.end());
+
+    if (rev_ins_order.size() != 0) {
+        auto bb_from = rev_ins_order.front();
+        auto bb_end  = rev_ins_order.back();
+        std::reverse(rev_ins_order.begin(), rev_ins_order.end());
+    }
 
     for (auto succ_idx: bb->Successors()) {
         // Check if succ exists in bb_live_in

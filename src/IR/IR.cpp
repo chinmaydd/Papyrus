@@ -236,12 +236,24 @@ std::string Function::HashInstruction(T insty, VI arg_1, VI arg_2) const {
     return return_str;
 }
 
+/*
+ * XXX:
+ * Currently disabling CSE since there are changes in values once the Phis are
+ * filled. We will implement this as an analysis pass later since at that time 
+ * know the values that will be used in all instructions
+ *
+ * CSE here is on-the-fly CSE; to be done during AST construction. I guess it 
+ * might still be possible to do this by some more bookkeeping but that this 
+ * point it does not make sense to do that.
+ */
 bool Function::IsEliminable(T insty) const {
-    return (insty != T::INS_CALL &&
-            insty != T::INS_ARG &&
-            insty != T::INS_BRA &&
-            insty != T::INS_LOAD &&
-            insty != T::INS_STORE);
+    return false;
+
+    // return (insty != T::INS_CALL &&
+    //         insty != T::INS_ARG  &&
+    //         insty != T::INS_BRA  &&
+    //         insty != T::INS_LOAD &&
+    //         insty != T::INS_STORE);
 }
 
 /*
@@ -388,6 +400,8 @@ bool Function::IsArithmetic(T insty) const {
 }
 
 bool Function::IsReducible(VI idx_1, VI idx_2) const {
+    // TODO: We should also make sure that we take into account values 
+    // that are equal and not just constants
     return (GetValue(idx_1)->IsConstant() && GetValue(idx_2)->IsConstant());
 }
 

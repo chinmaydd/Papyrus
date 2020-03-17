@@ -15,7 +15,9 @@ std::string Function::ConvertValueToString(VI val_idx) const {
     switch(val->Type()) {
         case V::VAL_CONST: {
             res += "#" + std::to_string(val->GetConstant());
-            res += "_(" + std::to_string(val_idx) + ")";
+            // Constant has a value; but displaying that in the IR does not
+            // really make sense.
+            // res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
         case V::VAL_FUNC: {
@@ -25,7 +27,8 @@ std::string Function::ConvertValueToString(VI val_idx) const {
         }
         case V::VAL_BRANCH: {
             res += "BB_" + std::to_string(val->GetConstant());
-            res += "_(" + std::to_string(val_idx) + ")";
+            // BB has a value assigned; to keep the IR sane.
+            // res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
         case V::VAL_VAR: {
@@ -35,6 +38,16 @@ std::string Function::ConvertValueToString(VI val_idx) const {
         }
         case V::VAL_LOCATION: {
             res += "&global_" + val->Identifier() + " ";
+            res += "_(" + std::to_string(val_idx) + ")";
+            break;
+        }
+        case V::VAL_GLOBALBASE: {
+            res += "&GlobalBase";
+            res += "_(" + std::to_string(val_idx) + ")";
+            break;
+        }
+        case V::VAL_LOCALBASE: {
+            res += "&LocalBase";
             res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
