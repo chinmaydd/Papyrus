@@ -6,7 +6,7 @@ bool InterprocCallAnalysis::IsFunctionCall(T insty) const {
     return (insty == T::INS_CALL);
 }
 
-void InterprocCallAnalysis::run() {
+void InterprocCallAnalysis::Run() {
     for (auto fn_pair: irc().Functions()) {
         auto fn_name = fn_pair.first;
         if (irc().IsIntrinsic(fn_name)) {

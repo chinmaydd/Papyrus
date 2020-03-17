@@ -9,7 +9,7 @@ namespace papyrus {
 class AnalysisPass {
 public:
     AnalysisPass(IRConstructor& irc) : irc_(irc) {}
-    virtual void run() = 0;
+    virtual void Run() = 0;
 
 protected:
     IRConstructor& irc_;

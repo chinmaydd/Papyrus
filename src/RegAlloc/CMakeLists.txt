@@ -1,4 +1,5 @@
 set(_SOURCE_FILES
+    IGBuilder.cpp
     RegAlloc.cpp
     )
 

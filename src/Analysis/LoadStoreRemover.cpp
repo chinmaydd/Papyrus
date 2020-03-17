@@ -86,11 +86,11 @@ bool LoadStoreRemover::CanSeal(BI bb_idx) {
     return true;
 }
 
-void LoadStoreRemover::run() {
+void LoadStoreRemover::Run() {
     // Run GlobalClobbering Analysis
     // Run a different analysis to get this information
     GlobalClobbering gc = GlobalClobbering(irc());
-    gc.run();
+    gc.Run();
 
     global_clobber_ = gc.GetClobberStatus();
     load_deps_      = gc.GetReadDefStatus();

@@ -14,7 +14,7 @@ using VarMap = std::unordered_map<std::string, std::unordered_set<std::string> >
 class GlobalClobbering : public AnalysisPass {
 public:
     GlobalClobbering(IRConstructor&);
-    void run();
+    void Run();
 
     const VarMap& GetClobberStatus() const;
     const VarMap& GetReadDefStatus() const;

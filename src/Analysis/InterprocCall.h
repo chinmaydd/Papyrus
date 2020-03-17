@@ -10,7 +10,7 @@ using VarMap = std::unordered_map<std::string, std::unordered_set<std::string> >
 class InterprocCallAnalysis : public AnalysisPass {
 public:
     InterprocCallAnalysis(IRConstructor& irc) : AnalysisPass(irc) {}
-    void run();
+    void Run();
 
     const VarMap& GetCallerInfo() const;
     const VarMap& GetCalleeInfo() const;

@@ -1,7 +1,7 @@
 #ifndef PAPYRUS_IGBUILDER_H
 #define PAPYRUS_IGBUILDER_H
 
-#include "AnalysisPass.h"
+#include "Analysis/AnalysisPass.h"
 
 #include <unordered_map>
 
@@ -22,6 +22,8 @@ public:
     void RegisterMerge(const std::vector<VI>&);
     void Merge();
 
+    std::unordered_map<int, std::unordered_set<VI> >& ClusterNeighbors();
+
     VI FindRegAlias(VI);
 
 private:
@@ -36,7 +38,7 @@ private:
 class IGBuilder : public AnalysisPass {
 public:
     IGBuilder(IRConstructor&);
-    void run();
+    void Run();
     void AddInterference(VI, VI);
     InterferenceGraph& IG();
 

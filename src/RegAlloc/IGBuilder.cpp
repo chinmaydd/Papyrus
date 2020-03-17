@@ -90,6 +90,10 @@ void InterferenceGraph::Merge() {
     }
 }
 
+std::unordered_map<int, std::unordered_set<VI> >& InterferenceGraph::ClusterNeighbors() {
+    return cluster_neighbors_;
+}
+
 /*
  * Method definitions for IGBuilder
  */
@@ -132,6 +136,15 @@ void IGBuilder::CoalesceNodes(Function* fn) {
                 // We would have seen all phis till now
                 break;
             }
+
+            // We should also check for coalescing nodes which are not
+            // really dependent on each other. This however is more costly 
+            // and will be handled by graph coloring?
+            //
+            // The literature on this suggested to merge non-interfering nodes
+            // if the resultant node had a degree of < k.
+            //
+            // This it to be implemented at a later time.
         }
     }
 
@@ -238,7 +251,7 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
     visited.insert(bb_idx);
 }
 
-void IGBuilder::run() {
+void IGBuilder::Run() {
     for (auto fn_pair: irc().Functions()) {
         std::string fn_name = fn_pair.first;
         if (irc().IsIntrinsic(fn_name)) {
@@ -264,8 +277,4 @@ void IGBuilder::run() {
     }
 
     LOG(ERROR) << "Done";
-
-    // Next steps:
-    // Spill
-    // Color
 }

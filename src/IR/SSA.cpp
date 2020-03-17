@@ -234,7 +234,7 @@ void Function::SealBB(BI bb_idx) {
 }
 
 /*
- * This function is introduced to run the SSA Pass once again for 
+ * This function is introduced to Run() the SSA Pass once again for 
  * global vars.
  */
 void Function::UnsealAllBB() {

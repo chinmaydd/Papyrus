@@ -17,7 +17,7 @@ public:
     LoadStoreRemover(IRConstructor& irc) : 
         hash_map_({}),
         AnalysisPass(irc) {}
-    void run();
+    void Run();
 
 private:
     std::vector<std::string> GlobalsUsedAcrossCall(Instruction*);

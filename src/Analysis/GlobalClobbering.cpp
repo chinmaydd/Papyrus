@@ -81,10 +81,10 @@ void GlobalClobbering::Visit(const std::string& fn_name) {
      }
 }
 
-void GlobalClobbering::run() {
+void GlobalClobbering::Run() {
 
     InterprocCallAnalysis ipc(irc());
-    ipc.run();
+    ipc.Run();
     callee_info_ = ipc.GetCalleeInfo();
 
     // Topological Sort

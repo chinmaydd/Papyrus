@@ -8,7 +8,9 @@
 #include "IR/IRConstructor.h"
 
 #include "Analysis/LoadStoreRemover.h"
-#include "Analysis/IGBuilder.h"
+
+#include "RegAlloc/IGBuilder.h"
+#include "RegAlloc/RegAlloc.h"
 
 #include "Utils.h"
 
@@ -44,10 +46,13 @@ int main(int argc, char *argv[]) {
     irconst.BuildIR();
 
     LoadStoreRemover lsr(irconst);
-    lsr.run();
+    lsr.Run();
 
     IGBuilder igb(irconst);
-    igb.run();
+    igb.Run();
+
+    RegAllocator ra(irconst, igb);
+    ra.Run();
 
     std::string vcg_fname = utils.ConstructOutFile(argv[1]);
 
