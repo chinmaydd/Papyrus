@@ -139,11 +139,16 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         var    = CF->GetVariable(var_name);
         base   = CF->LocalBase();
         offset = var->GetLocationIdx();
+
+        // Commented out to include LocationIdx() as the location value instead.
         // offset = CC(var->Offset());
     } else if (irc.IsVariableGlobal(var_name)) {
         var    = irc.GetGlobal(var_name);
         base   = irc.GlobalBase();
-        offset = CC(irc.GlobalOffset(var_name)*4);
+        offset = var->GetLocationIdx();
+
+        // Commented out to include LocationIdx() as the location value instead.
+        // offset = CC(irc.GlobalOffset(var_name)*4);
     } else {
         LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined.";
         exit(1);
@@ -247,7 +252,6 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
 
     if (desig_type_ == DESIG_VAR) {
         if (CF->IsVariableLocal(var_name)) {
-
             // Handling formals:
             //
             // The way we handle formals right now is that we assume them to be
@@ -256,7 +260,7 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
             // Once they are loaded, they are marked loaded. In the register 
             // allocation phase, we can then choose to store/reload them as
             // necessary. We create an instruction which will create a memory
-            // location value on the stack; localbase - 4 * ParamNumber. This
+            // location value on the stack; localbase - (4 * ParamNumber). This
             // is an approximation as there will be the return address on the
             // stack as well. But that is part of the ABI which can be modified
             // according to the architecture itself.
@@ -266,7 +270,7 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
                 auto mem_location = var->GetLocationIdx();
 
                 //////////////////////////////////////////
-                auto temp = MI(T::INS_SUB, CF->LocalBase(), mem_location);
+                auto temp = MI(T::INS_ADD, CF->LocalBase(), mem_location);
                 result    = MI(T::INS_LOAD, temp);
                 //////////////////////////////////////////
 
@@ -774,6 +778,8 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
             CF->GetValue(location)->SetConstant(-4 * old_offset);
             CF->GetValue(location)->SetIdentifier(var_name);
 
+            // The offset in words in stored in the "Variable" whereas the 
+            // offset in bytes is stored the in the value that is created.
             var = new Variable(sym, old_offset, location);
         }
 

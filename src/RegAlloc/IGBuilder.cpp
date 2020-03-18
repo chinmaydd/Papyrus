@@ -285,6 +285,4 @@ void IGBuilder::Run() {
 
         CoalesceNodes(fn);
     }
-
-    LOG(ERROR) << "Done";
 }

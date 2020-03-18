@@ -82,8 +82,6 @@ void RegAllocator::ColorIG() {
         auto val_idx = val_pair.first;
         coloring_[val_idx] = c;
     }
-
-    LOG(ERROR) << "Coloring done!";
 }
 
 void RegAllocator::TryColoringSpilledVals() {

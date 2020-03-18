@@ -48,14 +48,18 @@ int main(int argc, char *argv[]) {
     LoadStoreRemover lsr(irconst);
     lsr.Run();
 
+    std::string vcg_fname = utils.ConstructOutFile(argv[1], ".vcg");
+
+    // Visualizer viz = Visualizer(irconst);
+    // viz.WriteVCG(vcg_fname);
+
     IGBuilder igb(irconst);
     igb.Run();
 
     RegAllocator ra(irconst, igb);
     ra.Run();
 
-    std::string vcg_fname = utils.ConstructOutFile(argv[1]);
-
+    // vcg_fname = utils.ConstructOutFile(argv[1], ".final.vcg");
     Visualizer viz = Visualizer(irconst);
     viz.WriteVCG(vcg_fname);
 

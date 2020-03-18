@@ -255,22 +255,28 @@ std::string Function::HashInstruction(T insty, VI arg_1, VI arg_2) const {
  * know the values that will be used in all instructions
  *
  * CSE here is on-the-fly CSE; to be done during AST construction. I guess it 
- * might still be possible to do this by some more bookkeeping but that this 
+ * might still be possible to do this by some more bookkeeping but at this 
  * point it does not make sense to do that.
+ *
+ * The way this should be ideally done is that we make a Read() for that variable
+ * with the CurrentBBIdx() and check if that value exists in the hash table?
  */
 bool Function::IsEliminable(T insty) const {
     return false;
-
-    // return (insty != T::INS_CALL &&
-    //         insty != T::INS_ARG  &&
-    //         insty != T::INS_BRA  &&
-    //         insty != T::INS_LOAD &&
-    //         insty != T::INS_STORE);
+    // return (insty != T::INS_CALL  &&
+    //         insty != T::INS_ARG   &&
+    //         insty != T::INS_BRA   &&
+    //         insty != T::INS_LOAD  &&
+    //         insty != T::INS_STORE &&
+    //         insty != T::INS_ADDA);
 }
 
 /*
  * Create Instructions for the IR
  */
+
+// This function is never called standalone. Hence, not checking if instruction
+// is eliminable.
 VI Function::MakeInstruction(T insty) {
     instruction_counter_++;
     Instruction* inst = new Instruction(insty, CurrentBBIdx(), instruction_counter_);

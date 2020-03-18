@@ -9,7 +9,7 @@ namespace papyrus {
 class Utils {
 public:
     std::vector<std::string> Split(const std::string&, const std::string&);
-    std::string ConstructOutFile(const std::string&);
+    std::string ConstructOutFile(const std::string&, const std::string&);
 };
 
 } // namespace papyrus

@@ -26,6 +26,7 @@ class Value {
 public:
     enum ValueType {
         VAL_ANY,
+
         VAL_CONST,
         VAL_LOCALBASE,
         VAL_GLOBALBASE,
@@ -35,6 +36,8 @@ public:
         VAL_VAR,
         VAL_BRANCH,
         VAL_FORMAL,
+
+        VAL_NONE // Just in case
     };
 
     Value(ValueType);

@@ -74,6 +74,9 @@ VI Function::TryRemoveTrivialPhi(II phi_ins) {
     return same;
 }
 
+/*
+ * Utility function to replace all uses of a value with a new one
+ */
 void Function::ReplaceUse(VI old_idx, VI new_idx) {
     auto old_val = GetValue(old_idx);
     auto new_val = GetValue(new_idx);
