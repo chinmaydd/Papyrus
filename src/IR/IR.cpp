@@ -6,6 +6,9 @@ using namespace papyrus;
 Value::Value(ValueType vty) :
     vty_(vty) {}
 
+/*
+ * Requires Reg?
+ */
 bool Value::RequiresReg() const {
     return (vty_ != V::VAL_FORMAL ||
             vty_ != V::VAL_BRANCH);
@@ -119,6 +122,10 @@ void Function::AddBBEdge(BI pred, BI succ) {
 
 const std::unordered_map<BI, BasicBlock*> Function::BasicBlocks() const {
     return basic_block_map_;
+}
+
+const std::unordered_map<std::string, Variable*> Function::Variables() const {
+    return variable_map_;
 }
 
 BasicBlock* Function::GetBB(BI bb_idx) const {
@@ -262,13 +269,13 @@ std::string Function::HashInstruction(T insty, VI arg_1, VI arg_2) const {
  * with the CurrentBBIdx() and check if that value exists in the hash table?
  */
 bool Function::IsEliminable(T insty) const {
-    return false;
-    // return (insty != T::INS_CALL  &&
-    //         insty != T::INS_ARG   &&
-    //         insty != T::INS_BRA   &&
-    //         insty != T::INS_LOAD  &&
-    //         insty != T::INS_STORE &&
-    //         insty != T::INS_ADDA);
+    // return false;
+    return (insty != T::INS_CALL  &&
+            insty != T::INS_ARG   &&
+            insty != T::INS_BRA   &&
+            insty != T::INS_LOAD  &&
+            insty != T::INS_STORE &&
+            insty != T::INS_ADDA);
 }
 
 /*
@@ -284,7 +291,7 @@ VI Function::MakeInstruction(T insty) {
     instruction_map_[instruction_counter_] = inst;
     instruction_order_.push_back(instruction_counter_);
 
-    V vty;
+    V vty = V::VAL_ANY;
     
     VI result = CreateValue(vty);
     inst->SetResult(result);
@@ -622,7 +629,7 @@ bool BasicBlock::HasActiveInstructions() const {
     return false;
 }
 
-II BasicBlock::GetAddAForLS(II ins_idx) const {
+II BasicBlock::GetPreviousInstruction(II ins_idx) const {
     auto it = std::find(instruction_order_.begin(), instruction_order_.end(), ins_idx);
     return (*it - 1);
 }

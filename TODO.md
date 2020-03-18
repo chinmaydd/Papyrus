@@ -3,3 +3,5 @@
   Test 029: Dead Code Elimination; Loop condition checking for constants.
   Test 028: DCE
 * Handle formal params
+
+* Loop invariant code motion - 002

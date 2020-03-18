@@ -85,6 +85,7 @@ void Function::ReplaceUse(VI old_idx, VI new_idx) {
         auto ins = GetInstruction(use_idx);
         ins->ReplaceUse(old_idx, new_idx);
         new_val->AddUsage(use_idx);
+        old_val->RemoveUse(use_idx);
     }
 }
 

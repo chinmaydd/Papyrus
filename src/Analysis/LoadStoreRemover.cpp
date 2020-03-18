@@ -48,22 +48,15 @@ void LoadStoreRemover::CheckAndReduce(Instruction* ins) {
 
             fn->ReplaceUse(old_idx, new_idx);
             ins->MakeInactive();
-        } else {
-           auto hash_str = fn->HashInstruction(ins_type, idx_1, idx_2);
-
-           if (hash_map_.find(hash_str) != hash_map_.end()) {
-               auto old_idx = ins->Result();
-               auto new_idx = hash_map_.at(hash_str);
-            
-               if (old_idx != new_idx) {
-                   fn->ReplaceUse(old_idx, new_idx);
-                   ins->MakeInactive();
-               }
-           } else {
-               hash_map_.insert({hash_str, ins->Result()});
-           }
         }
-    } // TODO: Relational nodes.
+    }
+
+    // TODO: Relational nodes and other types of instructions
+
+    // The real challenge here is to implement common subexpression 
+    // elimination. We would have to implement a READ() in the Hashing 
+    // function to get the latest definition of the variable in use and
+    // then check..
 }
 
 /* 
@@ -100,6 +93,16 @@ void LoadStoreRemover::Run() {
     // pseudo-globals will store all variables which are sort-of
     // untouched by other function calls.
     std::unordered_set<std::string> pseudo_globals;
+
+    auto variables = irc().Globals();
+    for (auto var_pair: variables) {
+        auto var_name = var_pair.first;
+        auto var      = var_pair.second;
+
+        if (var->IsArray()) {
+            pseudo_globals.insert(var_name);
+        }
+    }
 
     for (auto bb_idx: fn->ReversePostOrderCFG()) {
         auto bb = fn->GetBB(bb_idx);
@@ -152,8 +155,8 @@ void LoadStoreRemover::Run() {
             auto result = ins->Result();
 
             if (IsGlobalLoad(ins_type)) {
-                auto var_idx = ins->Operands().at(0);
-                auto var_val = fn->GetValue(var_idx);
+                auto var_idx  = ins->Operands().at(0);
+                auto var_val  = fn->GetValue(var_idx);
                 auto var_name = var_val->Identifier();
 
                 // For each global load, check if it is a pseudo-global.
@@ -162,10 +165,13 @@ void LoadStoreRemover::Run() {
                 // which defined it.
                 if (pseudo_globals.find(var_name) == pseudo_globals.end()) {
                     var_val->RemoveUse(ins_idx);
-                    auto adda_idx = bb->GetAddAForLS(ins_idx);
-                    auto adda = fn->GetInstruction(adda_idx);
-                    if (adda->Type() == T::INS_ADDA) {
-                        adda->MakeInactive();
+                    auto add_idx = bb->GetPreviousInstruction(ins_idx);
+                    auto add     = fn->GetInstruction(add_idx);
+                    auto loc     = add->Result();
+
+                    if (add->Type() == T::INS_ADD &&
+                        loc == var_idx) {
+                        add->MakeInactive();
                     }
 
                     ins->MakeInactive();
@@ -182,14 +188,25 @@ void LoadStoreRemover::Run() {
                 // uses the earlier SSA Generation algorithm.
                 if (pseudo_globals.find(var_name) == pseudo_globals.end()) {
                     var_val->RemoveUse(ins_idx);
-                    auto adda_idx = bb->GetAddAForLS(ins_idx);
-                    auto adda = fn->GetInstruction(adda_idx);
-                    if (adda->Type() == T::INS_ADDA) {
-                        adda->MakeInactive();
+                    auto add_idx = bb->GetPreviousInstruction(ins_idx);
+                    auto add     = fn->GetInstruction(add_idx);
+                    auto loc     = add->Result();
+
+                    if (add->Type() == T::INS_ADD &&
+                        loc == var_idx) {
+                        add->MakeInactive();
                     }
 
                     ins->MakeInactive();
-                    fn->WriteVariable(var_name, ins->Operands().at(0));
+                    auto val_idx = ins->Operands().at(0);
+                    auto val     = fn->GetValue(val_idx);
+                    fn->WriteVariable(var_name, val_idx);
+
+                    // XXX: Experimental
+                    if (val->Type() != V::VAL_CONST) {
+                        val->SetType(V::VAL_VAR);
+                        val->SetIdentifier(var_name);
+                    }
                 }
             } else {
                 auto ins_oper = ins->Operands();
@@ -204,9 +221,9 @@ void LoadStoreRemover::Run() {
 
                         ins->ReplaceUse(oper, replacement);
                         var_val->RemoveUse(ins_idx);
+                        fn->GetValue(replacement)->AddUsage(ins_idx);
                     }
                 }
-
                 CheckAndReduce(ins);
             }
         }

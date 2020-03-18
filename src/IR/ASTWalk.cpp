@@ -141,6 +141,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         offset = var->GetLocationIdx();
 
         // Commented out to include LocationIdx() as the location value instead.
+        //
         // offset = CC(var->Offset());
     } else if (irc.IsVariableGlobal(var_name)) {
         var    = irc.GetGlobal(var_name);
@@ -148,6 +149,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         offset = var->GetLocationIdx();
 
         // Commented out to include LocationIdx() as the location value instead.
+        //
         // offset = CC(irc.GlobalOffset(var_name)*4);
     } else {
         LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined.";
@@ -218,7 +220,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     if (!CF->IsReducible(offset_idx, CC(4))) {
         temp = MI(T::INS_MUL, offset_idx, CC(4));
     } else {
-        temp = CF->Reduce(offset_idx, CC(4), T::INS_ADD);
+        temp = CF->Reduce(offset_idx, CC(4), T::INS_MUL);
     }
 
     //////////////////////////////////////////////////
@@ -291,8 +293,9 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
             /////////////////////////////////////
             // Changed to use ADD instead of ADDA
             auto mem_location = MI(T::INS_ADD, irc.GlobalBase(), offset_idx);
-            CF->GetValue(mem_location)->SetIdentifier(var_name);
+            /////////////////////////////////////
 
+            CF->GetValue(mem_location)->SetIdentifier(var_name);
             /////////////////////////////////////
             result = MI(T::INS_LOAD, mem_location);
             /////////////////////////////////////
@@ -304,6 +307,7 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
         auto arr_id = static_cast<const ArrIdentifierNode*>(this);
         auto mem_location = arr_id->GenerateIR(irc);
 
+        CF->GetValue(mem_location)->SetIdentifier(var_name);
         /////////////////////////////////////
         result = MI(T::INS_LOAD, mem_location);
         /////////////////////////////////////
@@ -315,10 +319,10 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
 VI AssignmentNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing assignment";
     
-    VI result = NOTFOUND;
+    auto result = NOTFOUND;
 
-    VI expr_idx  = value_->GenerateIR(irc);
-    auto var_name = designator_->IdentifierName();
+    auto expr_idx  = value_->GenerateIR(irc);
+    auto var_name  = designator_->IdentifierName();
 
     if (designator_->GetDesignatorType() == DESIG_VAR) {
         if (CF->IsVariableLocal(var_name)) {
@@ -330,23 +334,40 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
                 CF->LoadFormal(var_name);
             }
 
+            /////////////////////
+            // XXX: Experimental
+            /////////////////////
+            auto val = CF->GetValue(expr_idx);
+            if (val->Type() != V::VAL_CONST) {
+                // Here, setting the identifier does not make sense
+                // since with copy-propagation we will keep on overwriting the 
+                // same value.
+                //
+                // val->SetIdentifier(var_name);
+                val->SetType(V::VAL_VAR);
+            }
+
             // Overwrite variable definition in the SSA Context
             CF->WriteVariable(var_name, expr_idx);
-        } else if (irc.IsVariableGlobal(var_name)) {
-            //////////////////////////////////////////////////
-            int offset      = irc.GlobalOffset(var_name);
 
+            result = expr_idx;
+        } else if (irc.IsVariableGlobal(var_name)) {
+            // int offset      = irc.GlobalOffset(var_name);
             // This still uses *4 as we know that the offset is a constant
             // calculated at compile time
-            VI offset_idx   = CC(offset*4);
+            // VI offset_idx   = CC(offset*4);
+            // CF->GetValue(mem_location)->SetIdentifier(var_name);
+
+            auto temp = irc.GetGlobal(var_name)->GetLocationIdx();
 
             //////////////////////////////////////////////////
             // Changed to use addition from base to var offset
             // to use ADD instead of ADDA
-            VI mem_location = MI(T::INS_ADD, irc.GlobalBase(), offset_idx);
+            auto mem_location = MI(T::INS_ADD, irc.GlobalBase(), temp);
             //////////////////////////////////////////////////
 
             CF->GetValue(mem_location)->SetIdentifier(var_name);
+            //////////////////////////////////////////////////
             result = MI(T::INS_STORE, expr_idx, mem_location);
             //////////////////////////////////////////////////
         } else {
@@ -356,6 +377,8 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
     } else {
        auto arr_id = static_cast<const ArrIdentifierNode*>(designator_);
        VI mem_location = arr_id->GenerateIR(irc);
+
+       CF->GetValue(mem_location)->SetIdentifier(var_name);
        //////////////////////////////////////////////////
        result = MI(T::INS_STORE, expr_idx, mem_location);
        //////////////////////////////////////////////////

@@ -44,7 +44,7 @@ void GlobalClobbering::Visit(const std::string& fn_name) {
                 // 1. Check if instruction is active.
                 // 2. Check if it is a store to a global variable
                 auto operands = inst->Operands();
-                VI value_idx = operands.at(1);
+                auto value_idx = operands.at(1);
                 auto val = irc().GetValue(value_idx);
 
                 // Clobber the global variable value here.
@@ -53,7 +53,7 @@ void GlobalClobbering::Visit(const std::string& fn_name) {
                 // 1. Check if instruction is active
                 // 2. Check if it is a load from a global variable
                 auto operands = inst->Operands();
-                VI value_idx = operands.at(0);
+                auto value_idx = operands.at(0);
                 auto val = irc().GetValue(value_idx);
 
                 // Add ReadDef

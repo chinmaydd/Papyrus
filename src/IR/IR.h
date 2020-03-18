@@ -238,7 +238,7 @@ public:
     
     VI GetSelfValue() const { return self_value_; }
 
-    II GetAddAForLS(II) const;
+    II GetPreviousInstruction(II) const;
 
     BI Idx() const { return idx_; }
 
@@ -280,6 +280,7 @@ public:
     const std::string& FunctionName() const { return func_name_; }
     const Variable* GetVariable(const std::string& var_name) const;
     const std::unordered_map<BI, BasicBlock*> BasicBlocks() const;
+    const std::unordered_map<std::string, Variable*> Variables() const;
 
     std::vector<BI> PostOrderCFG();
     std::vector<BI> ReversePostOrderCFG();
