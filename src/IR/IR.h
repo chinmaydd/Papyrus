@@ -47,11 +47,16 @@ public:
     void SetConstant(int val) { val_ = val; }
     void SetIdentifier(const std::string& ident) { identifier_ = ident; }
     void RemoveUse(II);
-    void AddDepth(int depth) { loop_depth_ = depth; }
+
+    void SetDepth(int depth) { loop_depth_ = depth; }
+    void SetSpillCost(long double cost) { spill_cost_ = cost; }
 
     std::string Identifier() const { return identifier_; }
 
     int GetConstant() const { return val_; }
+
+    int LoopDepth() const { return loop_depth_; }
+    long double SpillCost() const { return spill_cost_; }
 
     bool IsConstant() const { return vty_ == VAL_CONST; }
     bool RequiresReg() const;
@@ -61,6 +66,7 @@ private:
 
     int val_;
     int loop_depth_;
+    long double spill_cost_;
 
     std::string identifier_;
     std::vector<II> uses_;
@@ -297,6 +303,8 @@ public:
     void MakeMove(const std::string&, VI);
     void ReplaceUse(VI, VI);
     void AddBackEdge(VI, VI);
+    void LoadFormal(const std::string&);
+
 
     int GetOffset(const std::string&) const;
     int ReduceCondition(RelationalOperator, VI, VI) const;
@@ -331,7 +339,11 @@ public:
 
     bool IsActive(II) const;
     bool HasEndedBB(BI idx) const;
+
     bool IsVariableLocal(const std::string&) const;
+    bool IsVariableFormal(const std::string&) const;
+    bool IsFormalLoaded(const std::string&) const;
+
     bool IsReducible(VI, VI) const;
     bool IsArithmetic(T) const;
     bool IsRelational(T) const;
@@ -363,6 +375,8 @@ private:
     std::vector<BI> exit_blocks_;
 
     std::unordered_map<VI, VI> back_edges_;
+
+    std::unordered_set<std::string> loaded_formals_;
 
     BI current_bb_;
     BI bb_counter_;

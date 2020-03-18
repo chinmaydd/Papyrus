@@ -73,6 +73,7 @@ void InterferenceGraph::RegisterMerge(const std::vector<VI>& values) {
 
     for (auto val: values) {
         val_to_cluster_[val] = cluster_found;
+        cluster_members_[cluster_found].insert(val);
     }
 }
 
@@ -90,8 +91,12 @@ void InterferenceGraph::Merge() {
     }
 }
 
-std::unordered_map<int, std::unordered_set<VI> >& InterferenceGraph::ClusterNeighbors() {
+ClusterDS& InterferenceGraph::ClusterNeighbors() {
     return cluster_neighbors_;
+}
+
+ClusterDS& InterferenceGraph::ClusterMembers() {
+    return cluster_members_;
 }
 
 /*
@@ -225,15 +230,20 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
 
         // Output operand
         auto result = ins->Result();
+
         // Add depth to the result
-        fn->GetValue(result)->AddDepth(loop_depth_);
+        fn->GetValue(result)->SetDepth(loop_depth_);
         bb_live.erase(result);
 
         if (ins->Type() != T::INS_PHI) {
             for (auto op: ins->Operands()) {
                 auto val = fn->GetValue(op);
 
-                if (val->Type() != V::VAL_BRANCH) {
+                // TODO: Check what to do for formal params.
+                if (val->Type() != V::VAL_BRANCH ||
+                    val->Type() != V::VAL_GLOBALBASE ||
+                    val->Type() != V::VAL_LOCALBASE ||
+                    val->Type() != V::VAL_FUNC) {
                     bb_live.insert(op);
                 }
             }

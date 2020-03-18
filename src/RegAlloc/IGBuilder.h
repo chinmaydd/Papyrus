@@ -11,6 +11,8 @@ using V = Value::ValueType;
 using ValueSet  = std::unordered_set<VI>;
 using BBLiveIn  = std::unordered_map<BI, ValueSet>;
 using BBLiveOut = std::unordered_map<BI, ValueSet>;
+using ClusterDS = std::unordered_map<int, std::unordered_set<VI> >;
+using IGMap     = std::unordered_map<VI, std::unordered_set<VI> >;
 
 class InterferenceGraph {
 public:
@@ -22,15 +24,19 @@ public:
     void RegisterMerge(const std::vector<VI>&);
     void Merge();
 
-    std::unordered_map<int, std::unordered_set<VI> >& ClusterNeighbors();
+    ClusterDS& ClusterNeighbors();
+    ClusterDS& ClusterMembers();
+
+    IGMap& IG() { return ig_; }
 
     VI FindRegAlias(VI);
 
 private:
-    std::unordered_map<VI, std::unordered_set<VI> > ig_;
+    IGMap ig_;
     // int here is the cluster ID
     std::unordered_map<VI, int> val_to_cluster_;
-    std::unordered_map<int, std::unordered_set<VI> > cluster_neighbors_;
+    ClusterDS cluster_neighbors_;
+    ClusterDS cluster_members_;
 
     int cluster_id_;
 };
@@ -38,9 +44,13 @@ private:
 class IGBuilder : public AnalysisPass {
 public:
     IGBuilder(IRConstructor&);
+
     void Run();
     void AddInterference(VI, VI);
+
     InterferenceGraph& IG();
+
+    IGMap& GetIG() { return ig_.IG(); }
 
 private:
     std::unordered_map<std::string, BBLiveIn> live_in_vars_;

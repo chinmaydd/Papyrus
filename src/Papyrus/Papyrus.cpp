@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
     std::istream is(&fb);
     Lexer lexer(is);
-    
+
     ASTConstructor astconst(lexer);
     astconst.ConstructAST();
 

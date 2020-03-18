@@ -138,9 +138,8 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     if (CF->IsVariableLocal(var_name)) {
         var    = CF->GetVariable(var_name);
         base   = CF->LocalBase();
-        offset = CC(var->Offset()*4);
-            // This still uses *4 as we know that the offset is a constant
-            // calculated at compile time
+        offset = var->GetLocationIdx();
+        // offset = CC(var->Offset());
     } else if (irc.IsVariableGlobal(var_name)) {
         var    = irc.GetGlobal(var_name);
         base   = irc.GlobalBase();
@@ -248,15 +247,42 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
 
     if (desig_type_ == DESIG_VAR) {
         if (CF->IsVariableLocal(var_name)) {
-            // Load variable. Can be thought of as a "SSA Read"
-            result = CF->ReadVariable(var_name, CF->CurrentBBIdx());
+
+            // Handling formals:
+            //
+            // The way we handle formals right now is that we assume them to be
+            // local variables. But their first load is from the stack since the
+            // assumption is that they are passed to functions from the stack.
+            // Once they are loaded, they are marked loaded. In the register 
+            // allocation phase, we can then choose to store/reload them as
+            // necessary. We create an instruction which will create a memory
+            // location value on the stack; localbase - 4 * ParamNumber. This
+            // is an approximation as there will be the return address on the
+            // stack as well. But that is part of the ABI which can be modified
+            // according to the architecture itself.
+            if (CF->IsVariableFormal(var_name) &&
+                !CF->IsFormalLoaded(var_name)) {
+
+                auto mem_location = var->GetLocationIdx();
+
+                //////////////////////////////////////////
+                auto temp = MI(T::INS_SUB, CF->LocalBase(), mem_location);
+                result    = MI(T::INS_LOAD, temp);
+                //////////////////////////////////////////
+
+                CF->LoadFormal(var_name);
+                CF->WriteVariable(var_name, result);
+            } else {
+                // Load variable. Can be thought of as a "SSA Read"
+                result = CF->ReadVariable(var_name, CF->CurrentBBIdx());
+            }
         } else if (irc.IsVariableGlobal(var_name)) {
             //////////////////////////////////////////////////
-            auto offset = irc.GlobalOffset(var_name);
-
             // This still uses *4 as we know that the offset is a constant
             // calculated at compile time
-            auto offset_idx = CC(offset*4);
+            // auto offset = irc.GlobalOffset(var_name);
+            // auto offset_idx = CC(offset*4);
+            auto offset_idx = var->GetLocationIdx();
 
             /////////////////////////////////////
             // Changed to use ADD instead of ADDA
@@ -292,6 +318,14 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
 
     if (designator_->GetDesignatorType() == DESIG_VAR) {
         if (CF->IsVariableLocal(var_name)) {
+            // If this is a formal param, we want to mark it loaded
+            // since the next use should use this value and not load
+            // it from the stack again.
+            if (CF->IsVariableFormal(var_name) &&
+                !CF->IsFormalLoaded(var_name)) {
+                CF->LoadFormal(var_name);
+            }
+
             // Overwrite variable definition in the SSA Context
             CF->WriteVariable(var_name, expr_idx);
         } else if (irc.IsVariableGlobal(var_name)) {
@@ -689,13 +723,18 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
     Symbol *sym;
     int total_size;
     VI expr, location;
+    int formal_count = 1;
 
     auto local_sym_table = irc.ASTConst().GetLocalSymTable(func_name);
     for (auto table_entry: local_sym_table) {
         var_name = table_entry.first;
         sym = table_entry.second;
 
-        // Local variables shadow global definitions
+        // Local variables shadow global definitions. Due to this, if a variable
+        // is redefined i.e if it is already global we dont really take any action
+        // Ideally, if it was not possible to have two symbols of the same name, 
+        // this would lead to a parse error.
+        //
         // if (irc.IsVariableGlobal(var_name)) {
         //     exit(1);
         // }
@@ -703,13 +742,19 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
         if (sym->IsFormal()) {
             // Creating a location value here to be used for later
             location = CV(V::VAL_LOCATION);
+            CF->GetValue(location)->SetConstant(-4 * formal_count);
+            CF->GetValue(location)->SetIdentifier(var_name);
+
             var = new Variable(sym, location);
 
             // We would like to store ordering of the formal parameters
             // Ideally, their storage locations, but atleast their order
             // in the argument sequence
+            var->SetParamNumber(formal_count);
             expr = CV(V::VAL_FORMAL);
             CF->WriteVariable(var_name, expr);
+
+            formal_count++;
         } else {
             old_offset = offset;
             if (sym->IsArray()) {
@@ -726,11 +771,10 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
             // register if possible, but for now we can store this value in
             // the variable; can be accessed later
             location = CV(V::VAL_LOCATION);
-            CF->GetValue(location)->SetConstant(old_offset);
+            CF->GetValue(location)->SetConstant(-4 * old_offset);
             CF->GetValue(location)->SetIdentifier(var_name);
 
             var = new Variable(sym, old_offset, location);
-            // XXX: Why was this added: expr = CV(V::VAL_VAR);
         }
 
         CF->AddVariable(var_name, var);
@@ -779,7 +823,7 @@ void ComputationNode::GenerateIR(IRC& irc) const {
         var_name = table_entry.first;
 
         location = irc.CreateValue(V::VAL_LOCATION);
-        irc.GetValue(location)->SetConstant(old_offset);
+        irc.GetValue(location)->SetConstant(4 * old_offset);
         irc.GetValue(location)->SetIdentifier(var_name);
 
         var = new Variable(sym, old_offset, location);

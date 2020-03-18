@@ -136,6 +136,11 @@ VI Function::ReadVariableRecursive(const std::string& var_name, BI bb_idx) {
         incomplete_phis_[bb_idx][var_name] = phi_ins;
     } else if (bb->Predecessors().size() == 1) {
         result = ReadVariable(var_name, bb->Predecessors()[0]);
+    } else if (bb_idx == 1 && bb->IsSealed()) {
+        // Here, we handle the case when we end up reaching the entry node while 
+        // searching for a def for a variable. In that case, we will assume that
+        // variables which are unverified will be initialized to 0.
+        result = CreateConstant(0);
     } else {
         SetCurrentBB(bb_idx);
         phi_ins = MakePhi();
@@ -144,7 +149,7 @@ VI Function::ReadVariableRecursive(const std::string& var_name, BI bb_idx) {
         result = AddPhiOperands(var_name, phi_ins);
     }
 
-    // Add identifier for phi
+    // Add identifier for phi / constant
     GetValue(result)->SetIdentifier(var_name);
 
     SetCurrentBB(cur_bb_idx);

@@ -40,8 +40,20 @@ void Function::AddVariable(const std::string& var_name, Variable* var) {
     variable_map_[var_name] = var;
 }
 
+void Function::LoadFormal(const std::string& var_name) {
+    loaded_formals_.insert(var_name);
+}
+
 bool Function::IsVariableLocal(const std::string& var_name) const {
     return variable_map_.find(var_name) != variable_map_.end();
+}
+
+bool Function::IsVariableFormal(const std::string& var_name) const {
+    return variable_map_.at(var_name)->IsFormal();
+}
+
+bool Function::IsFormalLoaded(const std::string& var_name) const {
+    return loaded_formals_.find(var_name) != loaded_formals_.end();
 }
 
 int Function::GetOffset(const std::string& var_name) const {

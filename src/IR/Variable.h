@@ -36,15 +36,20 @@ public:
 
     bool IsArray() const { return sym_->IsArray(); }
     bool IsGlobal() const { return sym_->IsGlobal(); }
+    bool IsFormal() const { return sym_->IsFormal(); }
 
     int Offset() const { return offset_; }
 
     VI GetLocationIdx() const { return vi_; }
 
+    void SetParamNumber(int num) { param_number_ = num; }
+    int ParamNumber() const { return param_number_; }
+
 private:
     Symbol* sym_;
     int offset_;
     VI vi_;
+    int param_number_;
 };
 
 } // namespace papyrus

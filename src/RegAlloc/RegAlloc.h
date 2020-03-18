@@ -3,12 +3,13 @@
 
 #include "IGBuilder.h"
 
+#include <math.h>
+
 namespace papyrus {
 
 const int NUM_REG = 6;
+using CostPair = std::pair<VI, long double>;
 
-// Should this inherit from AnalysisPass?
-// Technically this is a AnalysisPass
 class RegAllocator : public AnalysisPass {
 public:
     enum Color {
@@ -21,18 +22,26 @@ public:
         COL_ORANGE,
         COL_CYAN,
 
+        COL_GRAY,  // representative of spill
+
         COL_BLACK, // equivalent of ANY
     };
 
     RegAllocator(IRConstructor&, IGBuilder&);
 
     void Run();
-    void CalculateSpillCosts();
-    void ColorIG();
 
 private:
     IGBuilder& igb_;
     inline IGBuilder& igb() { return igb_; }
+    inline InterferenceGraph& IG() { return igb().IG(); }
+    inline IGMap& GetIGMap() { return igb().GetIG(); }
+
+    Color GetColor(std::unordered_set<VI>&);
+
+    void TryColoringSpilledVals();
+    void CalculateSpillCosts();
+    void ColorIG();
 
     const std::vector<Color> colors_ = {
         Color::COL_RED,
@@ -43,8 +52,9 @@ private:
         Color::COL_CYAN
     };
 
-    std::unordered_map<VI, int> spill_costs_;
+    std::vector<std::pair<VI, long double> > spill_costs_;
     std::unordered_map<VI, Color> coloring_;
+    IGMap& ig_map_;
 };
 
 } // namespace papyrus

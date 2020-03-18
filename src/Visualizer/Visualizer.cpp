@@ -37,17 +37,17 @@ std::string Function::ConvertValueToString(VI val_idx) const {
             break;
         }
         case V::VAL_LOCATION: {
-            res += "&global_" + val->Identifier() + " ";
+            res += "&" + val->Identifier() + " ";
             res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
         case V::VAL_GLOBALBASE: {
-            res += "&GlobalBase";
+            res += "GlobalBase";
             res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
         case V::VAL_LOCALBASE: {
-            res += "&LocalBase";
+            res += "LocalBase";
             res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
