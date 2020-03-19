@@ -442,56 +442,47 @@ bool Function::IsReducible(VI idx_1, VI idx_2) const {
     return (GetValue(idx_1)->IsConstant() && GetValue(idx_2)->IsConstant());
 }
 
-VI Function::Reduce(VI idx_1, VI idx_2, T ins_type) {
-    switch (ins_type) {
-        case T::INS_ADD: {
-            return Reduce(idx_1, idx_2, BINOP_ADD);
-        }
-        case T::INS_SUB: {
-            return Reduce(idx_1, idx_2, BINOP_SUB);
-        }
-        case T::INS_MUL: {
-            return Reduce(idx_1, idx_2, BINOP_MUL);
-        }
-        case T::INS_DIV: {
-            return Reduce(idx_1, idx_2, BINOP_DIV);
-        }
-        default: {
-            LOG(ERROR) << "[IR] Unknwon operation found!";
-            exit(1);
-        }
-    }
-}
+VI Function::TryReduce(ArithmeticOperator op, VI idx_1, VI idx_2) {
+    VI result = NOTFOUND;
 
-VI Function::Reduce(VI idx_1, VI idx_2, ArithmeticOperator op) {
-    int val_1 = GetValue(idx_1)->GetConstant();
-    int val_2 = GetValue(idx_2)->GetConstant();
+    auto val_1 = GetValue(idx_1);
+    auto val_2 = GetValue(idx_2);
 
-    VI result;
-    switch(op) {
-        case BINOP_MUL: {
-            result = CreateConstant(val_1 * val_2);
-            break;
-        }
-        case BINOP_ADD: {
-            result = CreateConstant(val_1 + val_2);
-            break;
-        }
-        case BINOP_SUB: {
-            result = CreateConstant(val_1 - val_2);
-            break;
-        }
-        case BINOP_DIV: {
+    if (val_1->Type() == V::VAL_CONST &&
+        val_2->Type() == V::VAL_CONST) {
+    
+        int c_1 = val_1->GetConstant();
+        int c_2 = val_2->GetConstant();
+
+        if (op == BINOP_MUL) {
+            result = CreateConstant(c_1 * c_2);
+        } else if (op == BINOP_ADD) {
+            result = CreateConstant(c_1 + c_2);
+        } else if (op == BINOP_SUB) {
+            result = CreateConstant(c_1 - c_2);
+        } else if (op == BINOP_DIV) {
             if (val_2 == 0) {
                 LOG(ERROR) << "[IR] Divide by zero found!";
                 exit(1);
             }
-            result = CreateConstant(val_1 / val_2);
-            break;
-        }
-        default: {
+            result = CreateConstant(c_1 / c_2);
+        } else {
             LOG(ERROR) << "[IR] Unknwon operation found!";
             exit(1);
+        }
+    } else {
+        // Other cases where a constant might be generated.
+        if (op == BINOP_DIV &&
+            (val_1 == val_2)) {
+            return CreateConstant(1);
+        } else if (val_1->Type() == V::VAL_CONST &&
+                   op == BINOP_MUL &&
+                   val_1->GetConstant() == 1) {
+            return idx_2;
+        } else if (val_2->Type() == V::VAL_CONST &&
+                   (op == BINOP_MUL || op == BINOP_DIV) &&
+                   val_2->GetConstant() == 1) {
+            return idx_1;
         }
     }
 
@@ -499,61 +490,76 @@ VI Function::Reduce(VI idx_1, VI idx_2, ArithmeticOperator op) {
 }
 
 int Function::ReduceCondition(RelationalOperator op, VI left, VI right) const {
-    int l_val = GetValue(left)->GetConstant();
-    int r_val = GetValue(right)->GetConstant();
+    auto l = GetValue(left);
+    auto r = GetValue(right);
 
+    VI result = NOTFOUND;
     int THEN = 1;
     int ELSE = 2;
-    int result = 0;
 
-    switch (op) {
-        case RELOP_EQ: {
-            if (l_val == r_val) {
-                result = THEN;
-            } else {
-                result = ELSE; 
+    if (l->Type() == V::VAL_CONST &&
+        r->Type() == V::VAL_CONST) {
+
+        int l_val = GetValue(left)->GetConstant();
+        int r_val = GetValue(right)->GetConstant();
+
+        switch (op) {
+            case RELOP_EQ: {
+                if (l_val == r_val) {
+                    result = THEN;
+                } else {
+                    result = ELSE; 
+                }
+                break;
             }
-            break;
+            case RELOP_NEQ: {
+                if (l_val != r_val) {
+                    result = THEN;
+                } else {
+                    result = ELSE;
+                }
+                break;
+            }
+            case RELOP_LT: {
+                if (l_val < r_val) {
+                    result = THEN;
+                } else {
+                    result = ELSE;
+                }
+                break;
+            }
+            case RELOP_LTE: {
+                if (l_val <= r_val) {
+                    result = THEN;
+                } else {
+                    result = ELSE;
+                }
+                break;
+            }
+            case RELOP_GT: {
+                if (l_val > r_val) {
+                    result = THEN;
+                } else {
+                    result = ELSE;
+                }
+                break;
+            }
+            case RELOP_GTE: {
+                if (l_val >= r_val) {
+                    result = THEN;
+                } else {
+                    result = ELSE;
+                }
+                break;
+            }
         }
-        case RELOP_NEQ: {
-            if (l_val != r_val) {
-                result = THEN;
-            } else {
-                result = ELSE;
-            }
-            break;
-        }
-        case RELOP_LT: {
-            if (l_val < r_val) {
-                result = THEN;
-            } else {
-                result = ELSE;
-            }
-            break;
-        }
-        case RELOP_LTE: {
-            if (l_val <= r_val) {
-                result = THEN;
-            } else {
-                result = ELSE;
-            }
-            break;
-        }
-        case RELOP_GT: {
-            if (l_val > r_val) {
-                result = THEN;
-            } else {
-                result = ELSE;
-            }
-            break;
-        }
-        case RELOP_GTE: {
-            if (l_val >= r_val) {
-                result = THEN;
-            } else {
-                result = ELSE;
-            }
-            break;
+    } else if (left == right) {
+        if (op == RELOP_EQ ||
+            op == RELOP_LTE ||
+            op == RELOP_GTE) {
+            result = THEN;
+        } else {
+            result = ELSE;
         }
     }
 

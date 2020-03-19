@@ -333,8 +333,7 @@ public:
     VI MakeInstruction(T, VI, VI);
 
     VI SelfIdx() const { return self_idx_; }
-    VI Reduce(VI, VI, ArithmeticOperator);
-    VI Reduce(VI, VI, T);
+    VI TryReduce(ArithmeticOperator, VI, VI);
     VI GetLocationValue(const std::string&) const;
     
     VI GetHash(const std::string& hash_str) const;

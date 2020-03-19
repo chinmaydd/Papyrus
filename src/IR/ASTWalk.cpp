@@ -75,12 +75,13 @@ VI TermNode::GenerateIR(IRC& irc) const {
 
         // Check if factor is reducible
         // If yes, fold it.
-        if (!CF->IsReducible(idx_1, idx_2)) {
+        auto temp = CF->TryReduce(op, idx_1, idx_2);
+        if (temp == NOTFOUND) {
             //////////////////////////////////////////////////
             idx_1 = MI(irc.ConvertOperation(op), idx_1, idx_2);
             //////////////////////////////////////////////////
         } else {
-            idx_1 = CF->Reduce(idx_1, idx_2, op);
+            idx_1 = temp;
         }
     }
 
@@ -108,14 +109,15 @@ VI ExpressionNode::GenerateIR(IRC& irc) const {
 
         idx_2 = term->GenerateIR(irc);
 
-        // Check if term is reducible
+        // Check if factor is reducible
         // If yes, fold it.
-        if (!CF->IsReducible(idx_1, idx_2)) {
+        auto temp = CF->TryReduce(op, idx_1, idx_2);
+        if (temp == NOTFOUND) {
             //////////////////////////////////////////////////
             idx_1 = MI(irc.ConvertOperation(op), idx_1, idx_2);
             //////////////////////////////////////////////////
         } else {
-            idx_1 = CF->Reduce(idx_1, idx_2, op);
+            idx_1 = temp;
         }
     }
 
@@ -197,30 +199,27 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
 
         //////////////////////////////////////////////////
         auto expr_idx = expr->GenerateIR(irc);
-        if (!CF->IsReducible(dim_idx, expr_idx)) {
+        auto temp = CF->TryReduce(ArithmeticOperator::BINOP_MUL, dim_idx, expr_idx);
+        if (temp == NOTFOUND) {
             temp = MI(T::INS_MUL, dim_idx, expr_idx);
-        } else {
-            temp = CF->Reduce(dim_idx, expr_idx, T::INS_MUL);
         }
         //////////////////////////////////////////////////
 
         //////////////////////////////////////////////////
-        if (!CF->IsReducible(offset_idx, temp)) {
-            offset_idx = MI(T::INS_ADD, offset_idx, temp);
-        } else {
-            offset_idx = CF->Reduce(offset_idx, temp, T::INS_ADD);
+        offset_idx = CF->TryReduce(ArithmeticOperator::BINOP_ADD, offset_idx, temp);
+        if (temp == NOTFOUND) {
+            offset_idx = MI(T::INS_MUL, dim_idx, expr_idx);
         }
         //////////////////////////////////////////////////
- 
+
         it++;
         dim_it++;
     }
 
     //////////////////////////////////////////////////
-    if (!CF->IsReducible(offset_idx, CC(4))) {
+    temp = CF->TryReduce(ArithmeticOperator::BINOP_MUL, offset_idx, CC(4));
+    if (temp == NOTFOUND) {
         temp = MI(T::INS_MUL, offset_idx, CC(4));
-    } else {
-        temp = CF->Reduce(offset_idx, CC(4), T::INS_MUL);
     }
 
     //////////////////////////////////////////////////
@@ -457,28 +456,24 @@ VI RelationNode::GenerateIR(IRC& irc) const {
     //////////////////////////////////////////////////
 }
 
-VI ITENode::HandleReducibleCmp(IRConstructor& irc, VI left, VI right) const {
-    LOG(INFO) << "[IR] Reducing CFG";
-
-    VI result = NOTFOUND;
-
-    // Make current instruction inactive and remove uses of expressions
-    CF->CurrentInstruction()->MakeInactive();
-    // TODO: Remove usages of exprs
-
-    auto op = relation_->GetOp();
-
+VI ITENode::TryReducingCmp(IRConstructor& irc, VI left, VI right) const {
     // Check if we want to explore THEN or ELSE branch of the condition.
     // We will discard the other.
     int THEN = 1;
     int ELSE = 2;
-    auto retval = CF->ReduceCondition(op, left, right);
+    auto op = relation_->GetOp();
+    auto result = CF->ReduceCondition(op, left, right);
 
-    if (retval == THEN) {
-        then_sequence_->GenerateIR(irc);
-    } else {
-        if (else_sequence_ != nullptr) {
-            else_sequence_->GenerateIR(irc);
+    if (result != NOTFOUND) {
+        // TODO: Remove usages of exprs
+        // Make current instruction inactive and remove uses of expressions
+        CF->CurrentInstruction()->MakeInactive();
+        if (result == THEN) {
+            then_sequence_->GenerateIR(irc);
+        } else if (result == ELSE) {
+            if (else_sequence_ != nullptr) {
+                else_sequence_->GenerateIR(irc);
+            }
         }
     }
 
@@ -506,11 +501,10 @@ VI ITENode::GenerateIR(IRC& irc) const {
     VI left_expr  = curr_ins->Operands().at(0);
     VI right_expr = curr_ins->Operands().at(1);
 
-    if (CF->IsReducible(left_expr, right_expr)) {
-        // Early return
-        return HandleReducibleCmp(irc, left_expr, right_expr);
-    } // TODO: Handle values being same but not constants
-    ///////////////////////////////////////////////
+    VI temp = TryReducingCmp(irc, left_expr, right_expr);
+    if (temp != NOTFOUND) {
+        return temp;
+    }
 
     BI previous = CF->CurrentBBIdx();
     CF->SealBB(previous);
@@ -872,6 +866,8 @@ void ComputationNode::GenerateIR(IRC& irc) const {
 
     /////////////////////////////////////////////////////////
     // EXPERIMENTAL!
+    // This is a conservative analysis... More on this later.
+    /////////////////////////////////////////////////////////
     GlobalClobbering gc = GlobalClobbering(irc);
     gc.Run();
 

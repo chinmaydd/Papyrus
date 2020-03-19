@@ -249,7 +249,7 @@ public:
     void AddElseClause(StatSequenceNode*);
 
     ValueIndex GenerateIR(IRC&) const;
-    ValueIndex HandleReducibleCmp(IRC&, ValueIndex, ValueIndex) const;
+    ValueIndex TryReducingCmp(IRC&, ValueIndex, ValueIndex) const;
 
 private:
     RelationNode* relation_;
