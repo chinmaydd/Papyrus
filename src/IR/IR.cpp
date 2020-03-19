@@ -248,6 +248,18 @@ std::string Function::HashInstruction(T insty, VI arg_1, VI arg_2) const {
     return return_str;
 }
 
+bool Function::HashExists(const std::string& hash_str) const {
+    return (hash_map_.find(hash_str) != hash_map_.end());
+}
+
+void Function::InsertHash(const std::string& hash_str, VI result) {
+    hash_map_[hash_str] = result;
+}
+
+VI Function::GetHash(const std::string& hash_str) const {
+    return hash_map_.at(hash_str);
+}
+
 /*
  * XXX:
  * Currently disabling CSE since there are changes in values once the Phis are
@@ -302,9 +314,9 @@ VI Function::MakeInstruction(T insty, VI arg_1) {
 
     // Check if instruction can be removed
     if (IsEliminable(insty)) {
-        if (hash_map_.find(hash_str) != hash_map_.end()) {
+        if (HashExists(hash_str)) {
             LOG(INFO) << "Removed " << hash_str;
-            return hash_map_.at(hash_str);
+            return GetHash(hash_str);
         }
     }
 
@@ -329,9 +341,9 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
         // ranges and hence interfere with all values. Does GlobalBase
         // even need a register?
         arg_1 != 1) {
-        if (hash_map_.find(hash_str) != hash_map_.end()) {
+        if (HashExists(hash_str)) {
             LOG(INFO) << "Removed " << hash_str;
-            return hash_map_.at(hash_str);
+            return GetHash(hash_str);
         }
     }
 
@@ -567,9 +579,7 @@ Instruction::Instruction(T insty, BI containing_bb, II ins_idx) :
     is_active_(true) {}
 
 void Instruction::AddOperand(VI val_idx) {
-    if (std::find(operands_.begin(), operands_.end(), val_idx) == operands_.end()) {
-        operands_.push_back(val_idx);
-    }
+    operands_.push_back(val_idx);
 }
 
 /*

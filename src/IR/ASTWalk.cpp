@@ -270,7 +270,6 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
                 !CF->IsFormalLoaded(var_name)) {
 
                 auto mem_location = var->GetLocationIdx();
-
                 //////////////////////////////////////////
                 auto temp = MI(T::INS_ADD, CF->LocalBase(), mem_location);
                 result    = MI(T::INS_LOAD, temp);
@@ -296,9 +295,9 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
             /////////////////////////////////////
 
             CF->GetValue(mem_location)->SetIdentifier(var_name);
-            /////////////////////////////////////
+            ////////////////////////////////////////
             result = MI(T::INS_LOAD, mem_location);
-            /////////////////////////////////////
+            ////////////////////////////////////////
         } else {
             LOG(ERROR) << "[IR] Usage of variable " + var_name + " which is not defined";
             exit(1);
@@ -871,13 +870,60 @@ void ComputationNode::GenerateIR(IRC& irc) const {
 
     LOG(INFO) << "[IR] Parsing main";
 
+    /////////////////////////////////////////////////////////
+    // EXPERIMENTAL!
+    GlobalClobbering gc = GlobalClobbering(irc);
+    gc.Run();
+
+    auto clobber_status = gc.GetClobberStatus();
+    auto readdef_status = gc.GetReadDefStatus();
+
+    std::unordered_set<std::string> tainted_globals = {};
+    for (auto clob_pair: clobber_status) {
+        for (auto var_name: clob_pair.second) {
+            tainted_globals.insert(var_name);
+        }
+    }
+
+    for (auto readdef_pair: readdef_status) {
+        for (auto var_name: readdef_pair.second) {
+            tainted_globals.insert(var_name);
+        }
+    }
+
+    auto variables = irc.Globals();
+    for (auto var_pair: variables) {
+        auto var_name = var_pair.first;
+        auto var      = var_pair.second;
+
+        if (var->IsArray()) {
+            tainted_globals.insert(var_name);
+        }
+    }
+
     // We could perform some analysis since we have already looked at functions
     // and their definitions.
     auto func_name = "main";
     auto func = new Function(func_name, irc.ValueCounter(), irc.ValMap());
 
+    // Now add non-tainted variables as locals.
     irc.AddFunction(func_name, func);
     irc.SetCurrentFunction(func);
+
+    std::unordered_set<std::string> mark;
+    for (auto globvar_pair: irc.Globals()) {
+        auto var_name = globvar_pair.first;
+        auto var = globvar_pair.second;
+        if (tainted_globals.find(var_name) == tainted_globals.end()) {
+            CF->AddVariable(var_name, var);
+            mark.insert(var_name);
+        }
+    }
+
+    for (auto actuallocal: mark) {
+        irc.RemoveGlobal(var_name);
+    }
+    /////////////////////////////////////////////////////////
 
     if (computation_body_ != nullptr) {
         computation_body_->GenerateIR(irc);

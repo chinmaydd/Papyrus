@@ -307,7 +307,7 @@ public:
     void ReplaceUse(VI, VI);
     void AddBackEdge(VI, VI);
     void LoadFormal(const std::string&);
-
+    void InsertHash(const std::string&, VI);
 
     int GetOffset(const std::string&) const;
     int ReduceCondition(RelationalOperator, VI, VI) const;
@@ -336,6 +336,8 @@ public:
     VI Reduce(VI, VI, ArithmeticOperator);
     VI Reduce(VI, VI, T);
     VI GetLocationValue(const std::string&) const;
+    
+    VI GetHash(const std::string& hash_str) const;
 
     Instruction* CurrentInstruction() const;
     Instruction* GetInstruction(II) const;
@@ -353,6 +355,8 @@ public:
     bool IsBackEdge(VI, VI) const;
     bool IsPhi(II) const;
     bool IsEliminable(T) const;
+
+    bool HashExists(const std::string&) const;
 
 private:
     std::string func_name_;

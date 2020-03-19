@@ -56,8 +56,12 @@ void GlobalClobbering::Visit(const std::string& fn_name) {
                 auto value_idx = operands.at(0);
                 auto val = irc().GetValue(value_idx);
 
-                // Add ReadDef
-                ReadDef(fn_name, val->Identifier());
+                auto ident = val->Identifier();
+                if (ident != "") {
+                    // Add ReadDef; 
+                    // NOTE: ident is empty when formal params are involved.
+                    ReadDef(fn_name, ident);
+                }
             }
         }
     }

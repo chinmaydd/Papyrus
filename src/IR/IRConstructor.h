@@ -27,6 +27,7 @@ public:
     void SetCurrentFunction(Function* f) { current_function_ = f; }
     void ClearCurrentFunction() { current_function_ = nullptr; }
     void AddGlobal(const std::string&, Variable*);
+    void RemoveGlobal(const std::string&);
     void SetCounter(VI idx) { value_counter_ = idx; }
     void DeclareGlobalBase();
 

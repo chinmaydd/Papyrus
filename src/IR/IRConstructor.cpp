@@ -107,6 +107,10 @@ void IRC::AddGlobal(const std::string& var_name, Variable* var) {
     global_variable_map_[var_name] = var;
 }
 
+void IRC::RemoveGlobal(const std::string& var_name) {
+    global_variable_map_.erase(var_name);
+}
+
 int IRC::GlobalOffset(const std::string& var_name) const {
     return global_variable_map_.at(var_name)->Offset();
 }

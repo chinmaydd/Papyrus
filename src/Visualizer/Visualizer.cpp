@@ -31,7 +31,6 @@ std::string Function::ConvertValueToString(VI val_idx) const {
             // res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
-        case V::VAL_VAR:
         case V::VAL_PHI:
         {
             res += val->Identifier();

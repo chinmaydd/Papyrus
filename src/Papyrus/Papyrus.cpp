@@ -46,8 +46,8 @@ int main(int argc, char *argv[]) {
 
     irconst.BuildIR();
 
-    LoadStoreRemover lsr(irconst);
-    lsr.Run();
+    // LoadStoreRemover lsr(irconst);
+    // lsr.Run();
 
     // DCE dce(irconst);
     // dce.Run();
