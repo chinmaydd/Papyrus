@@ -55,39 +55,40 @@ bool InterferenceGraph::Interferes(VI arg_1, VI arg_2) {
 }
 
 void InterferenceGraph::RegisterMerge(const std::vector<VI>& values) {
-    // Technically, we have to merge all the operands in the Phi
+    // We have to merge all the operands in the Phi
     std::unordered_set<VI> neighbors;
+    cluster_id_++;
 
-    int cluster_found = -1;
     for (auto val: values) {
-        if (val_to_cluster_.find(val) != val_to_cluster_.end()) {
-            cluster_found = val_to_cluster_.at(val);
-            break;
+        if (val_to_cluster_.find(val) == val_to_cluster_.end()) {
+            val_to_cluster_[val] = {};
         }
-    }
 
-    if (cluster_found == -1) {
-        cluster_id_++;
-        cluster_found = cluster_id_;
-    }
-
-    for (auto val: values) {
-        val_to_cluster_[val] = cluster_found;
-        cluster_members_[cluster_found].insert(val);
+        val_to_cluster_[val].insert(cluster_id_);
+        cluster_members_[cluster_id_].insert(val);
     }
 }
 
 void InterferenceGraph::Merge() {
     for (auto val_pair: ig_) {
-        auto val_idx = val_pair.first;
+        auto val_idx   = val_pair.first;
         auto neighbors = val_pair.second;
         if (val_to_cluster_.find(val_idx) != val_to_cluster_.end()) {
-            // It is part of a cluster
-            auto cluster_id = val_to_cluster_.at(val_idx);
-            for (auto neighbor: neighbors) {
-                cluster_neighbors_[cluster_id].insert(neighbor);
+            // It is part of atleast a cluster
+            auto cluster_ids = val_to_cluster_.at(val_idx);
+            for (auto cluster_id: cluster_ids) {
+                for (auto neighbor: neighbors) {
+                    cluster_neighbors_[cluster_id].insert(neighbor);
+                }
             }
-        } // TODO: Add else
+        } 
+
+        // TODO: Add else. This is the condition when the value is not part
+        // of any cluster. This implies that it is probably not involved
+        // in a phi. We take those values into account; but only after we have
+        // colored all of those in the cluster because that is how Phi works;
+        // We will have to color all nodes involved in a Phi with the same
+        // color, allowing us to eliminate the it.
     }
 }
 
@@ -136,6 +137,8 @@ void IGBuilder::CoalesceNodes(Function* fn) {
                     !ig_.Interferes(arg_2, result) &&
                     !ig_.Interferes(arg_1, arg_2)) {
                     ig_.RegisterMerge({arg_1, arg_2, result});
+                } else {
+                    LOG(ERROR) << std::to_string(arg_1) << ":" << std::to_string(arg_2);
                 }
             } else {
                 // We would have seen all phis till now
@@ -172,7 +175,6 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
                 // Back edge found. Decide later.
                 continue;
             } else {
-                // TODO: Take this into account!
                 loop_depth_++;
                 ProcessBlock(fn, succ);
                 loop_depth_--;
@@ -211,7 +213,14 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
                 if (op_source.find(bb_idx) != op_source.end()) {
                     // Insert values flowing into successor phi from 
                     // current block.
-                    bb_live.insert(op_source.at(bb_idx));
+                    auto val_idx = op_source.at(bb_idx);
+                    auto val = fn->GetValue(val_idx);
+
+                    if (val->Type() == V::VAL_CONST) {
+                        // TODO: Decide what to do here.
+                    } else {
+                        bb_live.insert(op_source.at(bb_idx));
+                    }
                 }
             } else if (ins->Type() != T::INS_PHI) {
                 // This means we have crossed all Phi instructions
@@ -239,7 +248,15 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
             for (auto op: ins->Operands()) {
                 auto val = fn->GetValue(op);
 
-                // TODO: Check what to do for formal params.
+                // The question is -> how to handle constants. It is extremely
+                // cheap to spill constants since we need only one instruction
+                // to load them back into a register. Let us assume that for 
+                // now and load them such that when we scan the successors and pull
+                // the value from the join node; we add a "move val register" 
+                // to the end of the BB
+                //
+                // The other issue with constants is that if left alone, they start
+                // interfering with every other value.
                 if (val->Type() != V::VAL_BRANCH ||
                     val->Type() != V::VAL_GLOBALBASE ||
                     val->Type() != V::VAL_LOCALBASE ||
@@ -285,4 +302,6 @@ void IGBuilder::Run() {
 
         CoalesceNodes(fn);
     }
+
+    LOG(ERROR) << "IG Built";
 }

@@ -34,7 +34,8 @@ public:
 private:
     IGMap ig_;
     // int here is the cluster ID
-    std::unordered_map<VI, int> val_to_cluster_;
+    // val can be a part of multiple clusters
+    std::unordered_map<VI, std::unordered_set<int>> val_to_cluster_;
     ClusterDS cluster_neighbors_;
     ClusterDS cluster_members_;
 

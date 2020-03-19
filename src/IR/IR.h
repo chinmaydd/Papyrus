@@ -62,7 +62,6 @@ public:
     long double SpillCost() const { return spill_cost_; }
 
     bool IsConstant() const { return vty_ == VAL_CONST; }
-    bool RequiresReg() const;
 
 private:
     ValueType vty_;
@@ -352,6 +351,8 @@ public:
     bool IsArithmetic(T) const;
     bool IsRelational(T) const;
     bool IsBackEdge(VI, VI) const;
+    bool IsPhi(II) const;
+    bool IsEliminable(T) const;
 
 private:
     std::string func_name_;
@@ -399,9 +400,6 @@ private:
     void AddBBPredecessor(BI, BI); // current, predecessor
     void AddBBSuccessor(BI, BI);   // current, successor
     void Visit(BI, std::unordered_set<BI>&);
-
-    bool IsPhi(II) const;
-    bool IsEliminable(T) const;
 };
 
 } // namespace papyrus

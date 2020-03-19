@@ -3,6 +3,7 @@ set(_SOURCE_FILES
     InterprocCall.cpp
     LoadStoreRemover.cpp
     CSE.cpp
+    DCE.cpp
     )
 
 add_library(Analysis OBJECT

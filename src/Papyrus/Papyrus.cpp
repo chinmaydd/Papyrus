@@ -8,6 +8,7 @@
 #include "IR/IRConstructor.h"
 
 #include "Analysis/LoadStoreRemover.h"
+#include "Analysis/DCE.h"
 
 #include "RegAlloc/IGBuilder.h"
 #include "RegAlloc/RegAlloc.h"
@@ -48,10 +49,12 @@ int main(int argc, char *argv[]) {
     LoadStoreRemover lsr(irconst);
     lsr.Run();
 
-    std::string vcg_fname = utils.ConstructOutFile(argv[1], ".vcg");
+    // DCE dce(irconst);
+    // dce.Run();
 
-    // Visualizer viz = Visualizer(irconst);
-    // viz.WriteVCG(vcg_fname);
+    std::string vcg_fname = utils.ConstructOutFile(argv[1], ".vcg");
+    Visualizer viz = Visualizer(irconst);
+    viz.WriteVCG(vcg_fname);
 
     IGBuilder igb(irconst);
     igb.Run();
@@ -60,8 +63,8 @@ int main(int argc, char *argv[]) {
     ra.Run();
 
     // vcg_fname = utils.ConstructOutFile(argv[1], ".final.vcg");
-    Visualizer viz = Visualizer(irconst);
-    viz.WriteVCG(vcg_fname);
+    // Visualizer viz = Visualizer(irconst);
+    // viz.WriteVCG(vcg_fname);
 
     return 0;
 }

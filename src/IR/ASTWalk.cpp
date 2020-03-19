@@ -400,14 +400,6 @@ VI FunctionCallNode::GenerateIR(IRC& irc) const {
 
     CF->GetValue(func_call)->SetIdentifier(identifier_->IdentifierName());
 
-    // Let us assume here, that the arguments are pushed from L-R
-    VI interm;
-    for (auto argument: arguments_) {
-        interm = argument->GenerateIR(irc); 
-        //////////////////////////////////////////////////
-        MI(T::INS_ARG, interm);
-        //////////////////////////////////////////////////
-    }
 
     VI result;
     if (func_name == "InputNum") {
@@ -426,7 +418,7 @@ VI FunctionCallNode::GenerateIR(IRC& irc) const {
         }
 
         //////////////////////////////////////////////////
-        result = MI(T::INS_WRITEX);
+        result = MI(T::INS_WRITEX, arguments_.at(0)->GenerateIR(irc));
         //////////////////////////////////////////////////
     } else if (func_name == "OutputNewLine") {
         if (arguments_.size() != 0) {
@@ -438,6 +430,15 @@ VI FunctionCallNode::GenerateIR(IRC& irc) const {
         result = MI(T::INS_WRITENL);
         //////////////////////////////////////////////////
     } else {
+        // Let us assume here, that the arguments are pushed from L-R
+        VI interm;
+        for (auto argument: arguments_) {
+            interm = argument->GenerateIR(irc); 
+            //////////////////////////////////////////////////
+            MI(T::INS_ARG, interm);
+            //////////////////////////////////////////////////
+        }
+
         //////////////////////////////////////////////////
         result = MI(T::INS_CALL, func_call);
         //////////////////////////////////////////////////

@@ -6,14 +6,6 @@ using namespace papyrus;
 Value::Value(ValueType vty) :
     vty_(vty) {}
 
-/*
- * Requires Reg?
- */
-bool Value::RequiresReg() const {
-    return (vty_ != V::VAL_FORMAL ||
-            vty_ != V::VAL_BRANCH);
-}
-
 Function::Function(const std::string& func_name, VI value_counter, std::unordered_map<VI, Value*>* value_map):
     func_name_(func_name),
     value_counter_(value_counter),
@@ -64,9 +56,10 @@ int Function::GetOffset(const std::string& var_name) const {
 }
 
 VI Function::CreateConstant(int val) {
-    if (constant_map_.find(val) != constant_map_.end()) {
-        return constant_map_.at(val);
-    }
+    // Disabling this for now.
+    // if (constant_map_.find(val) != constant_map_.end()) {
+    //     return constant_map_.at(val);
+    // }
 
     Value* v = new Value(V::VAL_CONST);
     v->SetConstant(val); 
@@ -269,18 +262,21 @@ std::string Function::HashInstruction(T insty, VI arg_1, VI arg_2) const {
  * with the CurrentBBIdx() and check if that value exists in the hash table?
  */
 bool Function::IsEliminable(T insty) const {
-    // return false;
-    return (insty != T::INS_CALL  &&
-            insty != T::INS_ARG   &&
-            insty != T::INS_BRA   &&
-            insty != T::INS_LOAD  &&
-            insty != T::INS_STORE &&
-            insty != T::INS_ADDA);
+    return (insty == T::INS_NEG ||
+            insty == T::INS_ADD ||
+            insty == T::INS_SUB ||
+            insty == T::INS_MUL ||
+            insty == T::INS_DIV ||
+            insty == T::INS_CMP);
 }
 
 /*
  * Create Instructions for the IR
  */
+
+// Here, we need to remove Add GlobalBase, Mem_Location as a value which is 
+// reused. This causes its live range to increase and hence the interference 
+// with the rest of the variables.
 
 // This function is never called standalone. Hence, not checking if instruction
 // is eliminable.
@@ -328,7 +324,11 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
     auto hash_str = HashInstruction(insty, arg_1, arg_2);
 
     // Check if instruction can be removed
-    if (IsEliminable(insty)) {
+    if (IsEliminable(insty) &&
+        // TODO: The reasoning behind this is that GlobalBase will create long
+        // ranges and hence interfere with all values. Does GlobalBase
+        // even need a register?
+        arg_1 != 1) {
         if (hash_map_.find(hash_str) != hash_map_.end()) {
             LOG(INFO) << "Removed " << hash_str;
             return hash_map_.at(hash_str);

@@ -4,6 +4,20 @@ using namespace papyrus;
 
 using C = RegAllocator::Color;
 
+std::stringstream ConvertVecToString(const std::vector<VI>& my_vector) {
+    std::stringstream result;
+    std::copy(my_vector.begin(), my_vector.end(), std::ostream_iterator<VI>(result, " "));
+
+    return result;
+}
+
+std::stringstream ConvertVecToString(const std::unordered_set<VI>& my_vector) {
+    std::stringstream result;
+    std::copy(my_vector.begin(), my_vector.end(), std::ostream_iterator<VI>(result, " "));
+
+    return result;
+}
+
 // I would have ideally preferred a bitvector-based implementation since we need
 // to model if a neighbor has a specific color or not. Each bit signifies whether
 // the color is used up by a neighbor.
@@ -60,16 +74,19 @@ C RegAllocator::GetColor(std::unordered_set<VI>& neighbors) {
 }
 
 void RegAllocator::ColorIG() {
-    // Let us first color clusters. The thought process behind this is that 
-    // coloring cluster values are live for a longer time during program execution
-    // and hence it makes sense for us to color them together.
+    // Let us first color clusters. The thought process behind this is that
+    // the values inside a cluster are a part of the Phi and hence
+    // we should color them with the same color ideally to remove it.
     for (auto cluster_pair: IG().ClusterNeighbors()) {
         auto cluster_neighbors = cluster_pair.second;
 
         auto c = GetColor(cluster_neighbors);
-
+        
         auto cluster_id = cluster_pair.first;
         auto cluster_members = IG().ClusterMembers()[cluster_id];
+
+        // LOG(ERROR) << ConvertVecToString(cluster_members).str();
+
         for (auto member: cluster_members) {
             coloring_[member] = c;
         }
@@ -107,8 +124,10 @@ void RegAllocator::Run() {
     CalculateSpillCosts();
     TryColoringSpilledVals();
 
-    for (auto val_pair: coloring_) {
-        auto val_idx = val_pair.first;
-        auto color = val_pair.second;
-    }
+    LOG(ERROR) << "Coloring done";
+
+    // for (auto val_pair: coloring_) {
+    //     auto val_idx = val_pair.first;
+    //     auto color = val_pair.second;
+    // }
 }

@@ -4,6 +4,8 @@
 #include "IGBuilder.h"
 
 #include <math.h>
+#include <sstream>
+#include <iterator>
 
 namespace papyrus {
 

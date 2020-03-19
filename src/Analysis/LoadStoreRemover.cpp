@@ -48,6 +48,8 @@ void LoadStoreRemover::CheckAndReduce(Instruction* ins) {
 
             fn->ReplaceUse(old_idx, new_idx);
             ins->MakeInactive();
+        } else if (fn->IsEliminable(ins_type)) {
+            auto hash_str = fn->HashInstruction(ins_type, idx_1, idx_2);
         }
     }
 
@@ -119,7 +121,7 @@ void LoadStoreRemover::Run() {
                 for (auto var_name: GlobalsUsedAcrossCall(ins)) {
                     pseudo_globals.insert(var_name);
                 }
-            }
+            } // TODO: Can we perform a "kill" analysis here.
         }
     }
 
@@ -174,8 +176,10 @@ void LoadStoreRemover::Run() {
                         add->MakeInactive();
                     }
 
+                    auto read_val = fn->ReadVariable(var_name, bb_idx);
+                    fn->ReplaceUse(result, read_val);
                     ins->MakeInactive();
-                    reverse_mapping.insert({result, var_name});
+                    // reverse_mapping.insert({result, var_name});
                 }
             } else if (IsGlobalStore(ins_type)) {
                 auto var_idx = ins->Operands().at(1);
@@ -210,22 +214,24 @@ void LoadStoreRemover::Run() {
                 }
             } else {
                 auto ins_oper = ins->Operands();
-                // For all other instructions, check if they are using the LOADG
+                // TODO: FIX
+                //
+                // For all instructions, check if they are using the LOADG
                 // generated result. In that case, replace it with the SSA-based
                 // ReadVariable() output.
-                for (auto oper: ins_oper) {
-                    if (reverse_mapping.find(oper) != reverse_mapping.end()) {
-                        auto var_val = fn->GetValue(oper);
-                        auto var_name = reverse_mapping.at(oper);
-                        auto replacement = fn->ReadVariable(var_name, bb_idx);
-
-                        ins->ReplaceUse(oper, replacement);
-                        var_val->RemoveUse(ins_idx);
-                        fn->GetValue(replacement)->AddUsage(ins_idx);
-                    }
-                }
-                CheckAndReduce(ins);
+                // for (auto oper: ins_oper) {
+                //     if (reverse_mapping.find(oper) != reverse_mapping.end()) {
+                //         auto var_val = fn->GetValue(oper);
+                //         auto var_name = reverse_mapping.at(oper);
+                //         auto replacement = fn->ReadVariable(var_name, bb_idx);
+                //         ins->ReplaceUse(oper, replacement);
+                //         var_val->RemoveUse(ins_idx);
+                //         fn->GetValue(replacement)->AddUsage(ins_idx);
+                //     }
+                // }
             }
+
+            CheckAndReduce(ins);
         }
 
 
