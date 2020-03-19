@@ -929,6 +929,10 @@ void ComputationNode::GenerateIR(IRC& irc) const {
         computation_body_->GenerateIR(irc);
     }
 
+    if (CF->CurrentBB()->IsSealed()) {
+        CF->CurrentBB()->Seal();
+    }
+
     //////////////////////////////////////////////////
     MI(T::INS_END);
     //////////////////////////////////////////////////

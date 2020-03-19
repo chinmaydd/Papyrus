@@ -123,11 +123,4 @@ void RegAllocator::Run() {
     ColorIG();
     CalculateSpillCosts();
     TryColoringSpilledVals();
-
-    LOG(ERROR) << "Coloring done";
-
-    // for (auto val_pair: coloring_) {
-    //     auto val_idx = val_pair.first;
-    //     auto color = val_pair.second;
-    // }
 }

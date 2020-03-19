@@ -1,7 +1,6 @@
 set(_SOURCE_FILES
     GlobalClobbering.cpp
     InterprocCall.cpp
-    LoadStoreRemover.cpp
     CSE.cpp
     DCE.cpp
     )

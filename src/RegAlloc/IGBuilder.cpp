@@ -128,7 +128,8 @@ void IGBuilder::CoalesceNodes(Function* fn) {
                 continue;
             }
 
-            if (ins->Type() == T::INS_PHI) {
+            if (ins->Type() == T::INS_PHI &&
+                ins->Operands().size() != 0) {
                 auto result = ins->Result();
                 auto arg_1  = ins->Operands().at(0);
                 auto arg_2  = ins->Operands().at(1);
@@ -138,7 +139,8 @@ void IGBuilder::CoalesceNodes(Function* fn) {
                     !ig_.Interferes(arg_1, arg_2)) {
                     ig_.RegisterMerge({arg_1, arg_2, result});
                 } else {
-                    LOG(ERROR) << std::to_string(arg_1) << ":" << std::to_string(arg_2);
+                    LOG(ERROR) << "Could not register merge";
+                    // LOG(ERROR) << std::to_string(arg_1) << ":" << std::to_string(arg_2);
                 }
             } else {
                 // We would have seen all phis till now
@@ -302,6 +304,4 @@ void IGBuilder::Run() {
 
         CoalesceNodes(fn);
     }
-
-    LOG(ERROR) << "IG Built";
 }

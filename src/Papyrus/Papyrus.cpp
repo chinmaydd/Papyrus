@@ -7,7 +7,6 @@
 #include "IR/IR.h"
 #include "IR/IRConstructor.h"
 
-#include "Analysis/LoadStoreRemover.h"
 #include "Analysis/DCE.h"
 
 #include "RegAlloc/IGBuilder.h"
@@ -45,9 +44,6 @@ int main(int argc, char *argv[]) {
     IRConstructor irconst = IRConstructor(astconst);
 
     irconst.BuildIR();
-
-    // LoadStoreRemover lsr(irconst);
-    // lsr.Run();
 
     // DCE dce(irconst);
     // dce.Run();

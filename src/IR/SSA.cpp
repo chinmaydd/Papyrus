@@ -134,7 +134,15 @@ VI Function::ReadVariableRecursive(const std::string& var_name, BI bb_idx) {
     auto bb    = GetBB(bb_idx);
 
     if (!bb->IsSealed()) {
+        // Creating a phi in entry node is equivalent to asking:
+        // What was the value of var before function? -> 0
         SetCurrentBB(bb_idx);
+        if (bb_idx == 1) {
+            auto result = CreateConstant(0);
+            WriteVariable(var_name, bb_idx, result);
+            return result;
+        }
+
         phi_ins = MakePhi();
         result = ResultForInstruction(phi_ins);
         incomplete_phis_[bb_idx][var_name] = phi_ins;
@@ -146,7 +154,15 @@ VI Function::ReadVariableRecursive(const std::string& var_name, BI bb_idx) {
         // variables which are unverified will be initialized to 0.
         result = CreateConstant(0);
     } else {
+        // Creating a phi in entry node is equivalent to asking:
+        // What was the value of var before function? -> 0
         SetCurrentBB(bb_idx);
+        if (bb_idx == 1) {
+            auto result = CreateConstant(0);
+            WriteVariable(var_name, bb_idx, result);
+            return result;
+        }
+
         phi_ins = MakePhi();
         result = ResultForInstruction(phi_ins);
         WriteVariable(var_name, bb_idx, result);
