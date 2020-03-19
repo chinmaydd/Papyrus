@@ -164,8 +164,8 @@ void TypeDeclNode::AddArrayDimension(ConstantNode* dimension) {
     dimensions_.push_back(dimension);
 }
 
-void TypeDeclNode::SetIfArray(bool is_array) {
-    is_array_ = is_array;
+void TypeDeclNode::SetIfArray(bool is_it_array) {
+    is_array_ = is_it_array;
 }
 
 ////////////////////////////////////

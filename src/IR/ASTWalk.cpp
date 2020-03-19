@@ -207,7 +207,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
 
         //////////////////////////////////////////////////
         offset_idx = CF->TryReduce(ArithmeticOperator::BINOP_ADD, offset_idx, temp);
-        if (temp == NOTFOUND) {
+        if (offset_idx == NOTFOUND) {
             offset_idx = MI(T::INS_MUL, dim_idx, expr_idx);
         }
         //////////////////////////////////////////////////
@@ -917,7 +917,7 @@ void ComputationNode::GenerateIR(IRC& irc) const {
     }
 
     for (auto actuallocal: mark) {
-        irc.RemoveGlobal(var_name);
+        irc.RemoveGlobal(actuallocal);
     }
     /////////////////////////////////////////////////////////
 
