@@ -33,8 +33,8 @@ std::string Function::ConvertValueToString(VI val_idx) const {
         }
         case V::VAL_PHI:
         {
-            res += val->Identifier();
-            res += "_(" + std::to_string(val_idx) + ")";
+            // res += val->Identifier();
+            res += "(" + std::to_string(val_idx) + ")";
             break;
         }
         case V::VAL_LOCATION: {
@@ -63,10 +63,18 @@ std::string Function::ConvertValueToString(VI val_idx) const {
 
 std::string Function::ConvertInstructionToString(II ins_idx) const {
     Instruction* ins = GetInstruction(ins_idx);
+    auto result_idx = ResultForInstruction(ins_idx);
+    auto result = GetValue(result_idx);
     std::string res = "";
 
     res += "(" + std::to_string(ins->Result()) + ")" + " ";
-    res += ins_to_str_.at(ins->Type()) + " ";
+    res += ins_to_str_.at(ins->Type());
+
+    if (ins->Type() == T::INS_PHI) {
+        res += "_" + result->Identifier() + " ";
+    } else {
+        res += " ";
+    }
 
     for (auto operand: ins->Operands()) {
         res += ConvertValueToString(operand) + " ";

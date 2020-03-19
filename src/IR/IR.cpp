@@ -20,6 +20,8 @@ Function::Function(const std::string& func_name, VI value_counter, std::unordere
     value_map_(value_map) {
         SetLocalBase(CreateValue(V::VAL_LOCALBASE));
         SetCurrentBB(CreateBB(B::BB_START));
+        // Seal the Start
+        SealBB(CurrentBBIdx());
 }
 
 const Variable* Function::GetVariable(const std::string& var_name) const { 
@@ -313,7 +315,8 @@ VI Function::MakeInstruction(T insty, VI arg_1) {
     auto hash_str = HashInstruction(insty, arg_1);
 
     // Check if instruction can be removed
-    if (IsEliminable(insty)) {
+    if (IsEliminable(insty) &&
+        arg_1 != 1) {
         if (HashExists(hash_str)) {
             LOG(INFO) << "Removed " << hash_str;
             return GetHash(hash_str);
@@ -338,9 +341,8 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
     // Check if instruction can be removed
     if (IsEliminable(insty) &&
         // TODO: The reasoning behind this is that GlobalBase will create long
-        // ranges and hence interfere with all values. Does GlobalBase
-        // even need a register?
-        arg_1 != 1) {
+        // ranges and hence interfere with all values.
+        (arg_1 != 1 || arg_2 != 1)) {
         if (HashExists(hash_str)) {
             LOG(INFO) << "Removed " << hash_str;
             return GetHash(hash_str);

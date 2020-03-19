@@ -36,6 +36,7 @@ public:
         VAL_VAR,
         VAL_BRANCH,
         VAL_FORMAL,
+        VAL_STACK,
 
         VAL_NONE // Just in case
     };
@@ -178,7 +179,7 @@ static const std::unordered_map<T, std::string> ins_to_str_ = {
     {T::INS_LOAD,    "load"},
     {T::INS_STORE,   "store"},
     {T::INS_CALL,    "call"},
-    {T::INS_PHI,     "phi"},
+    {T::INS_PHI,     "φ"},
     {T::INS_ADD,     "add"},
     {T::INS_SUB,     "sub"},
     {T::INS_MUL,     "mul"},

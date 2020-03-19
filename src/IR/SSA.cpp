@@ -134,16 +134,7 @@ VI Function::ReadVariableRecursive(const std::string& var_name, BI bb_idx) {
     auto bb    = GetBB(bb_idx);
 
     if (!bb->IsSealed()) {
-        // Creating a phi in entry node is equivalent to asking:
-        // What was the value of var before function? -> 0 or ANY
         SetCurrentBB(bb_idx);
-        if (bb_idx == 1) {
-            // result = CreateConstant(0);
-            result = CreateValue(V::VAL_ANY);
-            WriteVariable(var_name, bb_idx, result);
-            return result;
-        }
-
         phi_ins = MakePhi();
         result = ResultForInstruction(phi_ins);
         incomplete_phis_[bb_idx][var_name] = phi_ins;
@@ -152,20 +143,12 @@ VI Function::ReadVariableRecursive(const std::string& var_name, BI bb_idx) {
     } else if (bb_idx == 1 && bb->IsSealed()) {
         // Here, we handle the case when we end up reaching the entry node while 
         // searching for a def for a variable. In that case, we will assume that
-        // variables which are unverified will be initialized to 0.
+        // variables which are unverified will be initialized to 0 or VAR
         // result = CreateConstant(0);
-        result = CreateValue(V::VAL_ANY);
+        result = CreateValue(V::VAL_VAR);
+        GetValue(result)->SetIdentifier(var_name);
     } else {
-        // Creating a phi in entry node is equivalent to asking:
-        // What was the value of var before function? -> 0 or ANY
         SetCurrentBB(bb_idx);
-        if (bb_idx == 1) {
-            // result = CreateConstant(0);
-            result = CreateValue(V::VAL_ANY);
-            WriteVariable(var_name, bb_idx, result);
-            return result;
-        }
-
         phi_ins = MakePhi();
         result = ResultForInstruction(phi_ins);
         WriteVariable(var_name, bb_idx, result);
@@ -174,7 +157,6 @@ VI Function::ReadVariableRecursive(const std::string& var_name, BI bb_idx) {
 
     // Add identifier for phi / constant
     GetValue(result)->SetIdentifier(var_name);
-
     SetCurrentBB(cur_bb_idx);
     WriteVariable(var_name, bb_idx, result);
     return result;

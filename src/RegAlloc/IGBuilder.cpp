@@ -116,7 +116,33 @@ InterferenceGraph& IGBuilder::IG() {
     return ig_;
 }
 
-void IGBuilder::CoalesceNodes(Function* fn) {
+bool IGBuilder::RequiresReg(const Instruction* ins, const Value* val) {
+    auto val_type = val->Type();
+    auto ins_type = ins->Type();
+    bool required = true;
+
+    if (val_type == V::VAL_CONST) {
+        if (ins_type == T::INS_ADD ||
+            ins_type == T::INS_MUL ||
+            ins_type == T::INS_SUB ||
+            ins_type == T::INS_DIV ||
+            ins_type == T::INS_ADDA) {
+
+            required = false;
+        }
+    } else if (val_type == V::VAL_BRANCH     ||
+               val_type == V::VAL_GLOBALBASE ||
+               val_type == V::VAL_LOCALBASE  ||
+               val_type == V::VAL_LOCATION   ||
+               val_type == V::VAL_FUNC) {
+
+        required = false;
+    }
+
+    return required;
+}
+
+void IGBuilder::CoalesceNodes(const Function* fn) {
     for (auto bb_pair: fn->BasicBlocks()) {
         auto bb_idx = bb_pair.first;
         auto bb = bb_pair.second;
@@ -139,8 +165,8 @@ void IGBuilder::CoalesceNodes(Function* fn) {
                     !ig_.Interferes(arg_1, arg_2)) {
                     ig_.RegisterMerge({arg_1, arg_2, result});
                 } else {
-                    LOG(ERROR) << "Could not register merge";
-                    // LOG(ERROR) << std::to_string(arg_1) << ":" << std::to_string(arg_2);
+                    LOG(INFO) << "Could not register merge";
+                    LOG(INFO) << std::to_string(arg_1) << ":" << std::to_string(arg_2);
                 }
             } else {
                 // We would have seen all phis till now
@@ -161,7 +187,7 @@ void IGBuilder::CoalesceNodes(Function* fn) {
     ig_.Merge();
 }
 
-void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
+void IGBuilder::ProcessBlock(const Function* fn, const BasicBlock* bb) {
     auto bb_idx = bb->Idx();
     if (visited.find(bb_idx) != visited.end()) {
         // Already visited this BB
@@ -218,9 +244,7 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
                     auto val_idx = op_source.at(bb_idx);
                     auto val = fn->GetValue(val_idx);
 
-                    if (val->Type() == V::VAL_CONST) {
-                        // TODO: Decide what to do here.
-                    } else {
+                    if (val->Type() != V::VAL_CONST) {
                         bb_live.insert(op_source.at(bb_idx));
                     }
                 }
@@ -259,10 +283,7 @@ void IGBuilder::ProcessBlock(Function* fn, BasicBlock* bb) {
                 //
                 // The other issue with constants is that if left alone, they start
                 // interfering with every other value.
-                if (val->Type() != V::VAL_BRANCH ||
-                    val->Type() != V::VAL_GLOBALBASE ||
-                    val->Type() != V::VAL_LOCALBASE ||
-                    val->Type() != V::VAL_FUNC) {
+                if (RequiresReg(ins, val)) {
                     bb_live.insert(op);
                 }
             }

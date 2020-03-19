@@ -18,6 +18,20 @@ std::stringstream ConvertVecToString(const std::unordered_set<VI>& my_vector) {
     return result;
 }
 
+std::string ColorString(C col) {
+    std::string s = "UNKNOWN";
+    switch(col) {
+        case C::COL_RED:    s = "RED";    break;
+        case C::COL_GREEN:  s = "GREEN";  break;
+        case C::COL_BLUE:   s = "BLUE";   break;
+        case C::COL_YELLOW: s = "YELLOW"; break;
+        case C::COL_ORANGE: s = "ORANGE"; break;
+        case C::COL_CYAN:   s = "CYAN";   break;
+        case C::COL_GRAY:   s = "GRAY";   break;
+    }
+    return s;
+}
+
 // I would have ideally preferred a bitvector-based implementation since we need
 // to model if a neighbor has a specific color or not. Each bit signifies whether
 // the color is used up by a neighbor.
@@ -123,4 +137,14 @@ void RegAllocator::Run() {
     ColorIG();
     CalculateSpillCosts();
     TryColoringSpilledVals();
+
+    for (auto col_pair: coloring_) {
+        auto vi    = col_pair.first;
+        auto color = col_pair.second;
+
+        // LOG(ERROR) << std::to_string(vi) << ":" << ColorString(color);
+        if (color == C::COL_GRAY) {
+            LOG(ERROR) << "Value: " << std::to_string(vi);
+        }
+    }
 }

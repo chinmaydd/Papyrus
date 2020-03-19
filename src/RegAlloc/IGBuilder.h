@@ -57,8 +57,9 @@ private:
     std::unordered_map<std::string, BBLiveIn> live_in_vars_;
     std::unordered_map<std::string, BBLiveOut> live_out_vars_;
 
-    void ProcessBlock(Function*, BasicBlock*);
-    void CoalesceNodes(Function*);
+    void ProcessBlock(const Function*, const BasicBlock*);
+    void CoalesceNodes(const Function*);
+    bool RequiresReg(const Instruction*, const Value*);
 
     BBLiveIn bb_live_in;
     ValueSet bb_live;

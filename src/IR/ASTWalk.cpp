@@ -762,7 +762,7 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
 
         if (sym->IsFormal()) {
             // Creating a location value here to be used for later
-            location = CV(V::VAL_LOCATION);
+            location = CV(V::VAL_STACK);
             CF->GetValue(location)->SetConstant(-4 * formal_count);
             CF->GetValue(location)->SetIdentifier(var_name);
 
@@ -791,7 +791,7 @@ void FunctionDeclNode::GenerateIR(IRC& irc) const {
             // Again, here we would like to store localbase+offset in the 
             // register if possible, but for now we can store this value in
             // the variable; can be accessed later
-            location = CV(V::VAL_LOCATION);
+            location = CV(V::VAL_STACK);
             CF->GetValue(location)->SetConstant(-4 * old_offset);
             CF->GetValue(location)->SetIdentifier(var_name);
 
@@ -916,8 +916,8 @@ void ComputationNode::GenerateIR(IRC& irc) const {
         }
     }
 
-    for (auto actuallocal: mark) {
-        irc.RemoveGlobal(actuallocal);
+    for (auto glob: mark) {
+        irc.RemoveGlobal(glob);
     }
     /////////////////////////////////////////////////////////
 
