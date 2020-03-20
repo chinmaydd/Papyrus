@@ -30,6 +30,12 @@ void InterferenceGraph::AddInterference(VI source, VI dest) {
     ig_[dest].insert(source);
 }
 
+void InterferenceGraph::CreateNode(VI node_idx) {
+    if (ig_.find(node_idx) == ig_.end()) {
+        ig_[node_idx] = {};
+    }
+}
+
 void InterferenceGraph::PrintToConsole() const {
     for (auto node: ig_) {
         std::cout << std::to_string(node.first) << ": ";
@@ -112,6 +118,10 @@ void IGBuilder::AddInterference(VI source, VI dest) {
     ig_.AddInterference(source, dest);
 }
 
+void IGBuilder::CreateNode(VI node_idx) {
+    ig_.CreateNode(node_idx);
+}
+
 InterferenceGraph& IGBuilder::IG() {
     return ig_;
 }
@@ -133,7 +143,7 @@ bool IGBuilder::RequiresReg(const Instruction* ins, const Value* val) {
     } else if (val_type == V::VAL_BRANCH     ||
                val_type == V::VAL_GLOBALBASE ||
                val_type == V::VAL_LOCALBASE  ||
-               val_type == V::VAL_LOCATION   ||
+               // val_type == V::VAL_LOCATION   ||
                val_type == V::VAL_FUNC) {
 
         required = false;
@@ -245,7 +255,6 @@ void IGBuilder::ProcessBlock(const Function* fn, const BasicBlock* bb) {
                     auto val = fn->GetValue(val_idx);
 
                     bb_live.insert(op_source.at(bb_idx));
-
                     // We need to ensure that the constant is also
                     // live at this time. That is when we would be 
                     // introducing moves.
@@ -297,7 +306,9 @@ void IGBuilder::ProcessBlock(const Function* fn, const BasicBlock* bb) {
 
         // Add interferences for all live values
         for (auto it = bb_live.begin(); it != bb_live.end(); it++) {
+            CreateNode(*it);
             for (auto sub_it = std::next(it); sub_it != bb_live.end(); sub_it++) {
+                CreateNode(*sub_it);
                 AddInterference(*it, *sub_it);
             }
         }

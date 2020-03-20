@@ -9,7 +9,11 @@ std::string GetBBString(BI idx) {
 }
 
 Color Visualizer::GetColor(VI val_idx) const {
-    return coloring_.at(val_idx);
+    if (coloring_.find(val_idx) == coloring_.end()) {
+        return Color::COL_WHITE;
+    } else {
+        return coloring_.at(val_idx);
+    }
 }
 
 std::string Function::ConvertValueToString(VI val_idx) const {
@@ -42,7 +46,7 @@ std::string Function::ConvertValueToString(VI val_idx) const {
             break;
         }
         case V::VAL_LOCATION: {
-            res += "&" + val->Identifier() + " ";
+            res += "&" + val->Identifier();
             res += "_(" + std::to_string(val_idx) + ")";
             break;
         }
@@ -99,11 +103,45 @@ std::string Visualizer::GetEdgeString(const std::string& func_name, BI source, B
 }
 
 std::string Visualizer::RegisterString(VI val_idx) const {
-    if (coloring_.find(val_idx) == coloring_.end()) {
-        return "";
-    } else {
-        return std::string("R" + std::to_string(GetColor(val_idx)) + "_");
+    auto val = irc_.GetValue(val_idx);
+    std::string retval = "";
+
+    switch (val->Type()) {
+        case V::VAL_GLOBALBASE: {
+            retval += "GlobalBase ";
+            break;
+        }
+        case V::VAL_LOCATION: {
+            retval += "&" + val->Identifier() + " ";
+            break;
+        }
+        case V::VAL_FUNC: {
+            retval += "&" + val->Identifier() + " ";
+            break;
+        }
+        case V::VAL_BRANCH: {
+            retval += "BB_" + std::to_string(val->GetConstant()) + " ";
+            break;
+        }
+        case V::VAL_CONST: {
+            retval += "#" + std::to_string(val->GetConstant()) + " ";
+            break;
+        }
+        case V::VAL_ANY:
+        case V::VAL_VAR: {
+            retval += "(R" + std::to_string(GetColor(val_idx)) + ") ";
+            break;
+        }
+        case V::VAL_LOCALBASE: {
+            retval += "LocalBase ";
+            break;
+        }
+        default: {
+            retval += "(R" + std::to_string(GetColor(val_idx)) + ") ";
+        }
     }
+
+    return retval;
 }
 
 std::string Visualizer::ConvertInstructionToString(const Function* fn, II ins_idx) const {
@@ -114,23 +152,18 @@ std::string Visualizer::ConvertInstructionToString(const Function* fn, II ins_id
 
     if (RADone()) {
         res += RegisterString(result_idx);
-    }
-
-    res += "(" + std::to_string(result_idx) + ")" + " ";
-    res += ins_to_str_.at(ins->Type());
-
-    if (ins->Type() == T::INS_PHI) {
-        res += "_" + result->Identifier() + " ";
     } else {
-        res += " ";
+        res += "(" + std::to_string(result_idx) + ")" + " ";
     }
+
+    res += ins_to_str_.at(ins->Type()) + " ";
 
     for (auto operand: ins->Operands()) {
         if (RADone()) {
             res += RegisterString(operand);
+        } else {
+            res += fn->ConvertValueToString(operand) + " ";
         }
-
-        res += fn->ConvertValueToString(operand) + " ";
     }
 
     return res;
