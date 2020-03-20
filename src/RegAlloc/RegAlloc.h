@@ -7,6 +7,7 @@
 #include <math.h>
 #include <sstream>
 #include <iterator>
+#include <cassert>
 
 namespace papyrus {
 
@@ -34,8 +35,9 @@ public:
     };
 
     RegAllocator(IRConstructor&, IGBuilder&);
-
     void Run();
+
+    std::unordered_map<VI, Color> Coloring() const;
 
 private:
     IGBuilder& igb_;
@@ -45,13 +47,10 @@ private:
 
     Color GetColor(std::unordered_set<VI>&);
 
-    void RemoveFromMap(VI, std::unordered_set<VI>&);
-    void AddNodeToMap(VI, std::unordered_set<VI>&);
-    
+    void TryColoringSpilledVals();
+    void CalculateSpillCosts();
+    void ColorIG();
     void AnnotateIR();
-
-    VI GetNodeToColor();
-    VI GetNodeToSpill();
 
     const std::vector<Color> colors_ = {
         Color::COL_RED,
@@ -72,9 +71,10 @@ private:
     std::unordered_map<VI, Color> coloring_;
     IGMap& ig_map_;
 
-    std::stack<std::pair<VI, std::unordered_set<VI> > > removed_nodes;
     std::unordered_map<std::string, int> max_spills_;
 };
+
+using Color = RegAllocator::Color;
 
 } // namespace papyrus
 
