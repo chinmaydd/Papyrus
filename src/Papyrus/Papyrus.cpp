@@ -48,17 +48,18 @@ int main(int argc, char *argv[]) {
     ArrayLSRemover als(irconst);
     als.Run();
 
-    std::string vcg_fname = utils.ConstructOutFile(argv[1], ".vcg");
     Visualizer viz = Visualizer(irconst);
-    viz.WriteVCG(vcg_fname);
+
+    std::string ir_fname = utils.ConstructOutFile(argv[1], ".vcg");
+    viz.WriteIR(ir_fname);
 
     IGBuilder igb(irconst);
     RegAllocator ra(irconst, igb);
     ra.Run();
 
-    // vcg_fname = utils.ConstructOutFile(argv[1], ".final.vcg");
-    // Visualizer viz = Visualizer(irconst);
-    // viz.WriteVCG(vcg_fname);
+    std::string final_fname = utils.ConstructOutFile(argv[1], ".final.vcg");
+    viz.UpdateColoring(ra.Coloring());
+    viz.WriteFinalIR(final_fname);
 
     return 0;
 }

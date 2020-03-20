@@ -130,6 +130,8 @@ public:
     void MakeInactive() { is_active_ = false; }
     void ReplaceUse(VI, VI);
 
+    BI FindSource(VI) const;
+
     VI Result() const { return result_; }
 
     BI ContainingBB() const { return containing_bb_; }
@@ -290,7 +292,6 @@ public:
     std::vector<BI> ReversePostOrderCFG();
     std::vector<BI> ExitBlocks();
 
-    std::string ConvertInstructionToString(II) const;
     std::string ConvertValueToString(VI) const;
     
     std::string HashInstruction(T, VI, VI) const;
@@ -313,6 +314,8 @@ public:
     void AddBackEdge(VI, VI);
     void LoadFormal(const std::string&);
     void InsertHash(const std::string&, VI);
+
+    VI CreateMove(BI, VI, int);
 
     int GetOffset(const std::string&) const;
     int ReduceCondition(RelationalOperator, VI, VI) const;

@@ -8,6 +8,10 @@ std::string GetBBString(BI idx) {
     return "BB_" + std::to_string(idx);
 }
 
+Color Visualizer::GetColor(VI val_idx) const {
+    return coloring_.at(val_idx);
+}
+
 std::string Function::ConvertValueToString(VI val_idx) const {
     std::string res = "";
     Value *val = GetValue(val_idx);
@@ -61,30 +65,12 @@ std::string Function::ConvertValueToString(VI val_idx) const {
     return res;
 }
 
-std::string Function::ConvertInstructionToString(II ins_idx) const {
-    Instruction* ins = GetInstruction(ins_idx);
-    auto result_idx = ResultForInstruction(ins_idx);
-    auto result = GetValue(result_idx);
-    std::string res = "";
-
-    res += "(" + std::to_string(ins->Result()) + ")" + " ";
-    res += ins_to_str_.at(ins->Type());
-
-    if (ins->Type() == T::INS_PHI) {
-        res += "_" + result->Identifier() + " ";
-    } else {
-        res += " ";
-    }
-
-    for (auto operand: ins->Operands()) {
-        res += ConvertValueToString(operand) + " ";
-    }
-
-    return res;
-}
-
 Visualizer::Visualizer(IRC& irc) :
     irc_(irc) {}
+
+void Visualizer::UpdateColoring(const std::unordered_map<VI, Color>& coloring) {
+    coloring_ = coloring;
+}
 
 std::string Visualizer::GetBaseNodeString(BI bb_idx, const std::string& func_name) const {
     std::string res = "";
@@ -112,6 +98,44 @@ std::string Visualizer::GetEdgeString(const std::string& func_name, BI source, B
     return res;
 }
 
+std::string Visualizer::RegisterString(VI val_idx) const {
+    if (coloring_.find(val_idx) == coloring_.end()) {
+        return "";
+    } else {
+        return std::string("R" + std::to_string(GetColor(val_idx)) + "_");
+    }
+}
+
+std::string Visualizer::ConvertInstructionToString(const Function* fn, II ins_idx) const {
+    Instruction* ins = fn->GetInstruction(ins_idx);
+    auto result_idx  = ins->Result();
+    auto result      = fn->GetValue(result_idx);
+    std::string res = "";
+
+    if (RADone()) {
+        res += RegisterString(result_idx);
+    }
+
+    res += "(" + std::to_string(result_idx) + ")" + " ";
+    res += ins_to_str_.at(ins->Type());
+
+    if (ins->Type() == T::INS_PHI) {
+        res += "_" + result->Identifier() + " ";
+    } else {
+        res += " ";
+    }
+
+    for (auto operand: ins->Operands()) {
+        if (RADone()) {
+            res += RegisterString(operand);
+        }
+
+        res += fn->ConvertValueToString(operand) + " ";
+    }
+
+    return res;
+}
+
 void Visualizer::DrawFunc(const Function* func) {
     std::string func_name = func->FunctionName();
 
@@ -131,7 +155,7 @@ void Visualizer::DrawFunc(const Function* func) {
                 continue;
             }
 
-            bb_graph += func->ConvertInstructionToString(ins_idx);
+            bb_graph += ConvertInstructionToString(func, ins_idx);
             bb_graph += "\n";
         }
 
@@ -156,6 +180,7 @@ void Visualizer::UpdateVCG() {
     }
 }
 
+
 void Visualizer::WriteVCG(const std::string& fname) {
     graph_.open(fname);
 
@@ -170,4 +195,16 @@ void Visualizer::WriteVCG(const std::string& fname) {
 
     graph_ << "}";
     graph_.close();
+}
+
+void Visualizer::WriteFinalIR(const std::string& fname) {
+    writing_ir_before_ra_ = false;
+
+    WriteVCG(fname);
+}
+
+void Visualizer::WriteIR(const std::string& fname) {
+    writing_ir_before_ra_ = true;
+
+    WriteVCG(fname);
 }

@@ -244,9 +244,15 @@ void IGBuilder::ProcessBlock(const Function* fn, const BasicBlock* bb) {
                     auto val_idx = op_source.at(bb_idx);
                     auto val = fn->GetValue(val_idx);
 
-                    if (val->Type() != V::VAL_CONST) {
-                        bb_live.insert(op_source.at(bb_idx));
-                    }
+                    bb_live.insert(op_source.at(bb_idx));
+
+                    // We need to ensure that the constant is also
+                    // live at this time. That is when we would be 
+                    // introducing moves.
+                    //
+                    // if (val->Type() != V::VAL_CONST) {
+                    //     bb_live.insert(op_source.at(bb_idx));
+                    // }
                 }
             } else if (ins->Type() != T::INS_PHI) {
                 // This means we have crossed all Phi instructions
