@@ -65,6 +65,7 @@ VI Function::CreateConstant(int val) {
 
     Value* v = new Value(V::VAL_CONST);
     v->SetConstant(val); 
+    v->SetFunction(func_name_);
 
     value_counter_++;
     value_map_->emplace(value_counter_, v);
@@ -76,6 +77,7 @@ VI Function::CreateConstant(int val) {
 
 VI Function::CreateValue(V vty) {
     Value* val = new Value(vty);
+    val->SetFunction(func_name_);
 
     value_counter_++;
     value_map_->emplace(value_counter_, val);

@@ -53,8 +53,6 @@ int main(int argc, char *argv[]) {
     viz.WriteVCG(vcg_fname);
 
     IGBuilder igb(irconst);
-    igb.Run();
-
     RegAllocator ra(irconst, igb);
     ra.Run();
 

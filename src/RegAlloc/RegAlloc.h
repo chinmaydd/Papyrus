@@ -3,6 +3,7 @@
 
 #include "IGBuilder.h"
 
+#include <stack>
 #include <math.h>
 #include <sstream>
 #include <iterator>
@@ -15,18 +16,20 @@ using CostPair = std::pair<VI, long double>;
 class RegAllocator : public AnalysisPass {
 public:
     enum Color {
-        COL_WHITE, // equivalent of NONE
+        COL_WHITE = 0, // equivalent of NONE
 
         COL_RED,
         COL_GREEN,
         COL_BLUE,
         COL_YELLOW,
         COL_ORANGE,
-        COL_CYAN,
+        COL_CYAN, // 6
 
-        COL_GRAY,  // representative of spill
-
-        COL_BLACK, // equivalent of ANY
+        COL_GRAY_1,  // representative of spill - 1
+        COL_GRAY_2,  // representative of spill - 2
+        COL_GRAY_3,  // representative of spill - 2
+        COL_GRAY_4,  // representative of spill - 2
+        COL_GRAY_5,  // representative of spill - 2
     };
 
     RegAllocator(IRConstructor&, IGBuilder&);
@@ -41,9 +44,11 @@ private:
 
     Color GetColor(std::unordered_set<VI>&);
 
-    void TryColoringSpilledVals();
-    void CalculateSpillCosts();
-    void ColorIG();
+    void RemoveFromMap(VI, std::unordered_set<VI>&);
+    void AddNodeToMap(VI, std::unordered_set<VI>&);
+
+    VI GetNodeToColor();
+    VI GetNodeToSpill();
 
     const std::vector<Color> colors_ = {
         Color::COL_RED,
@@ -51,12 +56,20 @@ private:
         Color::COL_BLUE,
         Color::COL_YELLOW,
         Color::COL_ORANGE,
-        Color::COL_CYAN
+        Color::COL_CYAN,
+        Color::COL_GRAY_1,
+        Color::COL_GRAY_2,
+        Color::COL_GRAY_3,
+        Color::COL_GRAY_4,
+        Color::COL_GRAY_5,
     };
 
     std::vector<std::pair<VI, long double> > spill_costs_;
     std::unordered_map<VI, Color> coloring_;
     IGMap& ig_map_;
+
+    std::stack<std::pair<VI, std::unordered_set<VI> > > removed_nodes;
+    std::unordered_map<std::string, int> max_spills_;
 };
 
 } // namespace papyrus

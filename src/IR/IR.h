@@ -44,6 +44,7 @@ public:
     Value(ValueType);
 
     const std::vector<II>& GetUsers() const { return uses_; }
+    const std::string& Function() const { return function_; }
     const ValueType Type() const { return vty_; }
 
     void SetType(ValueType vty) { vty_ = vty; }
@@ -51,6 +52,8 @@ public:
     void SetConstant(int val) { val_ = val; }
     void SetIdentifier(const std::string& ident) { identifier_ = ident; }
     void RemoveUse(II);
+
+    void SetFunction(const std::string& fn_name) { function_ = fn_name; }
 
     void SetDepth(int depth) { loop_depth_ = depth; }
     void SetSpillCost(long double cost) { spill_cost_ = cost; }
@@ -72,6 +75,7 @@ private:
     long double spill_cost_;
 
     std::string identifier_;
+    std::string function_;
     std::vector<II> uses_;
 };
 
