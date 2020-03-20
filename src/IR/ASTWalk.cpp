@@ -181,6 +181,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     auto expr  = *it;
     VI offset_idx = expr->GenerateIR(irc);
     it++;
+    VI temp_idx;
 
     // Calculate the offset
     VI dim_idx;
@@ -199,16 +200,20 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
 
         //////////////////////////////////////////////////
         auto expr_idx = expr->GenerateIR(irc);
-        auto temp = CF->TryReduce(ArithmeticOperator::BINOP_MUL, dim_idx, expr_idx);
-        if (temp == NOTFOUND) {
+        temp_idx = CF->TryReduce(ArithmeticOperator::BINOP_MUL, dim_idx, expr_idx);
+        if (temp_idx == NOTFOUND) {
             temp = MI(T::INS_MUL, dim_idx, expr_idx);
+        } else {
+            temp = temp_idx;
         }
         //////////////////////////////////////////////////
 
         //////////////////////////////////////////////////
-        offset_idx = CF->TryReduce(ArithmeticOperator::BINOP_ADD, offset_idx, temp);
-        if (offset_idx == NOTFOUND) {
-            offset_idx = MI(T::INS_MUL, dim_idx, expr_idx);
+        temp_idx = CF->TryReduce(ArithmeticOperator::BINOP_ADD, offset_idx, temp);
+        if (temp_idx == NOTFOUND) {
+            offset_idx = MI(T::INS_ADD, offset_idx, temp);
+        } else {
+            offset_idx = temp_idx;
         }
         //////////////////////////////////////////////////
 
