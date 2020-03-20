@@ -50,10 +50,27 @@ VI Function::CreateMove(BI bb_idx, VI val_idx, int reg) {
     Instruction* inst = new Instruction(T::INS_MOVE, CurrentBBIdx(), instruction_counter_);
 
     instruction_map_[instruction_counter_] = inst;
-    // instruction_order_.push_back(instruction_counter_);
 
-    V vty = V::VAL_CONST;
-    VI reg_idx = CreateValue(vty);
+    ///////////////////////////////////////////
+    V vty = V::VAL_ANY;
+    auto val = new Value(vty);
+    val->SetFunction(func_name_);
+
+    value_counter_ = value_map_->size() + 1;
+    value_counter_++;
+    value_map_->emplace(value_counter_, val);
+    auto reg_idx = value_counter_;
+    ///////////////////////////////////////////
+
+    auto back_ins = GetInstruction(instruction_order_.back());
+    if (back_ins->Type() == T::INS_BRA) {
+        auto temp = instruction_order_.back();
+        instruction_order_.pop_back();
+        instruction_order_.push_back(instruction_counter_);
+        instruction_order_.push_back(temp);
+    } else {
+        instruction_order_.push_back(instruction_counter_);
+    }
 
     CurrentInstruction()->AddOperand(val_idx);
     CurrentInstruction()->AddOperand(reg_idx);
@@ -63,20 +80,31 @@ VI Function::CreateMove(BI bb_idx, VI val_idx, int reg) {
 
     CurrentBB()->AddInstruction(instruction_counter_, inst);
 
-    V vty = V::VAL_ANY;
-    VI result = CreateValue(vty);
-    inst->SetResult(result);
+    //////////////////////////////////////////
+    vty = V::VAL_ANY;
+    val = new Value(vty);
+    val->SetFunction(func_name_);
 
-    return reg;
+    value_counter_ = value_map_->size() + 1;
+    value_counter_++;
+    value_map_->emplace(value_counter_, val);
+    auto result = value_counter_;
+    inst->SetResult(result);
+    ///////////////////////////////////////////
+
+    return reg_idx;
 }
 
 BI Instruction::FindSource(VI val_idx) const {
+    BI found = -1;
     for (auto bb_pair: op_source_) {
         if (bb_pair.second == val_idx) {
-            return bb_pair.first;
+            found = bb_pair.first;
+            break;
         }
     }
-    // Hacky
+
+    return found;
 }
 
 void RegAllocator::AnnotateIR() {
@@ -97,6 +125,8 @@ void RegAllocator::AnnotateIR() {
                 if (ins->Type() == T::INS_PHI &&
                     ins->IsActive()) {
                     // Phi handling
+
+                    // Make Phi Inactive
                     ins->MakeInactive();
 
                     auto arg_1  = ins->Operands().at(0);
@@ -111,26 +141,33 @@ void RegAllocator::AnnotateIR() {
                         auto val_1   = fn->GetValue(arg_1);
                         auto prev_bb = ins->FindSource(arg_1); // new
                         if (val_1->IsConstant()) {
-                            fn->CreateMove(prev_bb, arg_1, c_3);
+                            auto reg = fn->CreateMove(prev_bb, arg_1, c_3);
+                            coloring_[reg] = c_1;
                         }
                     } else if (c_1 != c_3) {
                         auto prev_bb = ins->FindSource(arg_1); // new
-                        fn->CreateMove(prev_bb, arg_1, c_3);
+                        auto reg = fn->CreateMove(prev_bb, arg_1, c_3);
+                        coloring_[reg] = c_3;
                     }
 
                     if (c_2 == c_3) {
                         auto val_2   = fn->GetValue(arg_2);
                         auto prev_bb = ins->FindSource(arg_2); // new
                         if (val_2->IsConstant()) {
-                            fn->CreateMove(prev_bb, arg_2, c_3);
+                            auto reg = fn->CreateMove(prev_bb, arg_2, c_3);
+                            coloring_[reg] = c_1;
                         }
                     } else if (c_2 != c_3) {
                         auto prev_bb = ins->FindSource(arg_2); // new
-                        fn->CreateMove(prev_bb, arg_2, c_3);
+                        auto reg = fn->CreateMove(prev_bb, arg_2, c_3);
+                        coloring_[reg] = c_3;
                     }
                 } else {
-                    // Normal instruction handling
-                    //
+                    // All of these instructions will require their
+                    // operand to be in a register
+                    if (ins->Type() == T::INS_RET) {
+                    } else if (ins->Type() == T::INS_ARG) {
+                    }
                     // For now, it is assumed that we have infinite colors.
                 }
             }

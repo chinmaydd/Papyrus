@@ -20,6 +20,7 @@ public:
     bool Interferes(VI, VI);
 
     void AddInterference(VI, VI);
+    void CreateNode(VI);
     void PrintToConsole() const;
     void RegisterMerge(const std::vector<VI>&);
     void Merge();
@@ -48,6 +49,7 @@ public:
 
     void Run();
     void AddInterference(VI, VI);
+    void CreateNode(VI);
 
     InterferenceGraph& IG();
 
