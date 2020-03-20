@@ -23,13 +23,14 @@ public:
         COL_BLUE,
         COL_YELLOW,
         COL_ORANGE,
-        COL_CYAN, // 6
+        COL_CYAN,    // NUM_REG
 
+        // Spills are assumed to be < 5
         COL_GRAY_1,  // representative of spill - 1
         COL_GRAY_2,  // representative of spill - 2
-        COL_GRAY_3,  // representative of spill - 2
-        COL_GRAY_4,  // representative of spill - 2
-        COL_GRAY_5,  // representative of spill - 2
+        COL_GRAY_3,  // representative of spill - 3
+        COL_GRAY_4,  // representative of spill - 4
+        COL_GRAY_5,  // representative of spill - 5
     };
 
     RegAllocator(IRConstructor&, IGBuilder&);
@@ -46,6 +47,8 @@ private:
 
     void RemoveFromMap(VI, std::unordered_set<VI>&);
     void AddNodeToMap(VI, std::unordered_set<VI>&);
+    
+    void AnnotateIR();
 
     VI GetNodeToColor();
     VI GetNodeToSpill();
@@ -57,6 +60,7 @@ private:
         Color::COL_YELLOW,
         Color::COL_ORANGE,
         Color::COL_CYAN,
+
         Color::COL_GRAY_1,
         Color::COL_GRAY_2,
         Color::COL_GRAY_3,

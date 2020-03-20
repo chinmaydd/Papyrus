@@ -39,6 +39,52 @@ std::string ColorString(C col) {
     return s;
 }
 
+void RegAllocator::AnnotateIR() {
+    for (auto fn_pair: irc().Functions()) {
+        auto fn_name = fn_pair.first;
+
+        if (irc().IsIntrinsic(fn_name)) {
+            continue;
+        }
+
+        auto fn = fn_pair.second;
+
+        for (auto bb_idx: fn->ReversePostOrderCFG()) {
+            auto bb = fn->GetBB(bb_idx);
+            for (auto ins_idx: bb->InstructionOrder()) {
+                auto ins = fn->GetInstruction(ins_idx);
+
+                if (ins->Type() == T::INS_PHI) {
+                    // Phi handling
+
+                } else {
+                    // Normal instruction handling
+                    for (auto operand: ins->Operands()) {
+                        if (coloring_.find(operand) != coloring_.end()) {
+                            auto color = coloring_.at(operand);
+
+                            // Value has to be spilled!
+                            if (color > NUM_REG) {
+                                LOG(ERROR) << "Use of spilled!";
+                            }
+                        }
+                    }
+
+                    auto result = ins->Result();
+                    if (coloring_.find(result) != coloring_.end()) {
+                        auto color = coloring_.at(result);
+
+                        // Value is spilled!
+                        if (color > NUM_REG) {
+                            LOG(ERROR) << "Def of spilled value!";
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 // I would have ideally preferred a bitvector-based implementation since we need
 // to model if a neighbor has a specific color or not. Each bit signifies whether
 // the color is used up by a neighbor.
@@ -65,9 +111,13 @@ void RegAllocator::Run() {
    }
 
    // Keep track of nodes which have been removed
+   
+  
+
+
    removed_nodes = {};
    while (ig_map_.size() > 1) {
-       auto node_idx = GetNodeToColor();
+       auto node_idx  = GetNodeToColor();
        auto neighbors = ig_map_.at(node_idx);
 
        RemoveFromMap(node_idx, neighbors);
@@ -101,16 +151,7 @@ void RegAllocator::Run() {
        removed_nodes.pop();
    }
 
-   // DEBUGGING
-   for (auto col_pair: coloring_) {
-       auto vi    = col_pair.first;
-       auto val   = irc().GetValue(vi);
-       auto color = col_pair.second;
-       // LOG(ERROR) << std::to_string(vi) << ":" << ColorString(color) << ":" << val->Function();
-       // if (color > NUM_REG) {
-       //     LOG(ERROR) << std::to_string(vi) << ":" << ColorString(color);
-       // }
-    }
+   AnnotateIR();
 
    LOG(ERROR) << "Done coloring";
 }
@@ -199,4 +240,3 @@ C RegAllocator::GetColor(std::unordered_set<VI>& neighbors) {
 //         }
 //     }
 // }
-
