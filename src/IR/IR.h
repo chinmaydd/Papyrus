@@ -362,6 +362,10 @@ public:
 
     bool HashExists(const std::string&) const;
 
+    std::string access_str_;
+    std::unordered_map<VI, std::string> load_hash_;
+    std::unordered_map<VI, std::string> store_hash_;
+
 private:
     std::string func_name_;
 

@@ -166,6 +166,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         exit(1);
     }
 
+    auto base_ins_idx = CF->CurrentInstructionIdx();
     //////////////////////////////////////////////////
     // To compute base to initial offset we should use
     // ADD instead of ADDA.
@@ -182,6 +183,14 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     VI offset_idx = expr->GenerateIR(irc);
     it++;
     VI temp_idx;
+
+    std::string access_str = "";
+
+    if (CF->GetValue(offset_idx)->Type() == V::VAL_CONST) {
+        access_str = access_str + "_#" + std::to_string(CF->GetValue(offset_idx)->GetConstant());
+    } else {
+        access_str = access_str + "_#" + std::to_string(offset_idx);
+    }
 
     // Calculate the offset
     VI dim_idx;
@@ -200,6 +209,13 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
 
         //////////////////////////////////////////////////
         auto expr_idx = expr->GenerateIR(irc);
+
+        if (CF->GetValue(expr_idx)->Type() == V::VAL_CONST) {
+            access_str = access_str + "_#" + std::to_string(CF->GetValue(expr_idx)->GetConstant());
+        } else {
+            access_str = access_str + "_" + std::to_string(expr_idx);
+        }
+
         temp_idx = CF->TryReduce(ArithmeticOperator::BINOP_MUL, dim_idx, expr_idx);
         if (temp_idx == NOTFOUND) {
             temp = MI(T::INS_MUL, dim_idx, expr_idx);
@@ -222,11 +238,15 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     }
 
     //////////////////////////////////////////////////
-    temp = CF->TryReduce(ArithmeticOperator::BINOP_MUL, offset_idx, CC(4));
-    if (temp == NOTFOUND) {
+    temp_idx = CF->TryReduce(ArithmeticOperator::BINOP_MUL, offset_idx, CC(4));
+    if (temp_idx == NOTFOUND) {
         temp = MI(T::INS_MUL, offset_idx, CC(4));
+    } else {
+        temp = temp_idx;
     }
 
+    access_str = var_name + access_str;
+    CF->access_str_ = access_str;
     //////////////////////////////////////////////////
     return MI(T::INS_ADDA, arr_base, temp);
     //////////////////////////////////////////////////
@@ -314,6 +334,11 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
         /////////////////////////////////////
         result = MI(T::INS_LOAD, mem_location);
         /////////////////////////////////////
+
+        if (CF->access_str_ != "") {
+            CF->load_hash_[result] = CF->access_str_;
+            CF->access_str_ = "";
+        }
     }
 
     return result;
@@ -385,6 +410,11 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
        //////////////////////////////////////////////////
        result = MI(T::INS_STORE, expr_idx, mem_location);
        //////////////////////////////////////////////////
+
+       if (CF->access_str_ != "")  {
+            CF->store_hash_[result] = CF->access_str_;
+            CF->access_str_ = "";
+       }
     }
 
     return result;

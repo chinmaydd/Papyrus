@@ -1,8 +1,8 @@
 set(_SOURCE_FILES
     GlobalClobbering.cpp
     InterprocCall.cpp
-    CSE.cpp
     DCE.cpp
+    ArrayLSRemover.cpp
     )
 
 add_library(Analysis OBJECT

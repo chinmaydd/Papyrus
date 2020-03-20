@@ -331,7 +331,7 @@ VI Function::MakeInstruction(T insty, VI arg_1) {
     AddUsage(arg_1, instruction_counter_);
 
     if (IsEliminable(insty)) {
-        hash_map_.insert({hash_str, result});
+        InsertHash(hash_str, result);
     }
 
     return result;
@@ -360,11 +360,12 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
     AddUsage(arg_2, instruction_counter_);
 
     if (IsEliminable(insty)) {
-        hash_map_.insert({hash_str, result});
+        InsertHash(hash_str, result);
     }
 
     return result;
 }
+
 
 void Function::Visit(BI bb_idx, std::unordered_set<BI>& visited) {
     visited.insert(bb_idx);

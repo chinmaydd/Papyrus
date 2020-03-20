@@ -7,6 +7,7 @@
 #include "IR/IR.h"
 #include "IR/IRConstructor.h"
 
+#include "Analysis/ArrayLSRemover.h"
 #include "Analysis/DCE.h"
 
 #include "RegAlloc/IGBuilder.h"
@@ -42,11 +43,10 @@ int main(int argc, char *argv[]) {
     astconst.ConstructAST();
 
     IRConstructor irconst = IRConstructor(astconst);
-
     irconst.BuildIR();
 
-    // DCE dce(irconst);
-    // dce.Run();
+    ArrayLSRemover als(irconst);
+    als.Run();
 
     std::string vcg_fname = utils.ConstructOutFile(argv[1], ".vcg");
     Visualizer viz = Visualizer(irconst);
