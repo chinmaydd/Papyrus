@@ -166,7 +166,6 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         exit(1);
     }
 
-    auto base_ins_idx = CF->CurrentInstructionIdx();
     //////////////////////////////////////////////////
     // To compute base to initial offset we should use
     // ADD instead of ADDA.
@@ -189,7 +188,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     if (CF->GetValue(offset_idx)->Type() == V::VAL_CONST) {
         access_str = access_str + "_#" + std::to_string(CF->GetValue(offset_idx)->GetConstant());
     } else {
-        access_str = access_str + "_#" + std::to_string(offset_idx);
+        access_str = access_str + "_" + std::to_string(offset_idx);
     }
 
     // Calculate the offset

@@ -3,6 +3,8 @@
 
 #include "AnalysisPass.h"
 
+#include <stack>
+
 namespace papyrus {
 class ArrayLSRemover : public AnalysisPass {
 public:
@@ -10,11 +12,8 @@ public:
     void Run();
 
 private:
-    std::unordered_map<std::string, bool> kill_status_;
-    std::unordered_map<std::string, std::string> hash_val_;
-    std::unordered_map<std::string, VI> live_;
-    
-    void Recurse(Function*, Instruction*);
+    std::unordered_map<BI, bool> is_kill_;
+    std::unordered_map<BI, std::unordered_set<std::string> > active_defs_;
 };
 } // namespace papyrus
 

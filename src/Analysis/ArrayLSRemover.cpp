@@ -2,58 +2,67 @@
 
 using namespace papyrus;
 
-
-void ArrayLSRemover::Recurse(Function* fn, Instruction *ins) {
-    // TODO: Fix this!
-}
-
 void ArrayLSRemover::Run() {
-    auto fn = irc().GetFunction("main");
+    bool is_killed;
+    bool all_pred;
+    std::stack<BI> worklist = {};
+    std::unordered_set<BI> seen_once;
 
-    for (auto bb_idx: fn->ReversePostOrderCFG()) {
-        auto bb = fn->GetBB(bb_idx);
-        hash_val_ = {};
-        kill_status_ = {};
-        live_ = {};
+    for (auto fn_pair: irc().Functions()) {
+        auto fn_name = fn_pair.first;
+        auto fn      = fn_pair.second;
 
-        for (auto ins_idx: bb->InstructionOrder()) {
-            auto ins = fn->GetInstruction(ins_idx);
+        if (irc().IsIntrinsic(fn_name)) {
+            continue;
+        }
 
-            if (ins->Type() == T::INS_STORE) {
-                auto result  = ins->Result();
-                auto loc_idx = ins->Operands().at(1);
-                auto ident = fn->GetValue(loc_idx)->Identifier();
+        is_kill_ = {};
+        active_defs_ = {};
 
-                if (fn->store_hash_.find(result) != fn->store_hash_.end()) {
-                    hash_val_[ident] = fn->store_hash_[result];
-                    live_[fn->store_hash_[result]] = result;
-                    kill_status_[ident] = false;
+        for (auto bb_idx: fn->ReversePostOrderCFG()) {
+            auto bb = fn->GetBB(bb_idx);
+
+            is_killed = false;
+            auto pred = bb->Predecessors();
+            // Technically, if we have only one predecessor we should not really
+            // care and use the is_kill status from that BB
+            if (pred.size() > 1) {
+                for (auto pred: bb->Predecessors()) {
+                    is_killed |= is_kill_[pred];
                 }
-            } else if (ins->Type() == T::INS_LOAD) {
+            }
+
+            active_defs_[bb_idx] = {};
+            if (!is_killed) {
+                for (auto pred: bb->Predecessors()) {
+                    active_defs_[bb_idx].insert(active_defs_[pred].begin(), 
+                                                active_defs_[pred].end());
+                }
+            }
+
+            is_kill_[bb_idx] = false;
+            for (auto ins_idx: bb->InstructionOrder()) {
+                auto ins    = fn->GetInstruction(ins_idx);
+                auto type   = ins->Type();
                 auto result = ins->Result();
-                auto loc_idx = ins->Operands().at(0);
-                auto ident = fn->GetValue(loc_idx)->Identifier();
 
-                if (kill_status_.find(ident) != kill_status_.end() &&
-                    !kill_status_[ident]) {
-
+                if (type == T::INS_LOAD) {
                     if (fn->load_hash_.find(result) != fn->load_hash_.end()) {
-                        auto temp_hash = fn->load_hash_[result];
+                        auto hash_str = fn->load_hash_[result];
+                        if (active_defs_[bb_idx].find(hash_str) != active_defs_[bb_idx].end()) {
 
-                        if (hash_val_.find(ident) != hash_val_.end()) {
-                            if (temp_hash == hash_val_[ident]) {
-                                // match
-                                ins->MakeInactive();
-                                Recurse(fn, ins);
-                                fn->ReplaceUse(result, live_[temp_hash]);
-                            }
                         }
                     }
+                } else if (type == T::INS_STORE) {
+                    active_defs_[bb_idx] = {};
+                    // This is fairly conservative. Could we make this better?
+                    is_kill_[bb_idx] = true;
+
+                    if (fn->store_hash_.find(result) != fn->store_hash_.end()) {
+                        auto hash_str = fn->store_hash_[result];
+                        active_defs_[bb_idx].insert(hash_str);
+                    }
                 }
-            } else if (ins->Type() == T::INS_CALL) {
-                kill_status_ = {};
-                hash_val_ = {};
-                live_ = {};
             }
         }
     }

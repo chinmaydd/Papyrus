@@ -153,7 +153,7 @@ void Function::AddBackEdge(VI from, VI to) {
     back_edges_.insert({from, to});
 }
 
-bool Function::IsBackEdge(VI from, VI to) const {
+bool Function::IsBackEdge(BI from, BI to) const {
     if (back_edges_.find(from) == back_edges_.end()) {
         return false;
     }
@@ -373,7 +373,9 @@ void Function::Visit(BI bb_idx, std::unordered_set<BI>& visited) {
     auto bb = GetBB(bb_idx);
     
     for (auto succ: bb->Successors()) {
-        if (visited.find(succ) == visited.end()) {
+        if (IsBackEdge(bb_idx, succ)) {
+            Visit(succ, visited);
+        } else if (visited.find(succ) == visited.end()) {
             Visit(succ, visited);
         }
     }

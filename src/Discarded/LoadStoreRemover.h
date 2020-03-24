@@ -5,6 +5,7 @@
 #include "GlobalClobbering.h"
 
 #include <queue>
+#include <stack>
 #include <assert.h>
 
 namespace papyrus {

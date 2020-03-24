@@ -96,6 +96,7 @@ public:
         INS_MOVE,
 
         INS_PHI,
+        INS_KILL,
 
         INS_NEG,
         INS_ADD,
@@ -186,6 +187,7 @@ static const std::unordered_map<T, std::string> ins_to_str_ = {
     {T::INS_STORE,   "store"},
     {T::INS_CALL,    "call"},
     {T::INS_PHI,     "φ"},
+    {T::INS_KILL,    "KILL"},
     {T::INS_ADD,     "add"},
     {T::INS_SUB,     "sub"},
     {T::INS_MUL,     "mul"},
@@ -311,7 +313,7 @@ public:
     void AddExitBlock(BI idx);
     void MakeMove(const std::string&, VI);
     void ReplaceUse(VI, VI);
-    void AddBackEdge(VI, VI);
+    void AddBackEdge(BI, BI);
     void LoadFormal(const std::string&);
     void InsertHash(const std::string&, VI);
 
@@ -359,7 +361,7 @@ public:
     bool IsReducible(VI, VI) const;
     bool IsArithmetic(T) const;
     bool IsRelational(T) const;
-    bool IsBackEdge(VI, VI) const;
+    bool IsBackEdge(BI, BI) const;
     bool IsPhi(II) const;
     bool IsEliminable(T) const;
 
