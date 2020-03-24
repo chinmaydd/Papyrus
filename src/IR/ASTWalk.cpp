@@ -218,6 +218,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         temp_idx = CF->TryReduce(ArithmeticOperator::BINOP_MUL, dim_idx, expr_idx);
         if (temp_idx == NOTFOUND) {
             temp = MI(T::INS_MUL, dim_idx, expr_idx);
+            CF->load_contributors.push_back(CF->CurrentInstructionIdx());
         } else {
             temp = temp_idx;
         }
@@ -227,6 +228,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         temp_idx = CF->TryReduce(ArithmeticOperator::BINOP_ADD, offset_idx, temp);
         if (temp_idx == NOTFOUND) {
             offset_idx = MI(T::INS_ADD, offset_idx, temp);
+            CF->load_contributors.push_back(CF->CurrentInstructionIdx());
         } else {
             offset_idx = temp_idx;
         }
@@ -240,6 +242,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     temp_idx = CF->TryReduce(ArithmeticOperator::BINOP_MUL, offset_idx, CC(4));
     if (temp_idx == NOTFOUND) {
         temp = MI(T::INS_MUL, offset_idx, CC(4));
+        CF->load_contributors.push_back(CF->CurrentInstructionIdx());
     } else {
         temp = temp_idx;
     }
@@ -247,8 +250,11 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     access_str = var_name + access_str;
     CF->access_str_ = access_str;
     //////////////////////////////////////////////////
-    return MI(T::INS_ADDA, arr_base, temp);
+    auto result = MI(T::INS_ADDA, arr_base, temp);
+    CF->load_contributors.push_back(CF->CurrentInstructionIdx());
     //////////////////////////////////////////////////
+
+    return result;
 }
 
 /*
@@ -333,6 +339,12 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
         /////////////////////////////////////
         result = MI(T::INS_LOAD, mem_location);
         /////////////////////////////////////
+        
+        // Collecting some metadata for ArrayLSRemover
+        for (auto ins_idx: CF->load_contributors) {
+            CF->AddArrContributor(ins_idx, CF->CurrentInstructionIdx());
+        }
+        CF->load_contributors = {};
 
         if (CF->access_str_ != "") {
             CF->load_hash_[result] = CF->access_str_;
@@ -402,6 +414,7 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
             exit(1);
         }
     } else {
+       CF->load_contributors = {};
        auto arr_id = static_cast<const ArrIdentifierNode*>(designator_);
        VI mem_location = arr_id->GenerateIR(irc);
 
@@ -409,6 +422,11 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
        //////////////////////////////////////////////////
        result = MI(T::INS_STORE, expr_idx, mem_location);
        //////////////////////////////////////////////////
+
+       for (auto ins_idx: CF->load_contributors) {
+           CF->AddArrContributor(ins_idx, CF->CurrentInstructionIdx());
+       }
+       CF->load_contributors = {};
 
        if (CF->access_str_ != "")  {
             CF->store_hash_[result] = CF->access_str_;

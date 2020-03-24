@@ -17,6 +17,8 @@ Function::Function(const std::string& func_name, VI value_counter, std::unordere
     hash_map_({}),
     back_edges_({}),
     constant_map_({}),
+    load_contributors({}),
+    load_related_insts_({}),
     value_map_(value_map) {
         SetLocalBase(CreateValue(V::VAL_LOCALBASE));
         SetCurrentBB(CreateBB(B::BB_START));
@@ -424,6 +426,10 @@ Instruction* Function::CurrentInstruction() const {
     return GetInstruction(instruction_counter_);
 }
 
+II Function::CurrentInstructionIdx() const {
+    return instruction_counter_;
+}
+
 bool Function::IsActive(II ins_idx) const {
     return instruction_map_.at(ins_idx)->IsActive();
 }
@@ -579,6 +585,14 @@ VI Function::GetLocationValue(const std::string& var_name) const {
 
 VI Function::ResultForInstruction(II ins_idx) const {
     return instruction_map_.at(ins_idx)->Result();
+}
+
+void Function::AddArrContributor(II ins_idx, II result) {
+    if (load_related_insts_.find(result) == load_related_insts_.end()) {
+        load_related_insts_[result] = {};
+    }
+
+    load_related_insts_[result].insert(ins_idx);
 }
 
 /*

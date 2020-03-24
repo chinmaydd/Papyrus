@@ -5,8 +5,9 @@ using namespace papyrus;
 void ArrayLSRemover::Run() {
     bool is_killed;
     bool all_pred;
-    std::stack<BI> worklist = {};
+    hash_val = {};
     std::unordered_set<BI> seen_once;
+    std::unordered_set<II> mark_for_inactive;
 
     for (auto fn_pair: irc().Functions()) {
         auto fn_name = fn_pair.first;
@@ -16,31 +17,29 @@ void ArrayLSRemover::Run() {
             continue;
         }
 
-        is_kill_ = {};
         active_defs_ = {};
+        hash_val = {};
 
         for (auto bb_idx: fn->ReversePostOrderCFG()) {
             auto bb = fn->GetBB(bb_idx);
 
-            is_killed = false;
             auto pred = bb->Predecessors();
             // Technically, if we have only one predecessor we should not really
             // care and use the is_kill status from that BB
             if (pred.size() > 1) {
-                for (auto pred: bb->Predecessors()) {
-                    is_killed |= is_kill_[pred];
+                auto pred_1 = active_defs_[pred.at(0)];
+                auto pred_2 = active_defs_[pred.at(1)];
+
+                if (pred_1 == pred_2) {
+                    active_defs_[bb_idx] = pred_1;
+                } else {
+                    active_defs_[bb_idx] = {};
                 }
+            } else if (bb_idx != 1) {
+                active_defs_[bb_idx] = active_defs_[pred.at(0)];
             }
 
-            active_defs_[bb_idx] = {};
-            if (!is_killed) {
-                for (auto pred: bb->Predecessors()) {
-                    active_defs_[bb_idx].insert(active_defs_[pred].begin(), 
-                                                active_defs_[pred].end());
-                }
-            }
-
-            is_kill_[bb_idx] = false;
+            mark_for_inactive = {};
             for (auto ins_idx: bb->InstructionOrder()) {
                 auto ins    = fn->GetInstruction(ins_idx);
                 auto type   = ins->Type();
@@ -50,18 +49,34 @@ void ArrayLSRemover::Run() {
                     if (fn->load_hash_.find(result) != fn->load_hash_.end()) {
                         auto hash_str = fn->load_hash_[result];
                         if (active_defs_[bb_idx].find(hash_str) != active_defs_[bb_idx].end()) {
-
+                            ins->MakeInactive();
+                            fn->ReplaceUse(result, hash_val[hash_str]);
+                            auto related_insts = fn->load_related_insts_;
+                            if (related_insts.find(ins_idx) != related_insts.end()) {
+                                for (auto inact_ins_idx: related_insts[ins_idx]) {
+                                    mark_for_inactive.insert(inact_ins_idx);
+                                }
+                            }
                         }
                     }
                 } else if (type == T::INS_STORE) {
                     active_defs_[bb_idx] = {};
                     // This is fairly conservative. Could we make this better?
-                    is_kill_[bb_idx] = true;
-
                     if (fn->store_hash_.find(result) != fn->store_hash_.end()) {
                         auto hash_str = fn->store_hash_[result];
                         active_defs_[bb_idx].insert(hash_str);
+                        hash_val[hash_str] = ins->Operands().at(0);
                     }
+                }
+            }
+
+            for (auto inact_ins_idx: mark_for_inactive) {
+                auto ins = fn->GetInstruction(inact_ins_idx);
+                auto result = ins->Result();
+                auto resval = fn->GetValue(result);
+
+                if (resval->GetUsers().size() == 1) {
+                    ins->MakeInactive();
                 }
             }
         }

@@ -96,7 +96,6 @@ public:
         INS_MOVE,
 
         INS_PHI,
-        INS_KILL,
 
         INS_NEG,
         INS_ADD,
@@ -187,7 +186,6 @@ static const std::unordered_map<T, std::string> ins_to_str_ = {
     {T::INS_STORE,   "store"},
     {T::INS_CALL,    "call"},
     {T::INS_PHI,     "φ"},
-    {T::INS_KILL,    "KILL"},
     {T::INS_ADD,     "add"},
     {T::INS_SUB,     "sub"},
     {T::INS_MUL,     "mul"},
@@ -316,6 +314,8 @@ public:
     void AddBackEdge(BI, BI);
     void LoadFormal(const std::string&);
     void InsertHash(const std::string&, VI);
+    // (instruction_idx, final_ins_idx)
+    void AddArrContributor(II, II);
 
     VI CreateMove(BI, VI, int);
 
@@ -326,6 +326,8 @@ public:
 
     BI CreateBB(B);
     BI CurrentBBIdx() const { return current_bb_; }
+
+    II CurrentInstructionIdx() const;
 
     BasicBlock* CurrentBB() const;
     BasicBlock* GetBB(BI) const;
@@ -370,6 +372,10 @@ public:
     std::string access_str_;
     std::unordered_map<VI, std::string> load_hash_;
     std::unordered_map<VI, std::string> store_hash_;
+
+    std::vector<II> load_contributors;
+
+    std::unordered_map<II, std::unordered_set<II> > load_related_insts_;
 
 private:
     std::string func_name_;
