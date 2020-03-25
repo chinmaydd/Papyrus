@@ -432,6 +432,10 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
             CF->store_hash_[result] = CF->access_str_;
             CF->access_str_ = "";
        }
+
+       // Insert a kill instruction for a store.
+       MI(T::INS_KILL);
+       CF->KillBB(CF->CurrentBBIdx());
     }
 
     return result;
@@ -590,6 +594,18 @@ VI ITENode::GenerateIR(IRC& irc) const {
         CF->SealBB(f_through);
 
         CF->SetCurrentBB(f_through);
+
+        //////////////////////////////////
+        // KILL HANDLING
+        //
+        // Here, we insert a kill if either previous is killed or
+        // then is killed. But if then has ended, that means its modifications
+        // wont flow into this block
+        //////////////////////////////////
+        if (CF->IsKilled(then_end) && !CF->HasEndedBB(then_end)) {
+            MI(T::INS_KILL);
+            CF->KillBB(CF->CurrentBBIdx());
+        }
     } else {
         BI else_start = CF->CreateBB(B::BB_ELSE);
 
@@ -633,6 +649,20 @@ VI ITENode::GenerateIR(IRC& irc) const {
 
         CF->SetCurrentBB(f_through);
         CF->SealBB(f_through);
+ 
+        /////////////////////////////////////////////////
+        // KILL HANDLING
+        //
+        // Here, if either then or else has ended
+        // their kills wont flow into the newly created block
+        // and hence we need either of them to have the kill AND
+        // none of them to have ended.
+        /////////////////////////////////////////////////
+        if ((CF->IsKilled(then_end) || CF->IsKilled(else_end)) &&
+            (!CF->HasEndedBB(then_end) && !CF->HasEndedBB(else_end))) {
+            MI(T::INS_KILL);
+            CF->KillBB(CF->CurrentBBIdx());
+        }
     }
 
     return result;
@@ -697,8 +727,24 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     MI(irc.ConvertOperation(op), reln, bb_val);
     //////////////////////////////////////////////////
 
+    ////////////////////////////
+    // KILL HANDLING
+    ////////////////////////////
+    bool is_kill = false;
+    if ((CF->IsKilled(loop_end) || CF->IsKilled(previous)) &&
+        !CF->HasEndedBB(loop_end)) {
+        CF->MakeInstructionFront(T::INS_KILL);
+        CF->KillBB(CF->CurrentBBIdx());
+        is_kill = true;
+    }
+
     CF->SealBB(next_bb);
     CF->SetCurrentBB(next_bb);
+
+    if (is_kill) {
+        MI(T::INS_KILL);
+        CF->KillBB(CF->CurrentBBIdx());
+    }
 
     return result;
 }

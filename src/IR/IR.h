@@ -97,6 +97,8 @@ public:
 
         INS_PHI,
 
+        INS_KILL,
+
         INS_NEG,
         INS_ADD,
         INS_SUB,
@@ -145,6 +147,7 @@ public:
     std::string ConvertToString() const;
 
     bool IsPhi() const { return ins_type_ == INS_PHI; }
+    bool IsKill() const { return ins_type_ == INS_KILL; }
     bool IsActive() const { return is_active_; }
 
     const std::unordered_map<BI, VI> OpSource() { return op_source_; }
@@ -186,6 +189,7 @@ static const std::unordered_map<T, std::string> ins_to_str_ = {
     {T::INS_STORE,   "store"},
     {T::INS_CALL,    "call"},
     {T::INS_PHI,     "φ"},
+    {T::INS_KILL,    "kill"},
     {T::INS_ADD,     "add"},
     {T::INS_SUB,     "sub"},
     {T::INS_MUL,     "mul"},
@@ -316,6 +320,7 @@ public:
     void InsertHash(const std::string&, VI);
     // (instruction_idx, final_ins_idx)
     void AddArrContributor(II, II);
+    void KillBB(BI);
 
     VI CreateMove(BI, VI, int);
 
@@ -343,6 +348,7 @@ public:
     VI MakeInstruction(T);
     VI MakeInstruction(T, VI);
     VI MakeInstruction(T, VI, VI);
+    VI MakeInstructionFront(T);
 
     VI SelfIdx() const { return self_idx_; }
     VI TryReduce(ArithmeticOperator, VI, VI);
@@ -369,6 +375,10 @@ public:
 
     bool HashExists(const std::string&) const;
 
+    bool IsKilled(BI) const;
+
+    // Added later
+    // Ideally, they should be behind an API
     std::string access_str_;
     std::unordered_map<VI, std::string> load_hash_;
     std::unordered_map<VI, std::string> store_hash_;
@@ -376,6 +386,8 @@ public:
     std::vector<II> load_contributors;
 
     std::unordered_map<II, std::unordered_set<II> > load_related_insts_;
+
+    std::unordered_set<BI> is_killed_;
 
 private:
     std::string func_name_;

@@ -19,6 +19,7 @@ Function::Function(const std::string& func_name, VI value_counter, std::unordere
     constant_map_({}),
     load_contributors({}),
     load_related_insts_({}),
+    is_killed_({}),
     value_map_(value_map) {
         SetLocalBase(CreateValue(V::VAL_LOCALBASE));
         SetCurrentBB(CreateBB(B::BB_START));
@@ -163,6 +164,14 @@ bool Function::IsBackEdge(BI from, BI to) const {
     return back_edges_.at(from) == to;
 }
 
+bool Function::IsKilled(BI bb_idx) const {
+    return is_killed_.find(bb_idx) != is_killed_.end();
+}
+
+void Function::KillBB(BI bb_idx) {
+    is_killed_.insert(bb_idx);
+}
+
 II Function::MakePhi() {
     instruction_counter_++;
 
@@ -304,6 +313,23 @@ VI Function::MakeInstruction(T insty) {
 
     instruction_map_[instruction_counter_] = inst;
     instruction_order_.push_back(instruction_counter_);
+
+    V vty = V::VAL_ANY;
+    
+    VI result = CreateValue(vty);
+    inst->SetResult(result);
+
+    CurrentBB()->AddInstruction(instruction_counter_, inst);
+
+    return result;
+}
+
+VI Function::MakeInstructionFront(T insty) {
+    instruction_counter_++;
+    Instruction* inst = new Instruction(insty, CurrentBBIdx(), instruction_counter_);
+
+    instruction_map_[instruction_counter_] = inst;
+    instruction_order_.push_front(instruction_counter_);
 
     V vty = V::VAL_ANY;
     
@@ -639,7 +665,7 @@ void BasicBlock::AddSuccessor(BI succ_idx) {
 void BasicBlock::AddInstruction(II idx, Instruction* inst) {
     instructions_[idx] = inst;
     
-    if (inst->IsPhi()) {
+    if (inst->IsPhi() || inst->IsKill()) {
         instruction_order_.push_front(idx);
     } else {
         instruction_order_.push_back(idx);

@@ -152,7 +152,7 @@ std::string Visualizer::ConvertInstructionToString(const Function* fn, II ins_id
 
     if (RADone()) {
         res += RegisterString(result_idx);
-    } else {
+    } else if (!ins->IsKill()) {
         res += "(" + std::to_string(result_idx) + ")" + " ";
     }
 

@@ -24,18 +24,20 @@ void ArrayLSRemover::Run() {
             auto bb = fn->GetBB(bb_idx);
 
             auto pred = bb->Predecessors();
+
             // Technically, if we have only one predecessor we should not really
             // care and use the is_kill status from that BB
+            //
+            // Here, we can check if we encounter a KILL and use that!
             if (pred.size() > 1) {
                 auto pred_1 = active_defs_[pred.at(0)];
                 auto pred_2 = active_defs_[pred.at(1)];
-
                 if (pred_1 == pred_2) {
                     active_defs_[bb_idx] = pred_1;
                 } else {
                     active_defs_[bb_idx] = {};
                 }
-            } else if (bb_idx != 1) {
+            } else if (bb_idx != 1) { // not entry
                 active_defs_[bb_idx] = active_defs_[pred.at(0)];
             }
 
@@ -67,6 +69,9 @@ void ArrayLSRemover::Run() {
                         active_defs_[bb_idx].insert(hash_str);
                         hash_val[hash_str] = ins->Operands().at(0);
                     }
+                } else if (type == T::INS_KILL) {
+                    active_defs_[bb_idx] = {};
+                    mark_for_inactive.insert(ins_idx);
                 }
             }
 
@@ -75,7 +80,7 @@ void ArrayLSRemover::Run() {
                 auto result = ins->Result();
                 auto resval = fn->GetValue(result);
 
-                if (resval->GetUsers().size() == 1) {
+                if (resval->GetUsers().size() <= 1) {
                     ins->MakeInactive();
                 }
             }
