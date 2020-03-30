@@ -229,6 +229,7 @@ public:
     void AddPredecessor(BI);
     void AddSuccessor(BI);
     void AddInstruction(II, Instruction*);
+    void AddInstructionFront(II, Instruction*);
     void Seal() { is_sealed_ = true; }
     void Unseal() { is_sealed_ = false; }
     void MarkDead() { is_dead_ = true; }

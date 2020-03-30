@@ -55,7 +55,7 @@ void DCE::ProcessBlock(Function* fn, BasicBlock* bb) {
         if (CanRemove(insty) &&
             non_dead.find(result) == non_dead.end()) {
             inactive_ins.insert(ins_idx);
-            // ins->MakeInactive();
+            ins->MakeInactive();
         } else {
             for (auto operand: ins->Operands()) {
                 non_dead.insert(operand);

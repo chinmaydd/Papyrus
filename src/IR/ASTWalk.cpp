@@ -418,6 +418,10 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
        auto arr_id = static_cast<const ArrIdentifierNode*>(designator_);
        VI mem_location = arr_id->GenerateIR(irc);
 
+       // Insert a kill instruction for a store.
+       MI(T::INS_KILL);
+       CF->KillBB(CF->CurrentBBIdx());
+
        CF->GetValue(mem_location)->SetIdentifier(var_name);
        //////////////////////////////////////////////////
        result = MI(T::INS_STORE, expr_idx, mem_location);
@@ -432,10 +436,6 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
             CF->store_hash_[result] = CF->access_str_;
             CF->access_str_ = "";
        }
-
-       // Insert a kill instruction for a store.
-       MI(T::INS_KILL);
-       CF->KillBB(CF->CurrentBBIdx());
     }
 
     return result;

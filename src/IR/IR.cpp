@@ -336,7 +336,7 @@ VI Function::MakeInstructionFront(T insty) {
     VI result = CreateValue(vty);
     inst->SetResult(result);
 
-    CurrentBB()->AddInstruction(instruction_counter_, inst);
+    CurrentBB()->AddInstructionFront(instruction_counter_, inst);
 
     return result;
 }
@@ -665,11 +665,17 @@ void BasicBlock::AddSuccessor(BI succ_idx) {
 void BasicBlock::AddInstruction(II idx, Instruction* inst) {
     instructions_[idx] = inst;
     
-    if (inst->IsPhi() || inst->IsKill()) {
+    if (inst->IsPhi()) {
         instruction_order_.push_front(idx);
     } else {
         instruction_order_.push_back(idx);
     }
+}
+
+void BasicBlock::AddInstructionFront(II idx, Instruction* inst) {
+    instructions_[idx] = inst;
+    
+    instruction_order_.push_front(idx);
 }
 
 const std::vector<BI> BasicBlock::Predecessors() const {
