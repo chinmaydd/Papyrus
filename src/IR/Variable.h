@@ -9,6 +9,12 @@ namespace papyrus {
 
 using VI = int;
 
+/* A Symbol is used for a variable but without context. It encapsulates
+ * properties of the variable used in the program and stores nothing else. To 
+ * understand the distinction better, a Symbol is the entity generated during
+ * AST Construction and Variable is generated "using" the associated symbol
+ * during IR Construction
+ */
 class Symbol {
 public:
     Symbol(const std::string&, const std::vector<int>&, bool, bool, bool);
@@ -20,8 +26,11 @@ public:
     bool IsFormal() const { return is_formal_; }
     
 private:
+    // Identifier for the Symbol
     std::string identifier_;
+    // If array, store dimensions
     std::vector<int> dimensions_;
+
     bool if_array_;
     bool is_global_;
     bool is_formal_;
@@ -46,9 +55,13 @@ public:
     int ParamNumber() const { return param_number_; }
 
 private:
+    // Pointer to Symbol Object
     Symbol* sym_;
+    // Offset from base (local/global)
     int offset_;
+    // Value for the Variable
     VI vi_;
+    // If it is formal parameter, store its param_number_ (function call context)
     int param_number_;
 };
 

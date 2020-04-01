@@ -7,6 +7,12 @@ namespace papyrus {
 
 using VarMap = std::unordered_map<std::string, std::unordered_set<std::string> >;
 
+/*
+ * Create a topological sorted list of what function calls what. This helps us
+ * develop better intuitions when creating other analysis passes which might
+ * modify globals
+ */
+
 class InterprocCallAnalysis : public AnalysisPass {
 public:
     InterprocCallAnalysis(IRConstructor& irc) : AnalysisPass(irc) {}

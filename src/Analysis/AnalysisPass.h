@@ -6,6 +6,13 @@
 
 namespace papyrus {
 
+/*
+ * This is standard parent class for an AnalysisPass
+ *
+ * Children are supposed to implement their own Run()
+ * method.
+ */
+
 class AnalysisPass {
 public:
     AnalysisPass(IRConstructor& irc) : irc_(irc) {}

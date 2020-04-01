@@ -54,7 +54,6 @@ VI Function::CreateMove(BI bb_idx, VI val_idx, int reg) {
     ///////////////////////////////////////////
     V vty = V::VAL_ANY;
     auto val = new Value(vty);
-    val->SetFunction(func_name_);
 
     value_counter_ = value_map_->size() + 1;
     value_counter_++;
@@ -83,7 +82,6 @@ VI Function::CreateMove(BI bb_idx, VI val_idx, int reg) {
     //////////////////////////////////////////
     vty = V::VAL_ANY;
     val = new Value(vty);
-    val->SetFunction(func_name_);
 
     value_counter_ = value_map_->size() + 1;
     value_counter_++;

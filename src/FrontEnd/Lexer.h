@@ -101,6 +101,8 @@ public:
 private:
     //////////////////////////////
     // Private variables
+    //
+    // Most things here are self-explanatory.
     //////////////////////////////
     std::istream& input_buffer_;
     std::string current_buffer_;

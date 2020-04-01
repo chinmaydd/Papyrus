@@ -17,6 +17,19 @@ namespace papyrus {
 class IRConstructor;
 using IRC = IRConstructor;
 
+/*
+ * AST.h contains the definitions for various Node Classes which are used in
+ * the AST. There are various details which have impacted the design decisions
+ * I have made when writing this module. Specifically, the idea was to keep
+ * one ASTNode per production rule in the grammar for the language. With that
+ * in mind, it does seem like there is unncessary verbosity in the AST when
+ * it is created. This leads to more bookkeeping when walking/visiting over
+ * each node during IR construction.
+ *
+ * Looking back at it, I would make implicit certain nodes so as to remove 
+ * extra computation
+ */
+
 ////////////////////////////////
 class ASTNode {};
 ////////////////////////////////
@@ -130,6 +143,10 @@ protected:
 ////////////////////////////////
 
 ////////////////////////////////
+// The DesignatorNode is used a parent class for two nodes:
+// VarIdentifierNode for (scalar) variables
+// ArrIdentifierNode for arrays
+////////////////////////////////
 class VarIdentifierNode : public DesignatorNode {
 public:
     VarIdentifierNode(IdentifierNode*);
@@ -199,6 +216,9 @@ protected:
 ////////////////////////////////
 
 ////////////////////////////////
+// The StatementNode is used as a parent node for multiple
+// child nodes. A statement in the program can be either of those
+// described by the StatementType enum.
 class FunctionCallNode : public ValueNode, public StatementNode {
 public:
     FunctionCallNode(IdentifierNode*);
@@ -333,6 +353,8 @@ private:
 };
 ////////////////////////////////
 
+////////////////////////////////
+// ROOT node for the AST
 ////////////////////////////////
 class ComputationNode : public ASTNode {
 public:

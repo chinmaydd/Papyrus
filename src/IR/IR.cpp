@@ -68,7 +68,6 @@ VI Function::CreateConstant(int val) {
 
     Value* v = new Value(V::VAL_CONST);
     v->SetConstant(val); 
-    v->SetFunction(func_name_);
 
     value_counter_++;
     value_map_->emplace(value_counter_, v);
@@ -80,7 +79,6 @@ VI Function::CreateConstant(int val) {
 
 VI Function::CreateValue(V vty) {
     Value* val = new Value(vty);
-    val->SetFunction(func_name_);
 
     value_counter_++;
     value_map_->emplace(value_counter_, val);
@@ -152,7 +150,7 @@ void Function::AddExitBlock(BI bb_idx) {
     exit_blocks_.push_back(bb_idx);
 }
 
-void Function::AddBackEdge(VI from, VI to) {
+void Function::AddBackEdge(BI from, BI to) {
     back_edges_.insert({from, to});
 }
 

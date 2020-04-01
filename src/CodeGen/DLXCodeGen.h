@@ -7,6 +7,11 @@
 
 namespace papyrus {
 
+/* 
+ * "I had such plans."
+ *  - chinmay_dd, March 2020.
+ */
+
 class CodeGenerator {
 public:
     CodeGenerator(IRConstructor& irc) : irc_(irc) {}

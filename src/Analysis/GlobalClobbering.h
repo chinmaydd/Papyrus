@@ -11,6 +11,14 @@ namespace papyrus {
 using T = Instruction::InstructionType;
 using VarMap = std::unordered_map<std::string, std::unordered_set<std::string> >;
 
+/*
+ * GlobalClobbering Analysis tells us which functions "clobber" and "read" which 
+ * variables. "main" is not analysed initially. GlobalClobbering is used
+ * during IR Construction before analysis of main. This helps us identify
+ * which variavbles are actually global and which can be treated as locals
+ * by the IR Construction algorithm
+ */
+
 class GlobalClobbering : public AnalysisPass {
 public:
     GlobalClobbering(IRConstructor&);

@@ -10,6 +10,11 @@
 
 namespace papyrus {
 
+/*
+ * This was written before the intuition that globals could be considered as 
+ * locals during IR Construction. This is not being used anymore
+ */
+
 using BI = int;
 using VI = int;
 

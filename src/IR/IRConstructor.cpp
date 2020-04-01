@@ -127,8 +127,6 @@ void IRC::DeclareGlobalBase() {
     value_counter_++;
 
     global_base_ = new Value(V::VAL_GLOBALBASE);
-    // Global scope
-    global_base_->SetFunction("main");
     global_base_idx_ = value_counter_;
 
     value_map_->emplace(value_counter_, global_base_);
@@ -138,9 +136,6 @@ VI IRC::CreateValue(V vty) {
     value_counter_++;
 
     Value* val = new Value(vty);
-    // Global scope
-    val->SetFunction("main");
-    
     value_map_->emplace(value_counter_, val);
     
     return value_counter_;
