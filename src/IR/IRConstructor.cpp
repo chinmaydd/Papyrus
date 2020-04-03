@@ -15,6 +15,8 @@ IRConstructor::IRConstructor(ASTC& astconst) :
     DeclareIntrinsicFunctions();
 }
 
+// Functions such as below are treated as regular functions as part
+// of the IR. They are handled seperarately when considering analysis passes
 bool IRConstructor::IsIntrinsic(const std::string& func_name) const {
     return (func_name == "InputNum" ||
             func_name == "OutputNum" ||

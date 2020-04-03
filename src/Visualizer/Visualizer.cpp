@@ -16,6 +16,7 @@ Color Visualizer::GetColor(VI val_idx) const {
     }
 }
 
+// Should this be a part of the visualizer?
 std::string Function::ConvertValueToString(VI val_idx) const {
     std::string res = "";
     Value *val = GetValue(val_idx);
