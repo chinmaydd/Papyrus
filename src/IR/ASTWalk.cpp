@@ -158,6 +158,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         exit(1);
     }
 
+    // Basic error checking - Check if variables are being used correctly
     if (!var->IsArray()) {
         LOG(ERROR) << "[IR] Usage of variable " + var_name + " as an array.";
         exit(1);
@@ -183,6 +184,17 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     it++;
     VI temp_idx;
 
+    // access_str stores the access path to the array variable. For each array
+    // load and store we can save this in a cache and later optimize away 
+    // unnecessary loads from the IR. The reason we can do this is that
+    // since the IR is SSA, we are guaranteed that there will be only one 
+    // definition for each value being used in the access path. This implies that
+    // if the access_path value is the exact same and there has not been any
+    // kill involved in the interim, we will retrieve the same value from the array
+    //
+    // access_str looks like : 
+    //
+    // variable_VAL1_#CONSTVAL2_VAL3
     std::string access_str = "";
 
     if (CF->GetValue(offset_idx)->Type() == V::VAL_CONST) {
@@ -206,42 +218,47 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
 
         expr = *it;
 
-        //////////////////////////////////////////////////
         auto expr_idx = expr->GenerateIR(irc);
 
+        // Add to access_str
         if (CF->GetValue(expr_idx)->Type() == V::VAL_CONST) {
             access_str = access_str + "_#" + std::to_string(CF->GetValue(expr_idx)->GetConstant());
         } else {
             access_str = access_str + "_" + std::to_string(expr_idx);
         }
 
+        // Try and Reduce generated value
         temp_idx = CF->TryReduce(ArithmeticOperator::BINOP_MUL, dim_idx, expr_idx);
         if (temp_idx == NOTFOUND) {
+            //////////////////////////////////////////////////
             temp = MI(T::INS_MUL, dim_idx, expr_idx);
+            //////////////////////////////////////////////////
             CF->load_contributors.push_back(CF->CurrentInstructionIdx());
         } else {
             temp = temp_idx;
         }
-        //////////////////////////////////////////////////
 
-        //////////////////////////////////////////////////
+        // Try and reduce generated value
         temp_idx = CF->TryReduce(ArithmeticOperator::BINOP_ADD, offset_idx, temp);
         if (temp_idx == NOTFOUND) {
+            //////////////////////////////////////////////////
             offset_idx = MI(T::INS_ADD, offset_idx, temp);
+            //////////////////////////////////////////////////
             CF->load_contributors.push_back(CF->CurrentInstructionIdx());
         } else {
             offset_idx = temp_idx;
         }
-        //////////////////////////////////////////////////
 
         it++;
         dim_it++;
     }
 
-    //////////////////////////////////////////////////
+    // Try and reduce generated value
     temp_idx = CF->TryReduce(ArithmeticOperator::BINOP_MUL, offset_idx, CC(4));
     if (temp_idx == NOTFOUND) {
+        //////////////////////////////////////////////////
         temp = MI(T::INS_MUL, offset_idx, CC(4));
+        //////////////////////////////////////////////////
         CF->load_contributors.push_back(CF->CurrentInstructionIdx());
     } else {
         temp = temp_idx;
@@ -251,8 +268,13 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     CF->access_str_ = access_str;
     //////////////////////////////////////////////////
     auto result = MI(T::INS_ADDA, arr_base, temp);
-    CF->load_contributors.push_back(CF->CurrentInstructionIdx());
     //////////////////////////////////////////////////
+
+    // Add it to the load contributor. The idea here is that for each load/store
+    // there will be some value which contribute to the access. If we optimize
+    // a load away, we will also remove all the instructions which lead to 
+    // generation of these contributors (in case they arent being used elsewhere)
+    CF->load_contributors.push_back(CF->CurrentInstructionIdx());
 
     return result;
 }
@@ -267,6 +289,8 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
     auto var_name = identifier_->IdentifierName();
 
     const Variable* var;
+    
+    // Check local v/s global
     if (CF->IsVariableLocal(var_name)) {
         var = CF->GetVariable(var_name);
     } else if (irc.IsVariableGlobal(var_name)) {
@@ -276,6 +300,7 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
         exit(1);
     }
     
+    // Check if being used correctly
     if (var->IsArray() && desig_type_ == DESIG_VAR) {
         LOG(ERROR) << "[IR] Usage of variable " + var_name + " as a variable which is an array";
         exit(1);
@@ -308,10 +333,14 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
                 CF->WriteVariable(var_name, result);
             } else {
                 // Load variable. Can be thought of as a "SSA Read"
+                //
+                // This is the fundamental "read" of the SSA generation algorithm.
+                // For each variable, we go searching for the current definition
+                // of the variable. We start with the current block and then
+                // the predecessors and so on (lazily adding Phis wherever) we go
                 result = CF->ReadVariable(var_name, CF->CurrentBBIdx());
             }
         } else if (irc.IsVariableGlobal(var_name)) {
-            //////////////////////////////////////////////////
             // This still uses *4 as we know that the offset is a constant
             // calculated at compile time
             // auto offset = irc.GlobalOffset(var_name);
@@ -340,12 +369,18 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
         result = MI(T::INS_LOAD, mem_location);
         /////////////////////////////////////
         
+        // All of the below instructions are used for collecting some extra
+        // information for optimizing away the loads and stores in the IR.
+        //
         // Collecting some metadata for ArrayLSRemover
+        //
         for (auto ins_idx: CF->load_contributors) {
             CF->AddArrContributor(ins_idx, CF->CurrentInstructionIdx());
         }
+
         CF->load_contributors = {};
 
+        // Reset the temporary variables which actually track information
         if (CF->access_str_ != "") {
             CF->load_hash_[result] = CF->access_str_;
             CF->access_str_ = "";
@@ -387,10 +422,17 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
             }
 
             // Overwrite variable definition in the SSA Context
+            //
+            // This is again a fundamental operation in the SSA generation 
+            // algorithm. WriteVariable will overwrite the current definition of
+            // the variable in the current BB. A subsequent ReadVariable will
+            // read expr_idx as the value.
             CF->WriteVariable(var_name, expr_idx);
 
             result = expr_idx;
         } else if (irc.IsVariableGlobal(var_name)) {
+            // Removed in lieu using LocationIdx()
+            //
             // int offset      = irc.GlobalOffset(var_name);
             // This still uses *4 as we know that the offset is a constant
             // calculated at compile time
@@ -414,12 +456,17 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
             exit(1);
         }
     } else {
+       // Reset load_contributors since they will be computed again.
        CF->load_contributors = {};
        auto arr_id = static_cast<const ArrIdentifierNode*>(designator_);
        VI mem_location = arr_id->GenerateIR(irc);
 
        // Insert a kill instruction for a store.
        MI(T::INS_KILL);
+
+       // Kill the current BB. This ensures that any join node with the BB as a 
+       // predecessor will have a KILL at the very beginning. This ensures that
+       // we dont introduce new errors in the KILLing of vars.
        CF->KillBB(CF->CurrentBBIdx());
 
        CF->GetValue(mem_location)->SetIdentifier(var_name);
@@ -430,6 +477,8 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
        for (auto ins_idx: CF->load_contributors) {
            CF->AddArrContributor(ins_idx, CF->CurrentInstructionIdx());
        }
+
+       // Reset temporaries.
        CF->load_contributors = {};
 
        if (CF->access_str_ != "")  {
@@ -512,6 +561,7 @@ VI RelationNode::GenerateIR(IRC& irc) const {
     //////////////////////////////////////////////////
 }
 
+// This function is used to fold branches which can be computed at compile-time
 VI ITENode::TryReducingCmp(IRConstructor& irc, VI left, VI right) const {
     // Check if we want to explore THEN or ELSE branch of the condition.
     // We will discard the other.
@@ -536,9 +586,10 @@ VI ITENode::TryReducingCmp(IRConstructor& irc, VI left, VI right) const {
     return result;
 }
 
-/*
- * TODO: Draw fancy ascii picture.
- */
+// Note:
+//
+// Please read the reference paper to understand the ordering of the SealBB()
+// operations. 
 VI ITENode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing ITE";
 
@@ -668,9 +719,6 @@ VI ITENode::GenerateIR(IRC& irc) const {
     return result;
 }
 
-/*
- * TODO: Draw fancy ascii picture.
- */
 VI WhileNode::GenerateIR(IRC& irc) const {
     LOG(INFO) << "[IR] Parsing While";
 
@@ -686,7 +734,6 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     // TODO: Implement loop condition checking for 
     // reducibility
     //////////////////////////////////////////////////
-
     CF->AddBBEdge(previous, loop_header);
     CF->SealBB(previous);
 
@@ -1017,8 +1064,8 @@ void ComputationNode::GenerateIR(IRC& irc) const {
     for (auto glob: mark) {
         irc.RemoveGlobal(glob);
     }
-    /////////////////////////////////////////////////////////
 
+    // IR generation of "main" begins here.
     if (computation_body_ != nullptr) {
         computation_body_->GenerateIR(irc);
     }

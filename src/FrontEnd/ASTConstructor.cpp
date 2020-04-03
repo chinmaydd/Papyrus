@@ -27,7 +27,6 @@ bool ASTConstructor::MustParseToken(const Lexer::Token& expected_tok, const std:
 }
 
 ////////////////////////////////
-
 void ASTConstructor::AddSymbol(const IdentifierNode* ident, const TypeDeclNode* type_decl) {
     Symbol *s = new Symbol(ident->IdentifierName(),
                            type_decl->GetDimensions(),

@@ -3,6 +3,7 @@
 using namespace papyrus;
 
 #define NOTFOUND -1 
+
 Value::Value(ValueType vty) :
     vty_(vty) {}
 
@@ -23,7 +24,7 @@ Function::Function(const std::string& func_name, VI value_counter, std::unordere
     value_map_(value_map) {
         SetLocalBase(CreateValue(V::VAL_LOCALBASE));
         SetCurrentBB(CreateBB(B::BB_START));
-        // Seal the Start
+        // Seal the Start basic block since it has no predecessors
         SealBB(CurrentBBIdx());
 }
 
@@ -60,6 +61,21 @@ int Function::GetOffset(const std::string& var_name) const {
     return variable_map_.at(var_name)->Offset();
 }
 
+// This is the Value generation API template code. When generating a value there
+// are 2 main things to take care of:
+//
+// 1. Value Counter should be incremented. The NEW value_counter is the idx of the 
+// new value.
+// 2. Pointer to the new Value should be inserted into the Value map.
+VI Function::CreateValue(V vty) {
+    Value* val = new Value(vty);
+
+    value_counter_++;
+    value_map_->emplace(value_counter_, val);
+
+    return value_counter_;
+}
+
 VI Function::CreateConstant(int val) {
     // Disabling this for now.
     // if (constant_map_.find(val) != constant_map_.end()) {
@@ -77,16 +93,6 @@ VI Function::CreateConstant(int val) {
     return value_counter_;
 }
 
-VI Function::CreateValue(V vty) {
-    Value* val = new Value(vty);
-
-    value_counter_++;
-    value_map_->emplace(value_counter_, val);
-
-    return value_counter_;
-}
-
-
 void Function::AddUsage(VI val_idx, II ins_idx) {
     value_map_->at(val_idx)->AddUsage(ins_idx);
 }
@@ -100,6 +106,13 @@ void Function::SetValueType(VI val_idx, V val_type) {
     val->SetType(val_type);
 }
 
+// BasicBlock generation API. Things to take care of:
+//
+// 1. BB Counter should be incremented. New BB counter is what is assigned to
+// the newly created block
+// 2. Pointer to BB should be inserted into basic_block_map_ for the Function.
+// 3. A Value should be assigned to the BB. This is used to treat the BB as 
+// as an operand to the Jump instruction
 BI Function::CreateBB(B bb_type) {
     bb_counter_++;
 
@@ -170,25 +183,7 @@ void Function::KillBB(BI bb_idx) {
     is_killed_.insert(bb_idx);
 }
 
-II Function::MakePhi() {
-    instruction_counter_++;
-
-    Instruction* inst = new Instruction(T::INS_PHI,
-                                        CurrentBBIdx(),
-                                        instruction_counter_);
-
-    instruction_map_[instruction_counter_] = inst;
-    instruction_order_.push_front(instruction_counter_);
-
-    VI result = CreateValue(V::VAL_PHI);
-    inst->SetResult(result);
-
-    CurrentBB()->AddInstruction(instruction_counter_, inst);
-
-    return instruction_counter_;
-}
-
-// NOTE:
+// XXX:
 // MakeMove is deprecated since the instruction is not required
 // to be a part of the IR.
 void Function::MakeMove(const std::string& var_name, VI expr_idx) {
@@ -274,17 +269,9 @@ VI Function::GetHash(const std::string& hash_str) const {
 }
 
 /*
- * XXX:
- * Currently disabling CSE since there are changes in values once the Phis are
- * filled. We will implement this as an analysis pass later since at that time 
- * know the values that will be used in all instructions
- *
  * CSE here is on-the-fly CSE; to be done during AST construction. I guess it 
  * might still be possible to do this by some more bookkeeping but at this 
  * point it does not make sense to do that.
- *
- * The way this should be ideally done is that we make a Read() for that variable
- * with the CurrentBBIdx() and check if that value exists in the hash table?
  */
 bool Function::IsEliminable(T insty) const {
     return (insty == T::INS_NEG ||
@@ -304,7 +291,16 @@ bool Function::IsEliminable(T insty) const {
 // with the rest of the variables.
 
 // This function is never called standalone. Hence, not checking if instruction
-// is eliminable.
+// is eliminable. This is the Instruction generation API
+//
+// Things to take care of:
+//
+// 1. Instruction Counter is incremented.
+// 2. Instruction is created with new instruction counter, current BB idx and 
+// a type.
+// 3. This is then pushed back "correctly" into the instruction order for the
+// BB.
+// 4. A Result Value is generated and returned.
 VI Function::MakeInstruction(T insty) {
     instruction_counter_++;
     Instruction* inst = new Instruction(insty, CurrentBBIdx(), instruction_counter_);
@@ -318,23 +314,6 @@ VI Function::MakeInstruction(T insty) {
     inst->SetResult(result);
 
     CurrentBB()->AddInstruction(instruction_counter_, inst);
-
-    return result;
-}
-
-VI Function::MakeInstructionFront(T insty) {
-    instruction_counter_++;
-    Instruction* inst = new Instruction(insty, CurrentBBIdx(), instruction_counter_);
-
-    instruction_map_[instruction_counter_] = inst;
-    instruction_order_.push_front(instruction_counter_);
-
-    V vty = V::VAL_ANY;
-    
-    VI result = CreateValue(vty);
-    inst->SetResult(result);
-
-    CurrentBB()->AddInstructionFront(instruction_counter_, inst);
 
     return result;
 }
@@ -392,6 +371,44 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
     return result;
 }
 
+// Special
+// Add Instruction to front of instruction order.
+VI Function::MakeInstructionFront(T insty) {
+    instruction_counter_++;
+    Instruction* inst = new Instruction(insty, CurrentBBIdx(), instruction_counter_);
+
+    instruction_map_[instruction_counter_] = inst;
+    instruction_order_.push_front(instruction_counter_);
+
+    V vty = V::VAL_ANY;
+    
+    VI result = CreateValue(vty);
+    inst->SetResult(result);
+
+    CurrentBB()->AddInstructionFront(instruction_counter_, inst);
+
+    return result;
+}
+
+// Special
+// Make Phi Instruction
+II Function::MakePhi() {
+    instruction_counter_++;
+
+    Instruction* inst = new Instruction(T::INS_PHI,
+                                        CurrentBBIdx(),
+                                        instruction_counter_);
+
+    instruction_map_[instruction_counter_] = inst;
+    instruction_order_.push_front(instruction_counter_);
+
+    VI result = CreateValue(V::VAL_PHI);
+    inst->SetResult(result);
+
+    CurrentBB()->AddInstruction(instruction_counter_, inst);
+
+    return instruction_counter_;
+}
 
 void Function::Visit(BI bb_idx, std::unordered_set<BI>& visited) {
     visited.insert(bb_idx);
@@ -473,6 +490,9 @@ bool Function::IsArithmetic(T insty) const {
             insty == T::INS_DIV);
 }
 
+
+// Reduction functions. Try to check if we can reduce current operation at
+// compile-time.
 bool Function::IsReducible(VI idx_1, VI idx_2) const {
     // TODO: We should also make sure that we take into account values 
     // that are equal and not just constants

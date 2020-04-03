@@ -12,6 +12,7 @@
 #include <map>
     
 namespace papyrus {
+
 ////////////////////////////////
 class ASTConstructor {
 public:
