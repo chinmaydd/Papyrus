@@ -3,11 +3,11 @@ Papyrus
 
 ### Description
 
-This project was developed as part of the requirements for CS241 - Advanced Compiler Construction, instructed by Prof. Michael Franz at UC Irvine. Papyrus is an optimizing compiler for PL241, a toy-language.
+This project was developed as part of the requirements for CS241 - Advanced Compiler Construction, instructed by Prof. Michael Franz at UC Irvine. Papyrus is an optimizing compiler for PL241, a toy-language. More details about the project and the language can be found [here](https://github.com/chinmaydd/Papyrus/tree/master/utils).
 
 ### Building and usage
 
-```bash
+```sh
 $ git clone https://github.com/chinmaydd/Papyrus
 $ cd Papyrus
 $ mkdir bin
@@ -54,7 +54,8 @@ To be honest, there's a lot to be achieved. In no order of importance:
 - [proj] Instruction Scheduling and Code Generation: These two steps form the crux of a compiler backend. Unfortunately, I haven't had the bandwidth to implement both of these phases but their development should be orthogonal to what has been already implemented.
 - [proj] Since all of the modules mostly work independently with each other, I would also want to implement IR generation using the traditional dominator-based approach as described by [Cytron et. al](https://c9x.me/compile/bib/ssa.pdf) and compare specific points of ease and pain when handling this particular language.
 - [proj] Better heuristics for Register Allocation
-<br />
+<br />  
+
 - [devel] Rewriting the IR structure - If I had to implement the project again, there would be a lot of things I would do differently. For example, the API for `Function` is bloated and there is a lot of metadata duplication across the datastructures in IR.h. A first task here would be weed out the unnecessary details and rewrite the IR to be more cleaner.
 - [devel] Automatic Memory Management - You will notice that although the project is in C++, it does not make use of smart pointers. It should. Currently, allocated memory is not managed and it is left to the OS to manage it for us.
 
