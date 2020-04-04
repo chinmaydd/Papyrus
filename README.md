@@ -39,8 +39,7 @@ var i, j;
 
 ##### Visualization
 
-![alt](./utils/viz.png)
-
+<img src="./utils/viz.png" width="30%" height="30%"/>
 
 ### Relevant Literature
 
