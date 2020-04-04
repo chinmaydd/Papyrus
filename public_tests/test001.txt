@@ -1,0 +1,18 @@
+//Simple parsing test
+main 
+var x, y;
+function foo ();
+var p, q, r;
+{
+    if 3 > 4 then
+        call OutputNum(5)
+    else 
+        call OutputNum(4)
+    fi
+};
+{
+    let x <- 51; 
+    let y <- 2 * x;
+    call foo();
+    call OutputNum(y)
+}.
