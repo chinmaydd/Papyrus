@@ -8,8 +8,13 @@ namespace papyrus {
 
 class Utils {
 public:
+    Utils(const char *);
+
     std::vector<std::string> Split(const std::string&, const std::string&);
     std::string ConstructOutFile(const std::string&, const std::string&);
+
+private:
+    std::string out_dir_;
 };
 
 } // namespace papyrus

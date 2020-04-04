@@ -15,7 +15,12 @@ $ cd bin
 $ cmake ..
 $ make
 $ # binary availale at ./src/Papyrus/papyrus
-$ ./src/Papyrus/papyrus file_name.txt
+$ # Example
+$ # ./src/Papyrus/papyrus file_name.txt outdir_path
+$ mkdir output
+$ ./src/Papyrus/papyrus ../public_tests/test008.txt ./output
+$ ls output/
+test008.ir.vcg  test008.ra.vcg
 ```
 
 ### Visualization

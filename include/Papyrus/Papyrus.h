@@ -4,4 +4,6 @@
 #include <iostream>
 #include <fstream>
 
+#include <sys/stat.h>
+
 #endif /* PAPYRUS_H */

@@ -2,6 +2,9 @@
 
 using namespace papyrus;
 
+Utils::Utils(const char *out_dir) :
+    out_dir_(out_dir) {}
+
 std::vector<std::string> Utils::Split(const std::string& str, const std::string& delim) {
     std::vector<std::string> tokens;
     size_t prev = 0, pos = 0;
@@ -26,8 +29,7 @@ std::vector<std::string> Utils::Split(const std::string& str, const std::string&
 }
 
 std::string Utils::ConstructOutFile(const std::string& fpath, const std::string& suffix) {
-    std::string root = "/home/chinmay_dd/Projects/Papyrus/tests/public/";
     std::string fname = Split(Split(fpath, "/").back(), ".").front() + suffix;
 
-    return root + fname;
+    return out_dir_ + "/" + fname;
 }
