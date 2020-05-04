@@ -6,7 +6,9 @@ bool DCE::CanRemove(T insty) {
     if (insty == T::INS_READ ||
         insty == T::INS_WRITEX ||
         insty == T::INS_WRITENL ||
-        insty == T::INS_CALL) {
+        insty == T::INS_CALL ||
+        insty == T::INS_RET ||
+        insty == T::INS_END) {
         return false;
     } else {
         return true;
@@ -40,6 +42,7 @@ void DCE::ProcessBlock(Function* fn, BasicBlock* bb) {
     }
 
     auto rev_ins_order = bb->InstructionOrder();
+    // LOG(ERROR) << std::to_string(bb_idx);
 
     if (rev_ins_order.size() != 0) {
         auto bb_from = rev_ins_order.front();
@@ -74,6 +77,13 @@ void DCE::Run() {
         }
 
         auto fn = fn_pair.second;
+
+        fn->ComputeDominatorTree();
+        auto dom = fn->DominatorTree();
+
+        fn->ComputeDominanceFrontier();
+        auto dom_f = fn->DominanceFrontier();
+
         visited = {};
 
         auto entry_idx = 1;

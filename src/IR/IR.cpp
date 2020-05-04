@@ -21,6 +21,8 @@ Function::Function(const std::string& func_name, VI value_counter, std::unordere
     load_contributors({}),
     load_related_insts_({}),
     is_killed_({}),
+    dominator_tree_({}),
+    dominance_frontier_({}),
     value_map_(value_map) {
         SetLocalBase(CreateValue(V::VAL_LOCALBASE));
         SetCurrentBB(CreateBB(B::BB_START));
@@ -410,22 +412,6 @@ II Function::MakePhi() {
     return instruction_counter_;
 }
 
-void Function::Visit(BI bb_idx, std::unordered_set<BI>& visited) {
-    visited.insert(bb_idx);
-
-    auto bb = GetBB(bb_idx);
-    
-    for (auto succ: bb->Successors()) {
-        if (IsBackEdge(bb_idx, succ)) {
-            Visit(succ, visited);
-        } else if (visited.find(succ) == visited.end()) {
-            Visit(succ, visited);
-        }
-    }
-
-    postorder_cfg_.push_back(bb_idx);
-}
-
 // Static function?
 std::vector<BI> Function::PostOrderCFG() {
     if (postorder_cfg_.size() != 0) {
@@ -434,25 +420,236 @@ std::vector<BI> Function::PostOrderCFG() {
 
     std::unordered_set<BI> visited;
     // NOTE: BB with idx=1 is assumed to be the entry idx
+    //
+    // Here, there could be multiple entry indexes into the function. This could
+    // happen if there is a jump from another function somewhere into the middle
+    // of an instruction of the current function.
+    //
+    // However, that is an issue for another day.
     BI entry_idx = 1;
 
-    // Here, we can check if there are any BBs which are not visited.
-    // This is probably not going to happen since the way the IR is constructed
-    // it does not allow for it.
-    Visit(entry_idx, visited);
+    std::stack<BI> worklist;
+    worklist.push(entry_idx);
 
-    rev_postorder_cfg_ = std::vector<BI>(postorder_cfg_.rbegin(),
-                                         postorder_cfg_.rend());
+    while (!worklist.empty()) {
+        auto bb_idx = worklist.top();
+        visited.insert(bb_idx);
+
+        auto bb = GetBB(bb_idx);
+
+        bool keep_on_stack = false;
+        for (auto succ: bb->Successors()) {
+            if (visited.find(succ) == visited.end()) {
+                keep_on_stack = true;
+                worklist.push(succ);
+            }
+        }
+
+        if (keep_on_stack)
+            continue;
+
+        worklist.pop();
+        postorder_cfg_.push_back(bb_idx);
+    }
+
+    rev_postorder_cfg_ = std::vector<BI>(postorder_cfg_.rbegin(), postorder_cfg_.rend());
 
     return postorder_cfg_;
 }
 
 std::vector<BI> Function::ReversePostOrderCFG() {
+    // Compute PostOrderCFG if not previously computed. ReversePostOrderCFG also
+    // computed along with it.
     if (postorder_cfg_.size() == 0) {
         PostOrderCFG();
     }
 
     return rev_postorder_cfg_;
+}
+
+/*
+ * UnorderedSet union and intersection
+ * 
+ * Inspired from : https://stackoverflow.com/a/896398
+ */
+std::unordered_set<BI> UnorderedSetIntersect(const std::unordered_set<BI> &in1,
+                                             const std::unordered_set<BI> &in2) {
+    std::unordered_set<BI> out;
+    for (std::unordered_set<BI>::const_iterator it = in2.begin(); it != in2.end(); it++) {
+        if (in1.find(*it) != in1.end())
+            out.insert(*it);
+    }
+
+    return out;
+}
+
+std::unordered_set<BI> UnorderedSetUnion(const std::unordered_set<BI> &in1,
+                                         const std::unordered_set<BI> &in2) {
+    std::unordered_set<BI> out;
+    out.insert(in1.begin(), in1.end());
+    out.insert(in2.begin(), in2.end());
+
+    return out;
+}
+
+// Implementation of iterative method of dominator tree computation
+// void Function::ComputeDominatorTree() {
+//     if (dominator_tree_.size() != 0)
+//         return;
+// 
+//     std::unordered_set<BI> all_bbs_;
+//     for (auto bb_pair: basic_block_map_) {
+//         all_bbs_.insert(bb_pair.first);
+//     }
+// 
+//     // Set entry dominator value
+//     dominator_tree_[1] = {1};
+//     for (auto bb_idx: all_bbs_) {
+//         if (bb_idx == 1)
+//             continue;
+// 
+//         dominator_tree_[bb_idx] = std::unordered_set<BI>(all_bbs_);
+//     }
+// 
+//     bool changed = true;
+//     std::unordered_set<BI> current_dom;
+// 
+//     while (changed) {
+//         changed = false;
+//         for (auto bb_idx: rev_postorder_cfg_) {
+//             if (bb_idx == 1)
+//                 continue;
+// 
+//             current_dom.clear();
+// 
+//             auto bb = GetBB(bb_idx);
+//             for (auto pred: bb->Predecessors()) {
+// 
+//                 if (current_dom.size() == 0) {
+//                     current_dom = dominator_tree_[pred];
+//                 } else {
+//                     current_dom = UnorderedSetIntersect(current_dom, dominator_tree_[pred]);
+//                 }
+//             }
+// 
+//             current_dom.insert(bb_idx);
+// 
+//             if (current_dom != dominator_tree_[bb_idx]) {
+//                 dominator_tree_[bb_idx] = current_dom;
+//                 changed = true;
+//             }
+//         }
+//     }
+// }
+
+void Function::ComputeDominatorTree() {
+    for (auto bb_pair: basic_block_map_) {
+        dominator_tree_[bb_pair.first] = -1;
+    }
+
+    auto entry_idx = 1;
+    dominator_tree_[entry_idx] = entry_idx;
+    BI new_idom;
+
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (auto bb_idx: rev_postorder_cfg_) {
+            if (bb_idx == entry_idx)
+                continue;
+
+            auto bb = GetBB(bb_idx);
+            auto preds = bb->Predecessors();
+
+            new_idom = *preds.begin();
+            for (auto pred: preds) {
+                if (pred == new_idom)
+                    continue;
+
+                if (dominator_tree_[pred] != -1) {
+                    new_idom = Intersect(pred, new_idom);
+                }
+            }
+
+            if (dominator_tree_[bb_idx] != new_idom) {
+                dominator_tree_[bb_idx] = new_idom;
+                changed = true;
+            }
+        }
+    }
+}
+
+int GetIndex(const std::vector<BI> vec, BI elem) {
+    auto it = std::find(vec.begin(), vec.end(), elem);
+
+    if (it != vec.end()) {
+        return std::distance(vec.begin(), it);
+    } else {
+        return -1;
+    }
+}
+
+BI Function::Intersect(BI b1, BI b2) {
+    BI finger1 = GetIndex(rev_postorder_cfg_, b1);
+    BI finger2 = GetIndex(rev_postorder_cfg_, b2);
+
+    while (b1 != b2) {
+        while (finger1 > finger2) {
+            b1 = dominator_tree_[b1];
+            finger1 = GetIndex(rev_postorder_cfg_, b1);
+        }
+        while (finger2 > finger1) {
+            b2 = dominator_tree_[b2];
+            finger2 = GetIndex(rev_postorder_cfg_, b2);
+        }
+    }
+
+    return b1;
+}
+
+const std::unordered_map<BI, BI>& Function::DominatorTree() const {
+    return dominator_tree_;
+}
+
+void Function::ComputeDominanceFrontier() {
+    ComputeDominatorTree();
+
+    BI runner = 0;
+    bool found = false;
+    BI doms;
+
+    for (auto bb_pair: basic_block_map_) {
+        auto bb_idx = bb_pair.first;
+        auto bb = bb_pair.second;
+
+        auto preds = bb->Predecessors();
+        if (preds.size() >= 2) {
+            for (auto pred: preds) {
+                runner = pred;
+
+                if (dominance_frontier_.find(runner) == dominance_frontier_.end()) {
+                    dominance_frontier_[runner] = -1;
+                }
+
+                doms = dominator_tree_[bb_idx];
+                found = false;
+
+                while (!found) {
+                    dominance_frontier_[runner] = bb_idx;
+                    runner = dominator_tree_[runner];
+
+                    if (doms == runner) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+const std::unordered_map<BI, BI>& Function::DominanceFrontier() const {
+    return dominance_frontier_;
 }
 
 std::vector<BI> Function::ExitBlocks() {

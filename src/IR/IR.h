@@ -11,6 +11,7 @@
 #include <deque>
 #include <map>
 #include <string>
+#include <stack>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -353,6 +354,8 @@ public:
     const Variable* GetVariable(const std::string& var_name) const;
     const std::unordered_map<BI, BasicBlock*> BasicBlocks() const;
     const std::unordered_map<std::string, Variable*> Variables() const;
+    const std::unordered_map<BI, BI>& DominatorTree() const;
+    const std::unordered_map<BI, BI>& DominanceFrontier() const;
 
     std::vector<BI> PostOrderCFG();
     std::vector<BI> ReversePostOrderCFG();
@@ -380,6 +383,9 @@ public:
     void AddBackEdge(BI, BI);
     void LoadFormal(const std::string&);
     void InsertHash(const std::string&, VI);
+
+    void ComputeDominatorTree();
+    void ComputeDominanceFrontier();
 
     // (instruction_idx, final_ins_idx)
     void AddArrContributor(II, II);
@@ -545,6 +551,10 @@ private:
     // as future work.
     std::unordered_set<std::string> loaded_formals_;
 
+    std::unordered_map<BI, BI> dominator_tree_;
+
+    std::unordered_map<BI, BI> dominance_frontier_;
+
     // Current BB used for instruction generation. New instructions in the current
     // context are added to this BB
     BI current_bb_;
@@ -552,6 +562,7 @@ private:
     BI bb_counter_;
 
     BI GetBBForInstruction(II);
+    BI Intersect(BI, BI);
 
     VI ReadVariableRecursive(const std::string&, BI);
     VI ReadGlobalRecursive(const std::string&, BI);

@@ -190,7 +190,7 @@ void IGBuilder::CoalesceNodes(const Function* fn) {
             // The literature on this suggested to merge non-interfering nodes
             // if the resultant node had a degree of < k.
             //
-            // This it to be implemented at a later time.
+            // This is to be implemented at a later time.
         }
     }
 

@@ -57,6 +57,9 @@ int main(int argc, char *argv[]) {
     ArrayLSRemover als(irconst);
     als.Run();
 
+    DCE dce(irconst);
+    dce.Run();
+
     Visualizer viz = Visualizer(irconst);
 
     std::string ir_fname = utils.ConstructOutFile(argv[1], ".ir.vcg");
