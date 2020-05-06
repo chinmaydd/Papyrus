@@ -69,6 +69,17 @@ void DCE::ProcessBlock(Function* fn, BasicBlock* bb) {
     visited.insert(bb_idx);
 }
 
+void DCE::ConstructReverseDominanceFrontier(const std::unordered_map<BI, BI>& dom_f) {
+    reverse_dominance_frontier_ = {};
+
+    for (auto dom_pair: dom_f) {
+        auto parent = dom_pair.first;
+        auto frontier = dom_pair.second;
+
+        reverse_dominance_frontier_[frontier] = parent;
+    }
+}
+
 void DCE::Run() {
     for (auto fn_pair: irc().Functions()) {
         std::string fn_name = fn_pair.first;

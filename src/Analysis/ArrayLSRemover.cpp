@@ -3,7 +3,6 @@
 using namespace papyrus;
 
 void ArrayLSRemover::Run() {
-    bool is_killed;
     bool all_pred;
     hash_val = {};
     std::unordered_set<BI> seen_once;
@@ -36,6 +35,11 @@ void ArrayLSRemover::Run() {
                     active_defs_[bb_idx] = pred_1;
                 } else {
                     active_defs_[bb_idx] = {};
+                    for (auto elem: pred_1) {
+                        if (pred_2.find(elem) != pred_2.end()) {
+                            active_defs_[bb_idx].insert(elem);
+                        }
+                    }
                 }
             } else if (bb_idx != 1) { // not entry
                 active_defs_[bb_idx] = active_defs_[pred.at(0)];
@@ -62,15 +66,27 @@ void ArrayLSRemover::Run() {
                         }
                     }
                 } else if (type == T::INS_STORE) {
-                    active_defs_[bb_idx] = {};
-                    // This is fairly conservative. Could we make this better?
+                    auto location_val = ins->Operands().at(1);
+                    auto var_name = irc().GetValue(location_val)->Identifier();
+                    active_defs_[bb_idx].erase(var_name);
+
                     if (fn->store_hash_.find(result) != fn->store_hash_.end()) {
                         auto hash_str = fn->store_hash_[result];
                         active_defs_[bb_idx].insert(hash_str);
                         hash_val[hash_str] = ins->Operands().at(0);
                     }
                 } else if (type == T::INS_KILL) {
-                    active_defs_[bb_idx] = {};
+                    // Let us first handle this
+                    auto location_val = ins->Operands().at(0);
+                    auto var_name = irc().GetValue(location_val)->Identifier();
+
+                    std::string req_hash_str;
+                    for (auto hash_str: active_defs_[bb_idx]) {
+                        if (hash_str.rfind(var_name + "_", 0) == 0) {
+                            req_hash_str = hash_str;
+                        }
+                    }
+                    active_defs_[bb_idx].erase(req_hash_str);
                     mark_for_inactive.insert(ins_idx);
                 }
             }

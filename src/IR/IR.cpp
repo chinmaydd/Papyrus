@@ -79,10 +79,9 @@ VI Function::CreateValue(V vty) {
 }
 
 VI Function::CreateConstant(int val) {
-    // Disabling this for now.
-    // if (constant_map_.find(val) != constant_map_.end()) {
-    //     return constant_map_.at(val);
-    // }
+    if (constant_map_.find(val) != constant_map_.end()) {
+        return constant_map_.at(val);
+    }
 
     Value* v = new Value(V::VAL_CONST);
     v->SetConstant(val); 
@@ -181,8 +180,20 @@ bool Function::IsKilled(BI bb_idx) const {
     return is_killed_.find(bb_idx) != is_killed_.end();
 }
 
-void Function::KillBB(BI bb_idx) {
-    is_killed_.insert(bb_idx);
+void Function::KillBB(BI bb_idx, VI location_val) {
+    if (is_killed_.find(bb_idx) == is_killed_.end()) {
+        is_killed_[bb_idx] = {};
+    }
+
+    is_killed_[bb_idx].insert(location_val);
+}
+
+const std::unordered_set<VI> Function::GetKilledValues(BI bb_idx) const {
+    if (is_killed_.find(bb_idx) != is_killed_.end()) {
+        return is_killed_.at(bb_idx);
+    }
+
+    return {};
 }
 
 // XXX:
@@ -281,6 +292,7 @@ bool Function::IsEliminable(T insty) const {
             insty == T::INS_SUB ||
             insty == T::INS_MUL ||
             insty == T::INS_DIV ||
+            insty == T::INS_ADDA ||
             insty == T::INS_CMP);
 }
 
@@ -324,8 +336,8 @@ VI Function::MakeInstruction(T insty, VI arg_1) {
     auto hash_str = HashInstruction(insty, arg_1);
 
     // Check if instruction can be removed
-    if (IsEliminable(insty) &&
-        arg_1 != 1) {
+    if (IsEliminable(insty)) {
+    // arg_1 != 1) {
         if (HashExists(hash_str)) {
             LOG(INFO) << "Removed " << hash_str;
             return GetHash(hash_str);
@@ -348,10 +360,10 @@ VI Function::MakeInstruction(T insty, VI arg_1, VI arg_2) {
     auto hash_str = HashInstruction(insty, arg_1, arg_2);
 
     // Check if instruction can be removed
-    if (IsEliminable(insty) &&
+    if (IsEliminable(insty)) {
         // TODO: The reasoning behind this is that GlobalBase will create long
         // ranges and hence interfere with all values.
-        (arg_1 != 1 || arg_2 != 1)) {
+        // (arg_1 != 1 || arg_2 != 1)) {
         if (HashExists(hash_str)) {
             LOG(INFO) << "Removed " << hash_str;
             return GetHash(hash_str);
@@ -388,6 +400,16 @@ VI Function::MakeInstructionFront(T insty) {
     inst->SetResult(result);
 
     CurrentBB()->AddInstructionFront(instruction_counter_, inst);
+
+    return result;
+}
+
+VI Function::MakeInstructionFront(T insty, VI arg_1) {
+    VI result = MakeInstructionFront(T::INS_KILL);
+
+    CurrentInstruction()->AddOperand(arg_1);
+
+    AddUsage(arg_1, instruction_counter_);
 
     return result;
 }
@@ -632,15 +654,19 @@ void Function::ComputeDominanceFrontier() {
                 }
 
                 doms = dominator_tree_[bb_idx];
-                found = false;
 
-                while (!found) {
+                if (doms == runner) {
                     dominance_frontier_[runner] = bb_idx;
-                    runner = dominator_tree_[runner];
+                } else {
+                    found = false;
+                    while (!found) {
+                        dominance_frontier_[runner] = bb_idx;
+                        runner = dominator_tree_[runner];
 
-                    if (doms == runner) {
-                        found = true;
-                        break;
+                        if (doms == runner) {
+                            found = true;
+                            break;
+                        }
                     }
                 }
             }

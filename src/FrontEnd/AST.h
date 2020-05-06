@@ -273,8 +273,9 @@ public:
 
 private:
     RelationNode* relation_;
-    StatSequenceNode* then_sequence_;
-    StatSequenceNode* else_sequence_;
+    // Memory leak fix
+    StatSequenceNode* then_sequence_ = nullptr;
+    StatSequenceNode* else_sequence_ = nullptr;
 };
 ////////////////////////////////
 

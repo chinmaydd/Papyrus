@@ -462,12 +462,18 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
        VI mem_location = arr_id->GenerateIR(irc);
 
        // Insert a kill instruction for a store.
-       MI(T::INS_KILL);
+       VI location_value;
+       if (irc.IsVariableGlobal(var_name)) {
+           location_value = irc.GetLocationValue(var_name);
+       } else {
+           location_value = CF->GetLocationValue(var_name);
+       }
 
        // Kill the current BB. This ensures that any join node with the BB as a 
        // predecessor will have a KILL at the very beginning. This ensures that
        // we dont introduce new errors in the KILLing of vars.
-       CF->KillBB(CF->CurrentBBIdx());
+       MI(T::INS_KILL, location_value);
+       CF->KillBB(CF->CurrentBBIdx(), location_value);
 
        CF->GetValue(mem_location)->SetIdentifier(var_name);
        //////////////////////////////////////////////////
@@ -653,10 +659,12 @@ VI ITENode::GenerateIR(IRC& irc) const {
         // then is killed. But if then has ended, that means its modifications
         // wont flow into this block
         //////////////////////////////////
-        if (CF->IsKilled(then_end) && !CF->HasEndedBB(then_end)) {
-            MI(T::INS_KILL);
-            CF->KillBB(CF->CurrentBBIdx());
-        }
+        // if (CF->IsKilled(then_end) && !CF->HasEndedBB(then_end)) {
+        //     for (auto location_val: CF->GetKilledValues(then_end)) {
+        //         MI(T::INS_KILL, location_val);
+        //         CF->KillBB(CF->CurrentBBIdx(), location_val);
+        //     }
+        // }
     } else {
         BI else_start = CF->CreateBB(B::BB_ELSE);
 
@@ -709,11 +717,19 @@ VI ITENode::GenerateIR(IRC& irc) const {
         // and hence we need either of them to have the kill AND
         // none of them to have ended.
         /////////////////////////////////////////////////
-        if ((CF->IsKilled(then_end) || CF->IsKilled(else_end)) &&
-            (!CF->HasEndedBB(then_end) && !CF->HasEndedBB(else_end))) {
-            MI(T::INS_KILL);
-            CF->KillBB(CF->CurrentBBIdx());
-        }
+        // if (CF->IsKilled(then_end) && !CF->HasEndedBB(then_end)) {
+        //     for (auto location_val: CF->GetKilledValues(then_end)) {
+        //         MI(T::INS_KILL, location_val);
+        //         CF->KillBB(CF->CurrentBBIdx(), location_val);
+        //     }
+        // }
+
+        // if (CF->IsKilled(else_end) && !CF->HasEndedBB(else_end)) {
+        //     for (auto location_val: CF->GetKilledValues(else_end)) {
+        //         MI(T::INS_KILL, location_val);
+        //         CF->KillBB(CF->CurrentBBIdx(), location_val);
+        //     }
+        // }
     }
 
     return result;
@@ -777,21 +793,29 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     ////////////////////////////
     // KILL HANDLING
     ////////////////////////////
-    bool is_kill = false;
-    if ((CF->IsKilled(loop_end) || CF->IsKilled(previous)) &&
-        !CF->HasEndedBB(loop_end)) {
-        CF->MakeInstructionFront(T::INS_KILL);
-        CF->KillBB(CF->CurrentBBIdx());
-        is_kill = true;
-    }
+    // if (CF->IsKilled(loop_end) && !CF->HasEndedBB(loop_end)) {
+    //    for (auto location_val: CF->GetKilledValues(loop_end)) {
+    //        CF->MakeInstructionFront(T::INS_KILL, location_val);
+    //        CF->KillBB(CF->CurrentBBIdx(), location_val);
+    //    }
+    // }
+
+    // if (CF->IsKilled(previous)) {
+    //    for (auto location_val: CF->GetKilledValues(previous)) {
+    //        CF->MakeInstructionFront(T::INS_KILL, location_val);
+    //        CF->KillBB(CF->CurrentBBIdx(), location_val);
+    //    }
+    // }
 
     CF->SealBB(next_bb);
     CF->SetCurrentBB(next_bb);
 
-    if (is_kill) {
-        MI(T::INS_KILL);
-        CF->KillBB(CF->CurrentBBIdx());
-    }
+    // if (CF->IsKilled(loop_header)) {
+    //    for (auto location_val: CF->GetKilledValues(loop_header)) {
+    //        CF->MakeInstructionFront(T::INS_KILL, location_val);
+    //        CF->KillBB(CF->CurrentBBIdx(), location_val);
+    //    }
+    // }
 
     return result;
 }

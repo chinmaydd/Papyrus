@@ -351,9 +351,10 @@ public:
     Function(const std::string&, VI, std::unordered_map<VI, Value*>*);
 
     const std::string& FunctionName() const { return func_name_; }
-    const Variable* GetVariable(const std::string& var_name) const;
+    const Variable* GetVariable(const std::string&) const;
     const std::unordered_map<BI, BasicBlock*> BasicBlocks() const;
     const std::unordered_map<std::string, Variable*> Variables() const;
+    const std::unordered_set<VI> GetKilledValues(BI) const;
     const std::unordered_map<BI, BI>& DominatorTree() const;
     const std::unordered_map<BI, BI>& DominanceFrontier() const;
 
@@ -389,7 +390,7 @@ public:
 
     // (instruction_idx, final_ins_idx)
     void AddArrContributor(II, II);
-    void KillBB(BI);
+    void KillBB(BI, VI);
 
     VI CreateMove(BI, VI, int);
 
@@ -418,6 +419,7 @@ public:
     VI MakeInstruction(T, VI);
     VI MakeInstruction(T, VI, VI);
     VI MakeInstructionFront(T);
+    VI MakeInstructionFront(T, VI);
 
     VI SelfIdx() const { return self_idx_; }
     VI TryReduce(ArithmeticOperator, VI, VI);
@@ -465,9 +467,6 @@ public:
     // for generating this load instruction. Ideally, this isnt needed
     // if the DCE pass is good.
     std::unordered_map<II, std::unordered_set<II> > load_related_insts_;
-
-    // Stores which BBs are killed
-    std::unordered_set<BI> is_killed_;
 
 private:
     // Name of the function
@@ -551,9 +550,15 @@ private:
     // as future work.
     std::unordered_set<std::string> loaded_formals_;
 
+    // Stores the dominator tree of the graph. This is needed to fold the CFG
+    // of the prorgam once "empty" blocks have been identified.
     std::unordered_map<BI, BI> dominator_tree_;
 
+    // Stores dominance frontier
     std::unordered_map<BI, BI> dominance_frontier_;
+
+    // Stores which BBs are killed
+    std::unordered_map<BI, std::unordered_set<VI> > is_killed_;
 
     // Current BB used for instruction generation. New instructions in the current
     // context are added to this BB
