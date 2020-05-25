@@ -195,13 +195,13 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     // access_str looks like : 
     //
     // variable_VAL1_#CONSTVAL2_VAL3
-    std::string access_str = "";
+    // std::string access_str = "";
 
-    if (CF->GetValue(offset_idx)->Type() == V::VAL_CONST) {
-        access_str = access_str + "_#" + std::to_string(CF->GetValue(offset_idx)->GetConstant());
-    } else {
-        access_str = access_str + "_" + std::to_string(offset_idx);
-    }
+    // if (CF->GetValue(offset_idx)->Type() == V::VAL_CONST) {
+    //     access_str = access_str + "_#" + std::to_string(CF->GetValue(offset_idx)->GetConstant());
+    // } else {
+    //     access_str = access_str + "_" + std::to_string(offset_idx);
+    // }
 
     // Calculate the offset
     VI dim_idx;
@@ -221,11 +221,11 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         auto expr_idx = expr->GenerateIR(irc);
 
         // Add to access_str
-        if (CF->GetValue(expr_idx)->Type() == V::VAL_CONST) {
-            access_str = access_str + "_#" + std::to_string(CF->GetValue(expr_idx)->GetConstant());
-        } else {
-            access_str = access_str + "_" + std::to_string(expr_idx);
-        }
+        // if (CF->GetValue(expr_idx)->Type() == V::VAL_CONST) {
+        //     access_str = access_str + "_#" + std::to_string(CF->GetValue(expr_idx)->GetConstant());
+        // } else {
+        //     access_str = access_str + "_" + std::to_string(expr_idx);
+        // }
 
         // Try and Reduce generated value
         temp_idx = CF->TryReduce(ArithmeticOperator::BINOP_MUL, dim_idx, expr_idx);
@@ -264,8 +264,8 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         temp = temp_idx;
     }
 
-    access_str = var_name + access_str;
-    CF->access_str_ = access_str;
+    // access_str = var_name + access_str;
+    // CF->access_str_ = access_str;
     //////////////////////////////////////////////////
     auto result = MI(T::INS_ADDA, arr_base, temp);
     //////////////////////////////////////////////////
@@ -380,11 +380,12 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
 
         CF->load_contributors = {};
 
+        // Disabled for now.
         // Reset the temporary variables which actually track information
-        if (CF->access_str_ != "") {
-            CF->load_hash_[result] = CF->access_str_;
-            CF->access_str_ = "";
-        }
+        // if (CF->access_str_ != "") {
+        //     CF->load_hash_[result] = CF->access_str_;
+        //     CF->access_str_ = "";
+        // }
     }
 
     return result;
@@ -487,10 +488,10 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
        // Reset temporaries.
        CF->load_contributors = {};
 
-       if (CF->access_str_ != "")  {
-            CF->store_hash_[result] = CF->access_str_;
-            CF->access_str_ = "";
-       }
+       // if (CF->access_str_ != "")  {
+       //      CF->store_hash_[result] = CF->access_str_;
+       //      CF->access_str_ = "";
+       // }
     }
 
     return result;

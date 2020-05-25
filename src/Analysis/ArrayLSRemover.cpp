@@ -2,6 +2,23 @@
 
 using namespace papyrus;
 
+std::string ArrayLSRemover::LSHash(const Instruction* ins) {
+    auto ins_type = ins->Type();
+    std::string retval = "";
+    VI location;
+
+    if (ins_type == T::INS_LOAD) {
+        location = ins->Operands().at(0);
+    } else {
+        location = ins->Operands().at(1);
+    }
+
+    auto var = irc().GetValue(location)->Identifier();
+    retval += var + "_" + std::to_string(location);
+
+    return retval;
+}
+
 void ArrayLSRemover::Run() {
     std::unordered_map<BI, int> visited;
     std::stack<BI> worklist;
@@ -49,6 +66,18 @@ void ArrayLSRemover::Run() {
                 }
             }
 
+            to_explore = true;
+            auto pred = bb->Predecessors();
+            for (auto pred_idx: bb->Predecessors()) {
+                if (visited.find(pred_idx) == visited.end()) {
+                    to_explore = false;
+                }
+            }
+
+            if (!to_explore && bb_type != B::BB_LOOPHEAD) {
+                continue;
+            }
+
             auto first_loop_visit = false;
             if (bb_type == B::BB_LOOPHEAD) {
                 if (visited.find(bb_idx) != visited.end()) {
@@ -67,18 +96,6 @@ void ArrayLSRemover::Run() {
                 } else {
                     visited[bb_idx] = 1;
                 }
-            }
-
-            to_explore = true;
-            auto pred = bb->Predecessors();
-            for (auto pred_idx: bb->Predecessors()) {
-                if (visited.find(pred_idx) == visited.end()) {
-                    to_explore = false;
-                }
-            }
-
-            if (!to_explore && bb_type != B::BB_LOOPHEAD) {
-                continue;
             }
 
             // Technically, if we have only one predecessor we should not really
@@ -124,16 +141,14 @@ void ArrayLSRemover::Run() {
 
                 if (!first_loop_visit) {
                     if (type == T::INS_LOAD) {
-                        if (fn->load_hash_.find(result) != fn->load_hash_.end()) {
-                            auto hash_str = fn->load_hash_[result];
-                            if (active_defs_[bb_idx].find(hash_str) != active_defs_[bb_idx].end()) {
-                                ins->MakeInactive();
-                                fn->ReplaceUse(result, hash_val[hash_str]);
-                                auto related_insts = fn->load_related_insts_;
-                                if (related_insts.find(ins_idx) != related_insts.end()) {
-                                    for (auto inact_ins_idx: related_insts[ins_idx]) {
-                                        mark_for_inactive.insert(inact_ins_idx);
-                                    }
+                        auto hash_str = LSHash(ins);
+                        if (active_defs_[bb_idx].find(hash_str) != active_defs_[bb_idx].end()) {
+                            ins->MakeInactive();
+                            fn->ReplaceUse(result, hash_val[hash_str]);
+                            auto related_insts = fn->load_related_insts_;
+                            if (related_insts.find(ins_idx) != related_insts.end()) {
+                                for (auto inact_ins_idx: related_insts[ins_idx]) {
+                                    mark_for_inactive.insert(inact_ins_idx);
                                 }
                             }
                         }
@@ -142,8 +157,15 @@ void ArrayLSRemover::Run() {
                         auto var_name = irc().GetValue(location_val)->Identifier();
                         active_defs_[bb_idx].erase(var_name);
 
-                        if (fn->store_hash_.find(result) != fn->store_hash_.end()) {
-                            auto hash_str = fn->store_hash_[result];
+                        bool is_arr;
+                        if (fn->IsVariableLocal(var_name)) {
+                            is_arr = fn->GetVariable(var_name)->IsArray();
+                        } else {
+                            is_arr = irc().GetGlobal(var_name)->IsArray();
+                        }
+
+                        if (is_arr) {
+                            auto hash_str = LSHash(ins);
                             active_defs_[bb_idx].insert(hash_str);
                             hash_val[hash_str] = ins->Operands().at(0);
                         }
