@@ -233,7 +233,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
             //////////////////////////////////////////////////
             temp = MI(T::INS_MUL, dim_idx, expr_idx);
             //////////////////////////////////////////////////
-            CF->load_contributors.push_back(CF->CurrentInstructionIdx());
+            CF->AddLoadContributor(CF->CurrentInstructionIdx());
         } else {
             temp = temp_idx;
         }
@@ -244,7 +244,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
             //////////////////////////////////////////////////
             offset_idx = MI(T::INS_ADD, offset_idx, temp);
             //////////////////////////////////////////////////
-            CF->load_contributors.push_back(CF->CurrentInstructionIdx());
+            CF->AddLoadContributor(CF->CurrentInstructionIdx());
         } else {
             offset_idx = temp_idx;
         }
@@ -259,7 +259,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
         //////////////////////////////////////////////////
         temp = MI(T::INS_MUL, offset_idx, CC(4));
         //////////////////////////////////////////////////
-        CF->load_contributors.push_back(CF->CurrentInstructionIdx());
+        CF->AddLoadContributor(CF->CurrentInstructionIdx());
     } else {
         temp = temp_idx;
     }
@@ -274,7 +274,7 @@ VI ArrIdentifierNode::GenerateIR(IRC& irc) const {
     // there will be some value which contribute to the access. If we optimize
     // a load away, we will also remove all the instructions which lead to 
     // generation of these contributors (in case they arent being used elsewhere)
-    CF->load_contributors.push_back(CF->CurrentInstructionIdx());
+    CF->AddLoadContributor(CF->CurrentInstructionIdx());
 
     return result;
 }
@@ -374,18 +374,11 @@ VI DesignatorNode::GenerateIR(IRC& irc) const {
         //
         // Collecting some metadata for ArrayLSRemover
         //
-        for (auto ins_idx: CF->load_contributors) {
+        for (auto ins_idx: CF->CurrentLoadContributors()) {
             CF->AddArrContributor(ins_idx, CF->CurrentInstructionIdx());
         }
 
-        CF->load_contributors = {};
-
-        // Disabled for now.
-        // Reset the temporary variables which actually track information
-        // if (CF->access_str_ != "") {
-        //     CF->load_hash_[result] = CF->access_str_;
-        //     CF->access_str_ = "";
-        // }
+        CF->ClearLoadContributor();
     }
 
     return result;
@@ -457,8 +450,8 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
             exit(1);
         }
     } else {
-       // Reset load_contributors since they will be computed again.
-       CF->load_contributors = {};
+       // Reset load contributors since they will be computed again.
+       CF->ClearLoadContributor();
        auto arr_id = static_cast<const ArrIdentifierNode*>(designator_);
        VI mem_location = arr_id->GenerateIR(irc);
 
@@ -481,17 +474,12 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
        result = MI(T::INS_STORE, expr_idx, mem_location);
        //////////////////////////////////////////////////
      
-       for (auto ins_idx: CF->load_contributors) {
+       for (auto ins_idx: CF->CurrentLoadContributors()) {
            CF->AddArrContributor(ins_idx, CF->CurrentInstructionIdx());
        }
 
        // Reset temporaries.
-       CF->load_contributors = {};
-
-       // if (CF->access_str_ != "")  {
-       //      CF->store_hash_[result] = CF->access_str_;
-       //      CF->access_str_ = "";
-       // }
+       CF->ClearLoadContributor();
     }
 
     return result;

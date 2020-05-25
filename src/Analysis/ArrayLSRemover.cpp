@@ -145,7 +145,7 @@ void ArrayLSRemover::Run() {
                         if (active_defs_[bb_idx].find(hash_str) != active_defs_[bb_idx].end()) {
                             ins->MakeInactive();
                             fn->ReplaceUse(result, hash_val[hash_str]);
-                            auto related_insts = fn->load_related_insts_;
+                            auto related_insts = fn->LoadRelatedInsts();
                             if (related_insts.find(ins_idx) != related_insts.end()) {
                                 for (auto inact_ins_idx: related_insts[ins_idx]) {
                                     mark_for_inactive.insert(inact_ins_idx);

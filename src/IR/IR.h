@@ -358,6 +358,8 @@ public:
     const std::unordered_set<VI> GetKilledValues(BI) const;
     const std::unordered_map<BI, BI>& DominatorTree() const;
     const std::unordered_map<BI, BI>& DominanceFrontier() const;
+    const std::unordered_map<II, std::unordered_set<II> >& LoadRelatedInsts() const;
+    const std::vector<II>& CurrentLoadContributors() const;
 
     std::vector<BI> PostOrderCFG();
     std::vector<BI> ReversePostOrderCFG();
@@ -392,6 +394,9 @@ public:
     // (instruction_idx, final_ins_idx)
     void AddArrContributor(II, II);
     void KillBB(BI, VI);
+
+    void AddLoadContributor(II);
+    void ClearLoadContributor();
 
     VI CreateMove(BI, VI, int);
 
@@ -449,26 +454,6 @@ public:
     bool HashExists(const std::string&) const;
 
     bool IsKilled(BI) const;
-    
-    // NOTE:
-    // Added later
-    // Ideally, they should be behind an API
-    // Temporary access_string for an array access (load/store). This is used
-    // when walking over the AST.
-    std::string access_str_;
-    // For each value, we save the load access hashes and store access hashes.
-    // These are then used later during an analysis phase to remove 
-    // redundant array loads and stores.
-    std::unordered_map<VI, std::string> load_hash_;
-    std::unordered_map<VI, std::string> store_hash_;
-
-    // Temporary used across functions during ASTWalk
-    std::vector<II> load_contributors;
-
-    // For each load_instruction, we store the related instructions used
-    // for generating this load instruction. Ideally, this isnt needed
-    // if the DCE pass is good.
-    std::unordered_map<II, std::unordered_set<II> > load_related_insts_;
 
 private:
     // Name of the function
@@ -561,6 +546,14 @@ private:
 
     // Stores which BBs are killed
     std::unordered_map<BI, std::unordered_set<VI> > is_killed_;
+
+    // For each load_instruction, we store the related instructions used
+    // for generating this load instruction. Ideally, this isnt needed
+    // if the DCE pass is good.
+    std::unordered_map<II, std::unordered_set<II> > load_related_insts_;
+
+    // Temporary used across functions during ASTWalk
+    std::vector<II> load_contributors_;
 
     // Current BB used for instruction generation. New instructions in the current
     // context are added to this BB

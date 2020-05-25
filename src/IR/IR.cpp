@@ -18,7 +18,7 @@ Function::Function(const std::string& func_name, VI value_counter, std::unordere
     hash_map_({}),
     back_edges_({}),
     constant_map_({}),
-    load_contributors({}),
+    load_contributors_({}),
     load_related_insts_({}),
     is_killed_({}),
     dominator_tree_({}),
@@ -874,6 +874,22 @@ void Function::AddArrContributor(II ins_idx, II result) {
     }
 
     load_related_insts_[result].insert(ins_idx);
+}
+
+void Function::AddLoadContributor(II ins_idx) {
+    load_contributors_.push_back(ins_idx);
+}
+
+void Function::ClearLoadContributor() {
+    load_contributors_ = {};
+}
+
+const std::vector<II>& Function::CurrentLoadContributors() const {
+    return load_contributors_;
+}
+
+const std::unordered_map<II, std::unordered_set<II> >& Function::LoadRelatedInsts() const {
+    return load_related_insts_;
 }
 
 /*
