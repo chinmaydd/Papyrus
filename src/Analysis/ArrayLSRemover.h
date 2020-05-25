@@ -12,9 +12,9 @@ public:
     void Run();
 
 private:
-    std::unordered_map<BI, bool> is_kill_;
     std::unordered_map<BI, std::unordered_set<std::string> > active_defs_;
     std::unordered_map<std::string, VI> hash_val;
+    std::unordered_map<std::string, VI> all_defs_;
 };
 } // namespace papyrus
 

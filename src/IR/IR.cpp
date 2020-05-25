@@ -254,16 +254,31 @@ std::string Function::HashInstruction(T insty, VI arg_1) const {
     return return_str;
 }
 
+bool Function::IsCommutative(T insty) const {
+    if (insty == T::INS_ADD ||
+        insty == T::INS_ADDA ||
+        insty == T::INS_MUL) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 std::string Function::HashInstruction(T insty, VI arg_1, VI arg_2) const {
     std::string return_str = "";
-    return_str            += ins_to_str_.at(insty) + "_";
+    return_str += ins_to_str_.at(insty) + "_";
 
-    if (arg_1 < arg_2) {
+    if (IsCommutative(insty)) {
+        if (arg_1 < arg_2) {
+            return_str += std::to_string(arg_1) + "_";
+            return_str += std::to_string(arg_2);
+        } else {
+            return_str += std::to_string(arg_2) + "_";
+            return_str += std::to_string(arg_1);
+        }
+    } else {
         return_str += std::to_string(arg_1) + "_";
         return_str += std::to_string(arg_2);
-    } else {
-        return_str += std::to_string(arg_2) + "_";
-        return_str += std::to_string(arg_1);
     }
 
     return return_str;
@@ -337,7 +352,6 @@ VI Function::MakeInstruction(T insty, VI arg_1) {
 
     // Check if instruction can be removed
     if (IsEliminable(insty)) {
-    // arg_1 != 1) {
         if (HashExists(hash_str)) {
             LOG(INFO) << "Removed " << hash_str;
             return GetHash(hash_str);
@@ -883,6 +897,22 @@ void Instruction::AddOperand(VI val_idx) {
 void Instruction::AddOperand(VI val_idx, BI pred) {
     AddOperand(val_idx);
     op_source_[pred] = val_idx;
+}
+
+std::string Instruction::HashOfInstruction() const {
+    std::string ret_val = "";
+    if (operands_.size() == 0) {
+        ret_val = "NOTFOUND";
+    } else if (operands_.size() == 1) {
+        ret_val += ins_to_str_.at(ins_type_) + "_";
+        ret_val += std::to_string(operands_.at(0));
+    } else {
+        ret_val += ins_to_str_.at(ins_type_) + "_";
+        ret_val += std::to_string(operands_.at(0)) + "_";
+        ret_val += std::to_string(operands_.at(1));
+    }
+
+    return ret_val;
 }
 
 /*

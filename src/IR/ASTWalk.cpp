@@ -479,7 +479,7 @@ VI AssignmentNode::GenerateIR(IRC& irc) const {
        //////////////////////////////////////////////////
        result = MI(T::INS_STORE, expr_idx, mem_location);
        //////////////////////////////////////////////////
-
+     
        for (auto ins_idx: CF->load_contributors) {
            CF->AddArrContributor(ins_idx, CF->CurrentInstructionIdx());
        }
@@ -659,12 +659,12 @@ VI ITENode::GenerateIR(IRC& irc) const {
         // then is killed. But if then has ended, that means its modifications
         // wont flow into this block
         //////////////////////////////////
-        // if (CF->IsKilled(then_end) && !CF->HasEndedBB(then_end)) {
-        //     for (auto location_val: CF->GetKilledValues(then_end)) {
-        //         MI(T::INS_KILL, location_val);
-        //         CF->KillBB(CF->CurrentBBIdx(), location_val);
-        //     }
-        // }
+        if (CF->IsKilled(then_end) && !CF->HasEndedBB(then_end)) {
+            for (auto location_val: CF->GetKilledValues(then_end)) {
+                MI(T::INS_KILL, location_val);
+                CF->KillBB(CF->CurrentBBIdx(), location_val);
+            }
+        }
     } else {
         BI else_start = CF->CreateBB(B::BB_ELSE);
 
@@ -717,19 +717,19 @@ VI ITENode::GenerateIR(IRC& irc) const {
         // and hence we need either of them to have the kill AND
         // none of them to have ended.
         /////////////////////////////////////////////////
-        // if (CF->IsKilled(then_end) && !CF->HasEndedBB(then_end)) {
-        //     for (auto location_val: CF->GetKilledValues(then_end)) {
-        //         MI(T::INS_KILL, location_val);
-        //         CF->KillBB(CF->CurrentBBIdx(), location_val);
-        //     }
-        // }
+        if (CF->IsKilled(then_end) && !CF->HasEndedBB(then_end)) {
+            for (auto location_val: CF->GetKilledValues(then_end)) {
+                MI(T::INS_KILL, location_val);
+                CF->KillBB(CF->CurrentBBIdx(), location_val);
+            }
+        }
 
-        // if (CF->IsKilled(else_end) && !CF->HasEndedBB(else_end)) {
-        //     for (auto location_val: CF->GetKilledValues(else_end)) {
-        //         MI(T::INS_KILL, location_val);
-        //         CF->KillBB(CF->CurrentBBIdx(), location_val);
-        //     }
-        // }
+        if (CF->IsKilled(else_end) && !CF->HasEndedBB(else_end)) {
+            for (auto location_val: CF->GetKilledValues(else_end)) {
+                MI(T::INS_KILL, location_val);
+                CF->KillBB(CF->CurrentBBIdx(), location_val);
+            }
+        }
     }
 
     return result;
@@ -793,13 +793,18 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     ////////////////////////////
     // KILL HANDLING
     ////////////////////////////
-    // if (CF->IsKilled(loop_end) && !CF->HasEndedBB(loop_end)) {
-    //    for (auto location_val: CF->GetKilledValues(loop_end)) {
-    //        CF->MakeInstructionFront(T::INS_KILL, location_val);
-    //        CF->KillBB(CF->CurrentBBIdx(), location_val);
-    //    }
-    // }
+    if (CF->IsKilled(loop_end) && !CF->HasEndedBB(loop_end)) {
+       for (auto location_val: CF->GetKilledValues(loop_end)) {
+           CF->MakeInstructionFront(T::INS_KILL, location_val);
+           CF->KillBB(CF->CurrentBBIdx(), location_val);
+       }
+    }
 
+    // Commenting this out.
+    // The idea here is that if the loop is NOT killed in the loop body,
+    // it will not be killed in the loop head and the previous definition
+    // prevails.
+    //
     // if (CF->IsKilled(previous)) {
     //    for (auto location_val: CF->GetKilledValues(previous)) {
     //        CF->MakeInstructionFront(T::INS_KILL, location_val);
@@ -810,12 +815,12 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     CF->SealBB(next_bb);
     CF->SetCurrentBB(next_bb);
 
-    // if (CF->IsKilled(loop_header)) {
-    //    for (auto location_val: CF->GetKilledValues(loop_header)) {
-    //        CF->MakeInstructionFront(T::INS_KILL, location_val);
-    //        CF->KillBB(CF->CurrentBBIdx(), location_val);
-    //    }
-    // }
+    if (CF->IsKilled(loop_header)) {
+       for (auto location_val: CF->GetKilledValues(loop_header)) {
+           CF->MakeInstructionFront(T::INS_KILL, location_val);
+           CF->KillBB(CF->CurrentBBIdx(), location_val);
+       }
+    }
 
     return result;
 }

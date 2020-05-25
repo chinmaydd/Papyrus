@@ -159,6 +159,7 @@ public:
     II Index() const { return ins_idx_; }
 
     std::string ConvertToString() const;
+    std::string HashOfInstruction() const;
 
     bool IsPhi() const { return ins_type_ == INS_PHI; }
     bool IsKill() const { return ins_type_ == INS_KILL; }
@@ -440,6 +441,7 @@ public:
     bool IsReducible(VI, VI) const;
     bool IsArithmetic(T) const;
     bool IsRelational(T) const;
+    bool IsCommutative(T) const;
     bool IsBackEdge(BI, BI) const;
     bool IsPhi(II) const;
     bool IsEliminable(T) const;
@@ -447,7 +449,7 @@ public:
     bool HashExists(const std::string&) const;
 
     bool IsKilled(BI) const;
-
+    
     // NOTE:
     // Added later
     // Ideally, they should be behind an API
