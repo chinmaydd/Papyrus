@@ -45,6 +45,20 @@ void ArrayLSRemover::Run() {
             auto bb = fn->GetBB(bb_idx);
             auto bb_type = bb->Type();
 
+            // If predecessors of a block are not explored, first wait for
+            // them to get explored
+            to_explore = true;
+            auto pred = bb->Predecessors();
+            for (auto pred_idx: bb->Predecessors()) {
+                if (visited.find(pred_idx) == visited.end()) {
+                    to_explore = false;
+                }
+            }
+
+            if (!to_explore && bb_type != B::BB_LOOPHEAD) {
+                continue;
+            }
+
             // If bb_type is loop head, we first explore the loop body and
             // then the loop through.
             if (bb_type == B::BB_LOOPHEAD) {
@@ -73,20 +87,6 @@ void ArrayLSRemover::Run() {
                         worklist.push(succ);
                     }
                 }
-            }
-
-            // If predecessors of a block are not explored, first wait for
-            // them to get explored
-            to_explore = true;
-            auto pred = bb->Predecessors();
-            for (auto pred_idx: bb->Predecessors()) {
-                if (visited.find(pred_idx) == visited.end()) {
-                    to_explore = false;
-                }
-            }
-
-            if (!to_explore && bb_type != B::BB_LOOPHEAD) {
-                continue;
             }
 
             // If this is the first loop visit of the loop head, set a flag
@@ -119,6 +119,7 @@ void ArrayLSRemover::Run() {
             if (pred.size() > 1) {
                 if (bb_type == B::BB_LOOPHEAD && first_loop_visit) {
                     active_defs_[bb_idx] = active_defs_[pred.at(0)];
+                    hash_val[bb_idx] = hash_val[pred.at(0)];
                 } else {
                     auto pred_1 = active_defs_[pred.at(0)];
                     auto pred_2 = active_defs_[pred.at(1)];
@@ -132,9 +133,24 @@ void ArrayLSRemover::Run() {
                             }
                         }
                     }
+
+                    auto p_1 = hash_val[pred.at(0)];
+                    auto p_2 = hash_val[pred.at(1)];
+                    if (p_1 == p_2) {
+                        hash_val[bb_idx] = p_1;
+                    } else {
+                        hash_val[bb_idx] = {};
+                        for (auto elem: p_1) {
+                            if (p_2.find(elem.first) != p_2.end()) {
+                                if (elem.second == p_2[elem.first])
+                                    hash_val[bb_idx].insert(elem);
+                            }
+                        }
+                    }
                 }
             } else if (bb_idx != 1) { // not entry
                 active_defs_[bb_idx] = active_defs_[pred.at(0)];
+                hash_val[bb_idx] = hash_val[pred.at(0)];
             }
 
             LOG(INFO) << "Exploring " << std::to_string(bb_idx);
@@ -154,14 +170,20 @@ void ArrayLSRemover::Run() {
                             // This implies we can remove the load.
                             // Make the instruction inactive and make all dependent
                             // instructions also inactive
-                            ins->MakeInactive();
-                            fn->ReplaceUse(result, hash_val[hash_str]);
-                            auto related_insts = fn->LoadRelatedInsts();
-                            if (related_insts.find(ins_idx) != related_insts.end()) {
-                                for (auto inact_ins_idx: related_insts[ins_idx]) {
-                                    mark_for_inactive.insert(inact_ins_idx);
+                            if (hash_val[bb_idx].find(hash_str) != hash_val[bb_idx].end()) {
+                                ins->MakeInactive();
+                                fn->ReplaceUse(result, hash_val[bb_idx][hash_str]);
+                                auto related_insts = fn->LoadRelatedInsts();
+                                if (related_insts.find(ins_idx) != related_insts.end()) {
+                                    for (auto inact_ins_idx: related_insts[ins_idx]) {
+                                        mark_for_inactive.insert(inact_ins_idx);
+                                    }
                                 }
                             }
+                        } else {
+                            // Future loads can use this same value
+                            active_defs_[bb_idx].insert(hash_str);
+                            hash_val[bb_idx][hash_str] = result;
                         }
                     } else if (type == T::INS_STORE) {
                         auto location_val = ins->Operands().at(1);
@@ -176,13 +198,21 @@ void ArrayLSRemover::Run() {
 
                         if (is_arr) {
                             // Remove current definitions of the variable
-                            active_defs_[bb_idx].erase(var_name);
+                            std::string req_hash_str;
+                            for (auto hash_str: active_defs_[bb_idx]) {
+                                if (hash_str.rfind(var_name + "_", 0) == 0) {
+                                    req_hash_str = hash_str;
+                                }
+                            }
+
+                            // Kill current active defintion
+                            active_defs_[bb_idx].erase(req_hash_str);
 
                             auto hash_str = LSHash(ins);
 
                             // Add current definition for future loads
                             active_defs_[bb_idx].insert(hash_str);
-                            hash_val[hash_str] = ins->Operands().at(0);
+                            hash_val[bb_idx][hash_str] = ins->Operands().at(0);
                         }
                     } else if (type == T::INS_KILL) {
                         // Find the variable being killed
@@ -199,7 +229,7 @@ void ArrayLSRemover::Run() {
 
                         // Kill current active defintion
                         active_defs_[bb_idx].erase(req_hash_str);
-                        ins->MakeInactive();
+                        // ins->MakeInactive();
                     } else {
                         // CSE while building the SSA might not remove all
                         // redundant values. The assumption here is that while

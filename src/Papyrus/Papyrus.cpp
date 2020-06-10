@@ -23,7 +23,7 @@ structlog LOGCFG = {};
 
 int main(int argc, char *argv[]) {
     LOGCFG.headers = true;
-    LOGCFG.level = ERROR;
+    LOGCFG.level = INFO;
 
     if (argc < 3) {
         LOG(ERROR) << "Usage: papyrus <test file location> <output directory location>";

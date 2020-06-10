@@ -802,15 +802,20 @@ VI WhileNode::GenerateIR(IRC& irc) const {
     // }
 
     CF->SealBB(next_bb);
-    CF->SetCurrentBB(next_bb);
 
     if (CF->IsKilled(loop_header)) {
        for (auto location_val: CF->GetKilledValues(loop_header)) {
+           CF->SetCurrentBB(next_bb);
+           CF->MakeInstructionFront(T::INS_KILL, location_val);
+           CF->KillBB(CF->CurrentBBIdx(), location_val);
+
+           CF->SetCurrentBB(loop_body);
            CF->MakeInstructionFront(T::INS_KILL, location_val);
            CF->KillBB(CF->CurrentBBIdx(), location_val);
        }
     }
 
+    CF->SetCurrentBB(next_bb);
     return result;
 }
 

@@ -80,8 +80,9 @@ VI Function::TryRemoveTrivialPhi(II phi_ins) {
 void Function::ReplaceUse(VI old_idx, VI new_idx) {
     auto old_val = GetValue(old_idx);
     auto new_val = GetValue(new_idx);
+    auto all_uses = old_val->GetUsers();
 
-    for (auto use_idx: old_val->GetUsers()) {
+    for (auto use_idx: all_uses) {
         auto ins = GetInstruction(use_idx);
         ins->ReplaceUse(old_idx, new_idx);
         new_val->AddUsage(use_idx);
